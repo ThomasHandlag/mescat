@@ -30,7 +30,7 @@ class _ChatBoxState extends State<ChatBox> {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isTyping = false;
-  List<String> _attachments = [];
+  final List<String> _attachments = [];
 
   @override
   void initState() {

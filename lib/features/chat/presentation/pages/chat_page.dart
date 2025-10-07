@@ -19,7 +19,7 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final List<Message> _messages = [];
+  List<Message> _messages = [];
   final ScrollController _scrollController = ScrollController();
 
   @override
