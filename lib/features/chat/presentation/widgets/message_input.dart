@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../../../core/matrix/domain/entities/matrix_entities.dart';
+import 'package:matrix/matrix.dart';
 
-typedef MessageSendCallback = void Function(String content, MessageType type);
+typedef MessageSendCallback = void Function(String content, String type);
 
 class MessageInput extends StatefulWidget {
   final String roomId;
   final MessageSendCallback onSendMessage;
+  final String? channelName;
 
   const MessageInput({
     super.key,
     required this.roomId,
     required this.onSendMessage,
+    this.channelName,
   });
 
   @override
@@ -20,189 +22,304 @@ class MessageInput extends StatefulWidget {
 class _MessageInputState extends State<MessageInput> {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  bool _isComposing = false;
+
+  bool _isTyping = false;
+  final List<String> _attachments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _messageController.addListener(_onMessageChanged);
+  }
 
   @override
   void dispose() {
+    _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
-  void _sendMessage() {
-    final content = _messageController.text.trim();
-    if (content.isNotEmpty) {
-      widget.onSendMessage(content, MessageType.text);
-      _messageController.clear();
+  void _onMessageChanged() {
+    final hasText = _messageController.text.trim().isNotEmpty;
+    if (hasText != _isTyping) {
       setState(() {
-        _isComposing = false;
+        _isTyping = hasText;
       });
     }
   }
 
-  void _handleSubmitted(String text) {
-    _sendMessage();
+  void _sendMessage() {
+    final message = _messageController.text.trim();
+    if (message.isNotEmpty || _attachments.isNotEmpty) {
+      widget.onSendMessage(message, MessageTypes.Text);
+      _messageController.clear();
+      _attachments.clear();
+      setState(() {
+        _isTyping = false;
+      });
+    }
+  }
+
+  void _removeAttachment(int index) {
+    setState(() {
+      _attachments.removeAt(index);
+    });
+  }
+
+  String get _placeholderText {
+    if (widget.channelName != null) {
+      return 'Message #${widget.channelName}';
+    }
+    return 'Type a message...';
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 1,
-          ),
-        ),
+        color: theme.scaffoldBackgroundColor,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Attachment button
-          IconButton(
-            onPressed: () => _showAttachmentOptions(context),
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Attach file',
-          ),
-          
-          // Message input field
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: _focusNode.hasFocus
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-                  width: 2,
+          // Attachments preview
+          if (_attachments.isNotEmpty) ...[
+            _buildAttachmentsPreview(),
+            const SizedBox(height: 2),
+          ],
+
+          // Main chat input
+          Container(
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 97, 97, 97),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Attach file button
+                _buildActionButton(
+                  icon: Icons.add,
+                  onPressed: () {},
+                  tooltip: 'Attach file',
                 ),
-              ),
-              child: TextField(
-                controller: _messageController,
-                focusNode: _focusNode,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withAlpha(0x60),
+
+                // Text input
+                Expanded(
+                  child: Container(
+                    constraints: BoxConstraints(maxHeight: 20 * 24.0),
+                    child: TextField(
+                      controller: _messageController,
+                      focusNode: _focusNode,
+                      maxLines: null,
+                      maxLength: 500,
+                      textInputAction: TextInputAction.newline,
+                      keyboardType: TextInputType.multiline,
+                      onSubmitted: (_) => _sendMessage(),
+                      decoration: InputDecoration(
+                        hintText: _placeholderText,
+                        hintStyle: TextStyle(
+                          color: colorScheme.onSurface.withAlpha(180),
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        counterText: '', // Hide character counter
+                      ),
+                      style: const TextStyle(fontSize: 16),
+                      onChanged: (text) {
+                        // Handle typing indicator here if needed
+                      },
+                    ),
                   ),
                 ),
-                maxLines: null,
-                textCapitalization: TextCapitalization.sentences,
-                onChanged: (text) {
-                  setState(() {
-                    _isComposing = text.trim().isNotEmpty;
-                  });
-                },
-                onSubmitted: _handleSubmitted,
-                keyboardType: TextInputType.multiline,
-                textInputAction: TextInputAction.send,
-              ),
+
+                // Emoji button
+                _buildActionButton(
+                  icon: Icons.emoji_emotions_outlined,
+                  onPressed: () {},
+                  tooltip: 'Add emoji',
+                ),
+
+                // Send button
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: _isTyping || _attachments.isNotEmpty
+                      ? _buildSendButton()
+                      : _buildMicButton(),
+                ),
+              ],
             ),
           ),
-          
-          const SizedBox(width: 8),
-          
-          // Send button
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            child: _isComposing
-                ? IconButton(
-                    onPressed: _sendMessage,
-                    icon: Icon(
-                      Icons.send,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    tooltip: 'Send message',
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Emoji button
-                      IconButton(
-                        onPressed: () => _showEmojiPicker(context),
-                        icon: const Icon(Icons.emoji_emotions_outlined),
-                        tooltip: 'Add emoji',
-                      ),
-                      
-                      // Voice message button
-                      IconButton(
-                        onPressed: () => _startVoiceRecording(),
-                        icon: const Icon(Icons.mic_outlined),
-                        tooltip: 'Voice message',
-                      ),
-                    ],
+
+          // Character counter (when approaching limit)
+          if (_messageController.text.length > 500 * 0.8)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, right: 2),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${_messageController.text.length}/500',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _messageController.text.length >= 500
+                        ? colorScheme.error
+                        : colorScheme.onSurface.withAlpha(180),
                   ),
-          ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  void _showAttachmentOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Share Content',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+  Widget _buildActionButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required String tooltip,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: IconButton(
+        icon: Icon(icon, size: 20),
+        onPressed: onPressed,
+        tooltip: tooltip,
+        color: colorScheme.onSurface.withAlpha(200),
+        hoverColor: colorScheme.primary.withAlpha(60),
+        splashRadius: 20,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      ),
+    );
+  }
+
+  Widget _buildSendButton() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final canSend = _isTyping || _attachments.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: IconButton(
+        icon: const Icon(Icons.send_rounded, size: 20),
+        onPressed: _sendMessage,
+        tooltip: 'Send message',
+        color: canSend
+            ? colorScheme.primary
+            : colorScheme.onSurface.withAlpha(100),
+        hoverColor: colorScheme.primary.withAlpha(60),
+        splashRadius: 20,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      ),
+    );
+  }
+
+  Widget _buildMicButton() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: IconButton(
+        icon: const Icon(Icons.mic, size: 20),
+        onPressed: () {
+          // Handle voice message recording
+          // HapticFeedback.lightImpact();
+        },
+        tooltip: 'Voice message',
+        color: colorScheme.onSurface.withAlpha(190),
+        hoverColor: colorScheme.primary.withAlpha(60),
+        splashRadius: 20,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentsPreview() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outline.withAlpha(100)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.attachment,
+                size: 16,
+                color: colorScheme.onSurface.withAlpha(190),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _AttachmentOption(
-                  icon: Icons.photo_library,
-                  label: 'Photos',
-                  color: Colors.blue,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage();
-                  },
+              const SizedBox(width: 4),
+              Text(
+                'Attachments (${_attachments.length})',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface.withAlpha(190),
                 ),
-                _AttachmentOption(
-                  icon: Icons.videocam,
-                  label: 'Video',
-                  color: Colors.red,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickVideo();
-                  },
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Wrap(
+            spacing: 2,
+            runSpacing: 2,
+            children: _attachments.asMap().entries.map((entry) {
+              final index = entry.key;
+              final attachment = entry.value;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                _AttachmentOption(
-                  icon: Icons.insert_drive_file,
-                  label: 'File',
-                  color: Colors.orange,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickFile();
-                  },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.insert_drive_file,
+                      size: 14,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      attachment.split('/').last,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => _removeAttachment(index),
+                      child: Icon(
+                        Icons.close,
+                        size: 14,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
                 ),
-                _AttachmentOption(
-                  icon: Icons.location_on,
-                  label: 'Location',
-                  color: Colors.green,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _shareLocation();
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -295,17 +412,10 @@ class _AttachmentOption extends StatelessWidget {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
+            child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );

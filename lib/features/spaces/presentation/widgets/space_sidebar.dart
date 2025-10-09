@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mescat/features/spaces/presentation/widgets/space_icon.dart';
 import '../blocs/space_bloc.dart';
 
 class SpaceSidebar extends StatelessWidget {
@@ -8,7 +9,7 @@ class SpaceSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 80,
+      width: 60,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         boxShadow: [
@@ -18,31 +19,34 @@ class SpaceSidebar extends StatelessWidget {
             offset: const Offset(2, 0),
           ),
         ],
+        border: Border(
+          right: BorderSide(
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
+            width: 0.5,
+          ),
+        ),
       ),
       child: Column(
         children: [
-          // Home button
-
-          // Spaces list
           Expanded(
             child: BlocBuilder<SpaceBloc, SpaceState>(
               builder: (context, state) {
                 if (state is SpaceLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
                 if (state is SpaceLoaded) {
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: state.spaces.length + 1,
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return Padding(
                           padding: const EdgeInsets.all(12.0),
-                          child: _SpaceIcon(
+                          child: SpaceIcon(
                             icon: Icons.home,
                             label: 'Home',
-                            isSelected: state.selectedSpaceId == null || state.selectedSpaceId == '',
+                            isSelected:
+                                state.selectedSpaceId == null ||
+                                state.selectedSpaceId == '',
                             onTap: () {
                               context.read<SpaceBloc>().add(
                                 const SelectSpace(''),
@@ -60,7 +64,7 @@ class SpaceSidebar extends StatelessWidget {
                           horizontal: 12,
                           vertical: 4,
                         ),
-                        child: _SpaceIcon(
+                        child: SpaceIcon(
                           avatarUrl: space.avatarUrl,
                           label: space.name,
                           isSelected: isSelected,
@@ -77,35 +81,29 @@ class SpaceSidebar extends StatelessWidget {
 
                 if (state is SpaceError) {
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Error loading spaces',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      Icons.error_outline,
+                      size: 24,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                   );
                 }
-
                 return const SizedBox.shrink();
               },
             ),
           ),
-
-          // Add space button
           Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: _SpaceIcon(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: SpaceIcon(
+              icon: Icons.explore,
+              label: 'Explore Spaces',
+              isSelected: false,
+              onTap: () {},
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: SpaceIcon(
               icon: Icons.add,
               label: 'Create Space',
               isSelected: false,
@@ -171,72 +169,6 @@ class SpaceSidebar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SpaceIcon extends StatelessWidget {
-  final String? avatarUrl;
-  final IconData? icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _SpaceIcon({
-    this.avatarUrl,
-    this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(isSelected ? 16 : 28),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withAlpha(76),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: avatarUrl != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(isSelected ? 16 : 28),
-                  child: Image.network(
-                    avatarUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => _buildIcon(),
-                  ),
-                )
-              : _buildIcon(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIcon() {
-    return Icon(
-      icon ?? Icons.people,
-      color: isSelected ? Colors.white : null,
-      size: 28,
     );
   }
 }

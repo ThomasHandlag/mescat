@@ -3,28 +3,28 @@ import 'dart:developer';
 
 import 'package:dartz/dartz.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mescat/core/errors/matrix_failures.dart';
-import 'package:mescat/core/matrix/matrix_client.dart';
-import 'package:mescat/core/matrix/domain/entities/matrix_entities.dart';
-import 'package:mescat/core/matrix/domain/repositories/matrix_repository.dart';
+import 'package:mescat/core/mescat/matrix_client.dart';
+import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/core/mescat/domain/repositories/matrix_repository.dart';
 import 'package:uuid/rng.dart';
 
-final class MatrixRepositoryImpl implements MatrixRepository {
+final class MCRepositoryImpl implements MCRepository {
   final MatrixClientManager _matrixClientManager;
 
-  const MatrixRepositoryImpl(this._matrixClientManager);
+  const MCRepositoryImpl(this._matrixClientManager);
 
   @override
-  Future<Either<MatrixFailure, bool>> addReaction({
+  Future<Either<MCFailure, bool>> addReaction({
     required String roomId,
     required String eventId,
     required String emoji,
   }) {
+    // _matrixClientManager.client.se
     return Future.value(Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> addRoomToSpace(
+  Future<Either<MCFailure, bool>> addRoomToSpace(
     String spaceId,
     String roomId,
   ) async {
@@ -66,7 +66,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, MatrixRoom>> createRoom({
+  Future<Either<MCFailure, MatrixRoom>> createRoom({
     required String name,
     String? topic,
     RoomType type = RoomType.textChannel,
@@ -97,7 +97,35 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, MatrixSpace>> createSpace({
+  Future<Either<MCFailure, List<MCUser>>> getRoomMembers(String roomId) async {
+    final members = await _matrixClientManager.client.getMembersByRoom(roomId);
+
+    if (members == null) {
+      return Right([]);
+    }
+
+    final matrixUsers = members.map((member) async {
+      final user = await _matrixClientManager.client.getUserProfile(
+        member.senderId,
+      );
+
+      final presence = await _matrixClientManager.client.getPresence(
+        member.senderId,
+      );
+      final isOnline = presence.presence == PresenceType.online;
+      return MCUser(
+        displayName: user.displayname,
+        userId: member.senderId,
+        avatarUrl: user.avatarUrl?.toString(),
+        isOnline: isOnline,
+      );
+    }).toList();
+
+    return Right(await Future.wait(matrixUsers));
+  }
+
+  @override
+  Future<Either<MCFailure, MatrixSpace>> createSpace({
     required String name,
     String? description,
     bool isPublic = false,
@@ -120,15 +148,16 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> deleteMessage({
+  Future<Either<MCFailure, bool>> deleteMessage({
     required String roomId,
     required String eventId,
   }) async {
+    // await _matrixClientManager.client.deleteEvent(roomId, eventId);
     return Right(true);
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> editMessage({
+  Future<Either<MCFailure, bool>> editMessage({
     required String roomId,
     required String eventId,
     required String newContent,
@@ -137,19 +166,19 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> enableEncryption(String roomId) {
+  Future<Either<MCFailure, bool>> enableEncryption(String roomId) {
     return Future.value(Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
-  Future<Either<MatrixFailure, MatrixUser>> getCurrentUser() async {
+  Future<Either<MCFailure, MCUser>> getCurrentUser() async {
     final userId = _matrixClientManager.client.userID;
     if (userId != null) {
       final userProfile = await _matrixClientManager.client.getUserProfile(
         userId,
       );
       return Right(
-        MatrixUser(displayName: userProfile.displayname, userId: userId),
+        MCUser(displayName: userProfile.displayname, userId: userId),
       );
     } else {
       return Left(AuthenticationFailure(message: 'No user logged in'));
@@ -181,7 +210,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   // }
 
   @override
-  Future<Either<MatrixFailure, List<MatrixMessage>>> getMessages(
+  Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
     String roomId, {
     int limit = 50,
     String? fromToken,
@@ -193,38 +222,123 @@ final class MatrixRepositoryImpl implements MatrixRepository {
       from: fromToken,
     );
 
-    final events = eventsResponse.chunk;
+    final mtEvents = eventsResponse.chunk;
 
-    final List<MatrixMessage> matrixMessages = [];
+    final List<MCMessageEvent> matrixMessages = [];
 
-    for (final event in events) {
-      final content = event.content['body'] as String? ?? '';
-      if (content.isEmpty) continue;
+    for (final mtEvent in mtEvents) {
+      log('Processing event: ${mtEvent.eventId}, content: ${mtEvent.content}');
+      switch (mtEvent.type) {
+        case EventTypes.Message:
+          {
+            final room = _matrixClientManager.client.getRoomById(roomId);
+            MatrixFile? file;
+            if (room != null) {
+              final event = Event.fromMatrixEvent(mtEvent, room);
 
-      final senderName = await _matrixClientManager.client.getUserProfile(
-        event.senderId,
-      );
+              if (event.hasAttachment) {
+                file = await event.downloadAndDecryptAttachment();
+              }
 
-      log('Event type: ${event.type}, content: $content');
+              final messageEvent = await _mapMessageEvent(
+                mtEvent,
+                roomId,
+                file,
+              );
+              if (messageEvent != null) {
+                matrixMessages.add(messageEvent);
+              }
+            }
+          }
+          break;
+        case EventTypes.Encrypted:
+          {}
+          break;
+        case EventTypes.Redaction:
+          break;
+        case EventTypes.Reaction:
+          {
+            final object =
+                mtEvent.content['m.relates_to'] as Map<String, dynamic>?;
+            final reactedEventId = object?['event_id'] as String?;
+            final key = object?['key'] as String?;
 
-      matrixMessages.add(
-        MatrixMessage(
-          eventId: event.eventId,
-          senderDisplayName: senderName.displayname,
-          roomId: roomId,
-          senderId: event.senderId,
-          type: event.type.toMessageType(),
-          content: content,
-          timestamp: event.originServerTs,
-        ),
-      );
+            final index = matrixMessages.indexWhere(
+              (msg) => msg.eventId == reactedEventId,
+            );
+            if (index != -1) {
+              final isExist = matrixMessages[index].reactions.any(
+                (react) =>
+                    react.key == key && react.relatedEventId == reactedEventId,
+              );
+
+              if (isExist) {
+                final msg = matrixMessages[index];
+                final reactions = List<MCReactionEvent>.from(msg.reactions);
+                final reactIndex = reactions.indexWhere(
+                  (react) =>
+                      react.key == key &&
+                      react.relatedEventId == reactedEventId,
+                );
+                final existedReaction = reactions.removeAt(reactIndex);
+                reactions.add(
+                  existedReaction.copyWith(
+                    senderDisplayNames: [
+                      ...existedReaction.senderDisplayNames,
+                      mtEvent.senderId,
+                    ],
+                  ),
+                );
+                matrixMessages[index] = msg.copyWith(reactions: reactions);
+              } else {
+                if (key != null && reactedEventId != null) {
+                  final reactEvent = MCReactionEvent(
+                    key: key,
+                    relatedEventId: reactedEventId,
+                    eventId: mtEvent.eventId,
+                    roomId: roomId,
+                    senderId: mtEvent.senderId,
+                    timestamp: mtEvent.originServerTs,
+                    eventTypes: mtEvent.type,
+                    senderDisplayNames: [mtEvent.senderId],
+                    isCurrentUser:
+                        mtEvent.senderId == _matrixClientManager.client.userID,
+                  );
+                  final msg = matrixMessages[index];
+                  final reactions = List<MCReactionEvent>.from(msg.reactions);
+                  reactions.add(reactEvent);
+                  matrixMessages[index] = msg.copyWith(reactions: reactions);
+                }
+              }
+            }
+          }
+          break;
+        case EventTypes.RoomMember:
+          break;
+        case EventTypes.RoomName:
+          break;
+        case EventTypes.RoomTopic:
+          break;
+        case EventTypes.RoomAvatar:
+          break;
+        case EventTypes.SpaceChild:
+          break;
+        case EventTypes.SpaceParent:
+          break;
+        default:
+          {
+            break;
+          }
+      }
     }
+
+    // EventTypes
 
     return Right(matrixMessages);
   }
 
   @override
-  Future<Either<MatrixFailure, MatrixRoom>> getRoom(String roomId) async {
+  Future<Either<MCFailure, MatrixRoom>> getRoom(String roomId) async {
     final room = _matrixClientManager.client.getRoomById(roomId);
     if (room != null) {
       return Right(
@@ -242,7 +356,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, List<MatrixRoom>>> getRooms() async {
+  Future<Either<MCFailure, List<MatrixRoom>>> getRooms() async {
     final roomsId = await _matrixClientManager.client.getJoinedRooms();
 
     log('Joined rooms: $roomsId');
@@ -271,7 +385,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, MatrixSpace>> getSpace(String spaceId) async {
+  Future<Either<MCFailure, MatrixSpace>> getSpace(String spaceId) async {
     final spaceHierachie = await _matrixClientManager.client.getSpaceHierarchy(
       spaceId,
     );
@@ -293,7 +407,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, List<MatrixRoom>>> getSpaceRooms(
+  Future<Either<MCFailure, List<MatrixRoom>>> getSpaceRooms(
     String spaceId,
   ) async {
     final spaceHierachie = await _matrixClientManager.client.getSpaceHierarchy(
@@ -302,8 +416,9 @@ final class MatrixRepositoryImpl implements MatrixRepository {
 
     final rooms = spaceHierachie.rooms
         .map((room) {
-          log('Room in space: ${room.roomId}: ${room.toJson()}');
-          final isVoiceRoom = room.roomType != null && room.roomType == 'org.matrix.msc3417.call';
+          final isVoiceRoom =
+              room.roomType != null &&
+              room.roomType == 'org.matrix.msc3417.call';
           if (room.roomId != spaceId) {
             return MatrixRoom(
               roomId: room.roomId,
@@ -312,7 +427,6 @@ final class MatrixRepositoryImpl implements MatrixRepository {
               type: isVoiceRoom ? RoomType.voiceChannel : RoomType.textChannel,
               isPublic: room.guestCanJoin,
               parentSpaceId: spaceId,
-              
             );
           }
         })
@@ -323,10 +437,8 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, List<MatrixSpace>>> getSpaces() async {
+  Future<Either<MCFailure, List<MatrixSpace>>> getSpaces() async {
     final roomsId = await _matrixClientManager.client.getJoinedRooms();
-
-    log('Joined rooms: $roomsId');
 
     final spaces = roomsId
         .map((roomId) {
@@ -350,15 +462,15 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Stream<Either<MatrixFailure, Map<String, dynamic>>> getSyncStream() {
+  Stream<Either<MCFailure, Map<String, dynamic>>> getSyncStream() {
     return Stream.error(Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
-  Future<Either<MatrixFailure, MatrixUser>> getUser(String userId) async {
+  Future<Either<MCFailure, MCUser>> getUser(String userId) async {
     final user = await _matrixClientManager.client.getUserProfile(userId);
     return Right(
-      MatrixUser(
+      MCUser(
         displayName: user.displayname,
         userId: userId,
         avatarUrl: user.avatarUrl.toString(),
@@ -367,7 +479,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> inviteToRoom(
+  Future<Either<MCFailure, bool>> inviteToRoom(
     String roomId,
     String userId,
   ) async {
@@ -376,29 +488,29 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> joinRoom(String roomId) async {
+  Future<Either<MCFailure, bool>> joinRoom(String roomId) async {
     await _matrixClientManager.client.joinRoom(roomId);
     return Right(true);
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> joinSpace(String spaceId) async {
+  Future<Either<MCFailure, bool>> joinSpace(String spaceId) async {
     return Right(true);
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> leaveRoom(String roomId) async {
+  Future<Either<MCFailure, bool>> leaveRoom(String roomId) async {
     await _matrixClientManager.client.leaveRoom(roomId);
     return Right(true);
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> leaveSpace(String spaceId) async {
+  Future<Either<MCFailure, bool>> leaveSpace(String spaceId) async {
     return Right(true);
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> login({
+  Future<Either<MCFailure, bool>> login({
     required String username,
     required String password,
   }) async {
@@ -415,13 +527,13 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> logout() async {
+  Future<Either<MCFailure, bool>> logout() async {
     await _matrixClientManager.client.logout();
     return Right(true);
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> register({
+  Future<Either<MCFailure, bool>> register({
     required String username,
     required String password,
     String? email,
@@ -438,7 +550,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> removeReaction({
+  Future<Either<MCFailure, bool>> removeReaction({
     required String roomId,
     required String eventId,
     required String emoji,
@@ -447,7 +559,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> removeRoomFromSpace(
+  Future<Either<MCFailure, bool>> removeRoomFromSpace(
     String spaceId,
     String roomId,
   ) async {
@@ -483,7 +595,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, List<MatrixMessage>>> searchMessages({
+  Future<Either<MCFailure, List<MCMessageEvent>>> searchMessages({
     required String query,
     String? roomId,
     int limit = 20,
@@ -492,7 +604,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, List<MatrixRoom>>> searchRooms({
+  Future<Either<MCFailure, List<MatrixRoom>>> searchRooms({
     required String query,
     int limit = 20,
   }) async {
@@ -512,7 +624,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, List<MatrixUser>>> searchUsers({
+  Future<Either<MCFailure, List<MCUser>>> searchUsers({
     required String query,
     int limit = 20,
   }) {
@@ -520,45 +632,48 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> sendFileMessage({
+  Future<Either<MCFailure, bool>> sendFileMessage({
     required String roomId,
     required String fileUrl,
     required String fileName,
-    MessageType type = MessageType.file,
+    String type = MessageTypes.File,
   }) {
     return Future.value(Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
-  Future<Either<MatrixFailure, MatrixMessage>> sendMessage({
+  Future<Either<MCFailure, MCMessageEvent>> sendMessage({
     required String roomId,
     required String content,
-    MessageType type = MessageType.text,
+    String msgtype = MessageTypes.Text,
+    String eventType = EventTypes.Message,
     String? replyToEventId,
   }) async {
     final transactionId = CryptoRNG().generate().toString();
     final result = await _matrixClientManager.client.sendMessage(
       roomId,
-      EventTypes.Message,
+      eventType,
       transactionId,
-      Map.from({'body': content, 'msgtype': 'm.text'}),
+      Map.from({'body': content, 'msgtype': msgtype}),
     );
 
     return Right(
-      MatrixMessage(
+      MCMessageEvent(
+        eventTypes: eventType,
         eventId: result,
         roomId: roomId,
         senderId: _matrixClientManager.client.userID ?? 'unknown',
-        type: type,
-        content: content,
+        msgtype: msgtype,
+        body: content,
         senderDisplayName: await _matrixClientManager.currentUserDisplayName,
         timestamp: DateTime.now(),
+        isCurrentUser: true,
       ),
     );
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> sendTypingIndicator(
+  Future<Either<MCFailure, bool>> sendTypingIndicator(
     String roomId,
     bool isTyping,
   ) {
@@ -566,22 +681,22 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> setPresence(UserPresence presence) {
+  Future<Either<MCFailure, bool>> setPresence(UserPresence presence) {
     return Future.value(Right(true));
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> startSync() {
+  Future<Either<MCFailure, bool>> startSync() {
     return Future.value(Right(true));
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> stopSync() {
+  Future<Either<MCFailure, bool>> stopSync() {
     return Future.value(Right(true));
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> updateUserProfile({
+  Future<Either<MCFailure, bool>> updateUserProfile({
     String? displayName,
     String? avatarUrl,
   }) {
@@ -589,7 +704,7 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, String>> uploadFile({
+  Future<Either<MCFailure, String>> uploadFile({
     required String filePath,
     required String fileName,
     String? mimeType,
@@ -598,10 +713,107 @@ final class MatrixRepositoryImpl implements MatrixRepository {
   }
 
   @override
-  Future<Either<MatrixFailure, bool>> verifyDevice(
-    String userId,
-    String deviceId,
-  ) {
+  Future<Either<MCFailure, bool>> verifyDevice(String userId, String deviceId) {
     return Future.value(Right(true));
+  }
+
+  Future<MCMessageEvent?> _mapMessageEvent(
+    MatrixEvent event,
+    String roomId,
+    MatrixFile? file,
+  ) async {
+    final eventType = (event.content['msgtype'] as String?);
+    final senderName = await _matrixClientManager.client.getUserProfile(
+      event.senderId,
+    );
+
+    switch (eventType) {
+      case MessageTypes.Text:
+        {
+          final content = event.content['body'] as String? ?? '';
+          return MCMessageEvent(
+            eventTypes: EventTypes.Message,
+            eventId: event.eventId,
+            senderDisplayName: senderName.displayname,
+            roomId: roomId,
+            senderId: event.senderId,
+            msgtype: eventType!,
+            body: content,
+            timestamp: event.originServerTs,
+            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
+          );
+        }
+      case MessageTypes.Image:
+        {
+          final info = event.content['info'] as Map<String, dynamic>? ?? {};
+          final thumbnailInfo =
+              info['thumbnail_info'] as Map<String, dynamic>? ?? {};
+
+          return MCImageEvent(
+            height: thumbnailInfo['h'] as int? ?? 0,
+            width: thumbnailInfo['w'] as int? ?? 0,
+            mimeType: thumbnailInfo['mimetype'] as String? ?? '',
+            eventId: event.eventId,
+            senderDisplayName: senderName.displayname,
+            roomId: roomId,
+            senderId: event.senderId,
+            msgtype: eventType!,
+            timestamp: event.originServerTs,
+            file: file!,
+            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
+          );
+        }
+      case MessageTypes.File:
+        {
+          final content = event.content['body'] as String? ?? '';
+          return MCMessageEvent(
+            eventTypes: EventTypes.Message,
+            eventId: event.eventId,
+            senderDisplayName: senderName.displayname,
+            roomId: roomId,
+            senderId: event.senderId,
+            msgtype: eventType!,
+            body: content,
+            timestamp: event.originServerTs,
+            file: file,
+            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
+          );
+        }
+      case MessageTypes.Audio:
+        {
+          final content = event.content['body'] as String? ?? '';
+          return MCMessageEvent(
+            eventTypes: EventTypes.Message,
+            eventId: event.eventId,
+            senderDisplayName: senderName.displayname,
+            roomId: roomId,
+            senderId: event.senderId,
+            msgtype: eventType!,
+            body: content,
+            timestamp: event.originServerTs,
+            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
+          );
+        }
+      case MessageTypes.Video:
+        {
+          final content = event.content['body'] as String? ?? '';
+          return MCMessageEvent(
+            eventTypes: EventTypes.Message,
+            eventId: event.eventId,
+            senderDisplayName: senderName.displayname,
+            roomId: roomId,
+            senderId: event.senderId,
+            msgtype: eventType!,
+            body: content,
+            timestamp: event.originServerTs,
+            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
+            file: file,
+          );
+        }
+      default:
+        {
+          return null;
+        }
+    }
   }
 }

@@ -1,15 +1,15 @@
 import 'package:dartz/dartz.dart';
-import 'package:mescat/core/errors/matrix_failures.dart';
-import '../repositories/matrix_repository.dart';
-import '../entities/matrix_entities.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/core/mescat/domain/repositories/matrix_repository.dart';
 
 /// Use case for user authentication
 class LoginUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   LoginUseCase(this.repository);
 
-  Future<Either<MatrixFailure, bool>> call({
+  Future<Either<MCFailure, bool>> call({
     required String username,
     required String password,
   }) async {
@@ -21,11 +21,11 @@ class LoginUseCase {
 }
 
 class RegisterUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   RegisterUseCase(this.repository);
 
-  Future<Either<MatrixFailure, bool>> call({
+  Future<Either<MCFailure, bool>> call({
     required String username,
     required String password,
     String? email,
@@ -39,42 +39,42 @@ class RegisterUseCase {
 }
 
 class LogoutUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   LogoutUseCase(this.repository);
 
-  Future<Either<MatrixFailure, bool>> call() async {
+  Future<Either<MCFailure, bool>> call() async {
     return await repository.logout();
   }
 }
 
 /// Use case for getting current user
 class GetCurrentUserUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   GetCurrentUserUseCase(this.repository);
 
-  Future<Either<MatrixFailure, MatrixUser>> call() async {
+  Future<Either<MCFailure, MCUser>> call() async {
     return await repository.getCurrentUser();
   }
 }
 
 /// Use case for sending messages
 class SendMessageUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   SendMessageUseCase(this.repository);
 
-  Future<Either<MatrixFailure, MatrixMessage>> call({
+  Future<Either<MCFailure, MCMessageEvent>> call({
     required String roomId,
     required String content,
-    MessageType type = MessageType.text,
+    String type = MessageTypes.Text,
     String? replyToEventId,
   }) async {
     return await repository.sendMessage(
       roomId: roomId,
       content: content,
-      type: type,
+      msgtype: type,
       replyToEventId: replyToEventId,
     );
   }
@@ -82,11 +82,11 @@ class SendMessageUseCase {
 
 /// Use case for getting room messages
 class GetMessagesUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   GetMessagesUseCase(this.repository);
 
-  Future<Either<MatrixFailure, List<MatrixMessage>>> call({
+  Future<Either<MCFailure, List<MCMessageEvent>>> call({
     required String roomId,
     int limit = 50,
     String? fromToken,
@@ -101,11 +101,11 @@ class GetMessagesUseCase {
 
 /// Use case for creating rooms
 class CreateRoomUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   CreateRoomUseCase(this.repository);
 
-  Future<Either<MatrixFailure, MatrixRoom>> call({
+  Future<Either<MCFailure, MatrixRoom>> call({
     required String name,
     String? topic,
     RoomType type = RoomType.textChannel,
@@ -124,22 +124,22 @@ class CreateRoomUseCase {
 
 /// Use case for joining rooms
 class JoinRoomUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   JoinRoomUseCase(this.repository);
 
-  Future<Either<MatrixFailure, bool>> call(String roomId) async {
+  Future<Either<MCFailure, bool>> call(String roomId) async {
     return await repository.joinRoom(roomId);
   }
 }
 
 /// Use case for creating spaces (Discord servers)
 class CreateSpaceUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   CreateSpaceUseCase(this.repository);
 
-  Future<Either<MatrixFailure, MatrixSpace>> call({
+  Future<Either<MCFailure, MatrixSpace>> call({
     required String name,
     String? description,
     bool isPublic = false,
@@ -154,22 +154,22 @@ class CreateSpaceUseCase {
 
 /// Use case for getting user's spaces
 class GetSpacesUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   GetSpacesUseCase(this.repository);
 
-  Future<Either<MatrixFailure, List<MatrixSpace>>> call() async {
+  Future<Either<MCFailure, List<MatrixSpace>>> call() async {
     return await repository.getSpaces();
   }
 }
 
 /// Use case for getting user's rooms
 class GetRoomsUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   GetRoomsUseCase(this.repository);
 
-  Future<Either<MatrixFailure, List<MatrixRoom>>> call(String? spaceId) async {
+  Future<Either<MCFailure, List<MatrixRoom>>> call(String? spaceId) async {
     if (spaceId != null && spaceId.isNotEmpty) {
       return await repository.getSpaceRooms(spaceId);
     } else {
@@ -180,11 +180,11 @@ class GetRoomsUseCase {
 
 /// Use case for searching messages
 class SearchMessagesUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   SearchMessagesUseCase(this.repository);
 
-  Future<Either<MatrixFailure, List<MatrixMessage>>> call({
+  Future<Either<MCFailure, List<MCMessageEvent>>> call({
     required String query,
     String? roomId,
     int limit = 20,
@@ -199,11 +199,11 @@ class SearchMessagesUseCase {
 
 /// Use case for uploading files
 class UploadFileUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   UploadFileUseCase(this.repository);
 
-  Future<Either<MatrixFailure, String>> call({
+  Future<Either<MCFailure, String>> call({
     required String filePath,
     required String fileName,
     String? mimeType,
@@ -218,11 +218,11 @@ class UploadFileUseCase {
 
 /// Use case for adding reactions to messages
 class AddReactionUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   AddReactionUseCase(this.repository);
 
-  Future<Either<MatrixFailure, bool>> call({
+  Future<Either<MCFailure, bool>> call({
     required String roomId,
     required String eventId,
     required String emoji,
@@ -237,25 +237,37 @@ class AddReactionUseCase {
 
 /// Use case for setting user presence
 class SetPresenceUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   SetPresenceUseCase(this.repository);
 
-  Future<Either<MatrixFailure, bool>> call(UserPresence presence) async {
+  Future<Either<MCFailure, bool>> call(UserPresence presence) async {
     return await repository.setPresence(presence);
   }
 }
 
 /// Use case for sending typing indicators
 class SendTypingIndicatorUseCase {
-  final MatrixRepository repository;
+  final MCRepository repository;
 
   SendTypingIndicatorUseCase(this.repository);
 
-  Future<Either<MatrixFailure, bool>> call({
+  Future<Either<MCFailure, bool>> call({
     required String roomId,
     required bool isTyping,
   }) async {
     return await repository.sendTypingIndicator(roomId, isTyping);
+  }
+}
+
+class GetRoomMembersUseCase {
+  final MCRepository repository;
+
+  GetRoomMembersUseCase(this.repository);
+
+  Future<Either<MCFailure, List<MCUser>>> call(
+    String roomId,
+  ) async {
+    return await repository.getRoomMembers(roomId);
   }
 }

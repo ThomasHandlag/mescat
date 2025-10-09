@@ -1,12 +1,12 @@
-import 'package:equatable/equatable.dart';
+part of 'mescat_entities.dart';
 
 /// Base class for all Matrix-related failures
-abstract class MatrixFailure extends Equatable {
+abstract class MCFailure extends Equatable {
   final String message;
   final String? code;
   final dynamic details;
 
-  const MatrixFailure({
+  const MCFailure({
     required this.message,
     this.code,
     this.details,
@@ -17,7 +17,7 @@ abstract class MatrixFailure extends Equatable {
 }
 
 /// Network-related failures
-class NetworkFailure extends MatrixFailure {
+class NetworkFailure extends MCFailure {
   const NetworkFailure({
     required super.message,
     super.code,
@@ -26,7 +26,7 @@ class NetworkFailure extends MatrixFailure {
 }
 
 /// Authentication failures
-class AuthenticationFailure extends MatrixFailure {
+class AuthenticationFailure extends MCFailure {
   const AuthenticationFailure({
     required super.message,
     super.code,
@@ -35,7 +35,7 @@ class AuthenticationFailure extends MatrixFailure {
 }
 
 /// Authorization failures (insufficient permissions)
-class AuthorizationFailure extends MatrixFailure {
+class AuthorizationFailure extends MCFailure {
   const AuthorizationFailure({
     required super.message,
     super.code,
@@ -44,7 +44,7 @@ class AuthorizationFailure extends MatrixFailure {
 }
 
 /// Server-side failures
-class ServerFailure extends MatrixFailure {
+class ServerFailure extends MCFailure {
   const ServerFailure({
     required super.message,
     super.code,
@@ -53,7 +53,7 @@ class ServerFailure extends MatrixFailure {
 }
 
 /// Client-side failures
-class ClientFailure extends MatrixFailure {
+class ClientFailure extends MCFailure {
   const ClientFailure({
     required super.message,
     super.code,
@@ -62,7 +62,7 @@ class ClientFailure extends MatrixFailure {
 }
 
 /// Room-related failures
-class RoomFailure extends MatrixFailure {
+class RoomFailure extends MCFailure {
   const RoomFailure({
     required super.message,
     super.code,
@@ -71,7 +71,7 @@ class RoomFailure extends MatrixFailure {
 }
 
 /// Message-related failures
-class MessageFailure extends MatrixFailure {
+class MessageFailure extends MCFailure {
   const MessageFailure({
     required super.message,
     super.code,
@@ -80,7 +80,7 @@ class MessageFailure extends MatrixFailure {
 }
 
 /// File upload/download failures
-class FileFailure extends MatrixFailure {
+class FileFailure extends MCFailure {
   const FileFailure({
     required super.message,
     super.code,
@@ -89,7 +89,7 @@ class FileFailure extends MatrixFailure {
 }
 
 /// Encryption-related failures
-class EncryptionFailure extends MatrixFailure {
+class EncryptionFailure extends MCFailure {
   const EncryptionFailure({
     required super.message,
     super.code,
@@ -98,7 +98,7 @@ class EncryptionFailure extends MatrixFailure {
 }
 
 /// Sync-related failures
-class SyncFailure extends MatrixFailure {
+class SyncFailure extends MCFailure {
   const SyncFailure({
     required super.message,
     super.code,
@@ -107,7 +107,7 @@ class SyncFailure extends MatrixFailure {
 }
 
 /// Voice/Video call failures
-class CallFailure extends MatrixFailure {
+class CallFailure extends MCFailure {
   const CallFailure({
     required super.message,
     super.code,
@@ -116,7 +116,7 @@ class CallFailure extends MatrixFailure {
 }
 
 /// Database-related failures
-class DatabaseFailure extends MatrixFailure {
+class DatabaseFailure extends MCFailure {
   const DatabaseFailure({
     required super.message,
     super.code,
@@ -125,7 +125,7 @@ class DatabaseFailure extends MatrixFailure {
 }
 
 /// Unknown or unexpected failures
-class UnknownFailure extends MatrixFailure {
+class UnknownFailure extends MCFailure {
   const UnknownFailure({
     required super.message,
     super.code,

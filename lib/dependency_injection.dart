@@ -1,10 +1,10 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mescat/core/matrix/matrix_client.dart';
-import 'package:mescat/core/matrix/data/repositories/matrix_repository_impl.dart';
-import 'package:mescat/core/matrix/domain/repositories/matrix_repository.dart';
-import 'package:mescat/core/matrix/domain/usecases/matrix_usecases.dart';
+import 'package:mescat/core/mescat/matrix_client.dart';
+import 'package:mescat/core/mescat/data/repositories/mescat_repository_impl.dart';
+import 'package:mescat/core/mescat/domain/repositories/matrix_repository.dart';
+import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/network/network_service.dart';
@@ -53,47 +53,50 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient),
   );
-  getIt.registerLazySingleton<MatrixRepository>(
-    () => MatrixRepositoryImpl(getIt<MatrixClientManager>()),
+  getIt.registerLazySingleton<MCRepository>(
+    () => MCRepositoryImpl(getIt<MatrixClientManager>()),
   );
 
   // Add other dependencies here as they are implemented
   // Example:
   // getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
   getIt.registerLazySingleton<LoginUseCase>(
-    () => LoginUseCase(getIt<MatrixRepository>()),
+    () => LoginUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<RegisterUseCase>(
-    () => RegisterUseCase(getIt<MatrixRepository>()),
+    () => RegisterUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<LogoutUseCase>(
-    () => LogoutUseCase(getIt<MatrixRepository>()),
+    () => LogoutUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<GetCurrentUserUseCase>(
-    () => GetCurrentUserUseCase(getIt<MatrixRepository>()),
+    () => GetCurrentUserUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<CreateRoomUseCase>(
-    () => CreateRoomUseCase(getIt<MatrixRepository>()),
+    () => CreateRoomUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<GetRoomsUseCase>(
-    () => GetRoomsUseCase(getIt<MatrixRepository>()),
+    () => GetRoomsUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<GetMessagesUseCase>(
-    () => GetMessagesUseCase(getIt<MatrixRepository>()),
+    () => GetMessagesUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<SendMessageUseCase>(
-    () => SendMessageUseCase(getIt<MatrixRepository>()),
+    () => SendMessageUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<CreateSpaceUseCase>(
-    () => CreateSpaceUseCase(getIt<MatrixRepository>()),
+    () => CreateSpaceUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<GetSpacesUseCase>(
-    () => GetSpacesUseCase(getIt<MatrixRepository>()),
+    () => GetSpacesUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<JoinRoomUseCase>(
-    () => JoinRoomUseCase(getIt<MatrixRepository>()),
+    () => JoinRoomUseCase(getIt<MCRepository>()),
   );
   getIt.registerLazySingleton<AddReactionUseCase>(
-    () => AddReactionUseCase(getIt<MatrixRepository>()),
+    () => AddReactionUseCase(getIt<MCRepository>()),
+  );
+  getIt.registerLazySingleton<GetRoomMembersUseCase>(
+    () => GetRoomMembersUseCase(getIt<MCRepository>()),
   );
 }

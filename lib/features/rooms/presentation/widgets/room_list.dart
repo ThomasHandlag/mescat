@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mescat/features/rooms/presentation/widgets/expanse_channel.dart';
 import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 import '../blocs/room_bloc.dart';
-import '../../../../core/matrix/domain/entities/matrix_entities.dart';
+import '../../../../core/mescat/domain/entities/mescat_entities.dart';
 
 class RoomList extends StatelessWidget {
   const RoomList({super.key});
@@ -10,188 +11,160 @@ class RoomList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          right: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 1,
-          ),
-        ),
-      ),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
       child: Column(
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).dividerColor,
-                  width: 1,
-                ),
-              ),
             ),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    'Channels',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                BlocBuilder<SpaceBloc, SpaceState>(
+                  builder: (context, state) {
+                    return Text("Space name");
+                  },
                 ),
+                const Spacer(),
                 IconButton(
-                  onPressed: () => _showCreateRoomDialog(context),
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Create Channel',
+                  onPressed: () {},
+                  icon: const Icon(Icons.chevron_right),
                 ),
               ],
             ),
           ),
-          
+
           // Room list
           Expanded(
-            child: BlocListener<SpaceBloc, SpaceState>(listener: (context, state) {
-              if (state is SpaceLoaded) {
-                context.read<RoomBloc>().add(LoadRooms(spaceId: state.selectedSpaceId));
-              }
-            }, child: BlocBuilder<RoomBloc, RoomState>(
-              builder: (context, state) {
-                if (state is RoomLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
+            child: BlocListener<SpaceBloc, SpaceState>(
+              listener: (context, state) {
+                if (state is SpaceLoaded) {
+                  context.read<RoomBloc>().add(
+                    LoadRooms(spaceId: state.selectedSpaceId),
                   );
                 }
-                
-                if (state is RoomLoaded) {
-                  if (state.rooms.isEmpty) {
+              },
+              child: BlocBuilder<RoomBloc, RoomState>(
+                builder: (context, state) {
+                  if (state is RoomLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (state is RoomLoaded) {
+                    if (state.rooms.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 64,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withAlpha(0x4D),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No channels yet',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withAlpha(0xAD),
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Create your first channel',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withAlpha(0x4F),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    // Group rooms by type
+                    final textChannels = state.rooms
+                        .where((r) => r.type == RoomType.textChannel)
+                        .toList();
+                    final voiceChannels = state.rooms
+                        .where((r) => r.type == RoomType.voiceChannel)
+                        .toList();
+                    final directMessages = state.rooms
+                        .where((r) => r.type == RoomType.directMessage)
+                        .toList();
+
+                    return ListView(
+                      children: [
+                        // Text channels
+                        if (textChannels.isNotEmpty)
+                          _buildChannelExpansionTile(
+                            'Text Channels',
+                            textChannels,
+                            state.selectedRoomId,
+                            context,
+                          ),
+
+                        // Voice channels
+                        if (voiceChannels.isNotEmpty)
+                          _buildChannelExpansionTile(
+                            'Voice Channels',
+                            voiceChannels,
+                            state.selectedRoomId,
+                            context,
+                          ),
+
+                        // Direct messages
+                        if (directMessages.isNotEmpty)
+                          _buildChannelExpansionTile(
+                            'Direct Messages',
+                            directMessages,
+                            state.selectedRoomId,
+                            context,
+                          ),
+                      ],
+                    );
+                  }
+
+                  if (state is RoomError) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.chat_bubble_outline,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.onSurface.withAlpha(0x4D),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No channels yet',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withAlpha(0xAD),
-                            ),
+                            Icons.error_outline,
+                            size: 48,
+                            color: Theme.of(context).colorScheme.error,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Create your first channel',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withAlpha(0x4F),
+                            'Error loading channels',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<RoomBloc>().add(LoadRooms());
+                            },
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
                     );
                   }
-                  
-                  // Group rooms by type
-                  final textChannels = state.rooms.where((r) => r.type == RoomType.textChannel).toList();
-                  final voiceChannels = state.rooms.where((r) => r.type == RoomType.voiceChannel).toList();
-                  final directMessages = state.rooms.where((r) => r.type == RoomType.directMessage).toList();
-                  
-                  return ListView(
-                    children: [
-                      // Text channels
-                      if (textChannels.isNotEmpty) ...[
-                        _buildChannelCategory('Text Channels', Icons.tag),
-                        ...textChannels.map((room) => _buildRoomTile(
-                          context,
-                          room,
-                          state.selectedRoomId,
-                        )),
-                      ],
-                      
-                      // Voice channels
-                      if (voiceChannels.isNotEmpty) ...[
-                        _buildChannelCategory('Voice Channels', Icons.volume_up),
-                        ...voiceChannels.map((room) => _buildRoomTile(
-                          context,
-                          room,
-                          state.selectedRoomId,
-                        )),
-                      ],
-                      
-                      // Direct messages
-                      if (directMessages.isNotEmpty) ...[
-                        _buildChannelCategory('Direct Messages', Icons.person),
-                        ...directMessages.map((room) => _buildRoomTile(
-                          context,
-                          room,
-                          state.selectedRoomId,
-                        )),
-                      ],
-                    ],
-                  );
-                }
-                
-                if (state is RoomError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Error loading channels',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<RoomBloc>().add(LoadRooms());
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                
-                return const SizedBox.shrink();
-              },
-            ),)
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildChannelCategory(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: Colors.grey[600],
-          ),
-          const SizedBox(width: 8),
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-              letterSpacing: 0.5,
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ],
@@ -199,55 +172,108 @@ class RoomList extends StatelessWidget {
     );
   }
 
-  Widget _buildRoomTile(BuildContext context, MatrixRoom room, String? selectedRoomId) {
-    final isSelected = room.roomId == selectedRoomId;
-    
+  Widget _buildChannelExpansionTile(
+    String title,
+    List<MatrixRoom> rooms,
+    String? selectedRoomId,
+    BuildContext context,
+  ) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? Theme.of(context).colorScheme.primaryContainer
-            : null,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        dense: true,
-        leading: Icon(
-          _getRoomIcon(room.type),
-          size: 20,
-          color: isSelected
-              ? Theme.of(context).colorScheme.onPrimaryContainer
-              : null,
-        ),
-        title: Text(
-          room.name ?? 'Unnamed Room',
-          style: TextStyle(
-            color: isSelected
-                ? Theme.of(context).colorScheme.onPrimaryContainer
-                : null,
-            fontWeight: isSelected ? FontWeight.w600 : null,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      child: ExpanseChannel(
+        title: title,
+        trailing: GestureDetector(
+          onTap: () => _showCreateRoomDialog(
+            context,
+            roomType: rooms.isNotEmpty ? rooms.first.type : null,
+          ),
+          child: Tooltip(
+            message: 'Create Channel',
+            child: Icon(
+              Icons.add,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(0x99),
+            ),
           ),
         ),
-        trailing: room.unreadCount > 0
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.error,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+        children: rooms
+            .map((room) => _buildRoomTile(context, room, selectedRoomId))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildRoomTile(
+    BuildContext context,
+    MatrixRoom room,
+    String? selectedRoomId,
+  ) {
+    final isSelected = room.roomId == selectedRoomId;
+
+    return GestureDetector(
+      onTap: () => context.read<RoomBloc>().add(SelectRoom(room.roomId)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primaryContainer
+              : null,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              _getRoomIcon(room.type),
+              size: 18,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : Theme.of(context).colorScheme.onSurface.withAlpha(0xCC),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Tooltip(
+                message: room.name,
                 child: Text(
-                  room.unreadCount.toString(),
+                  room.name ?? 'Unnamed Room',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onError,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : null,
+                    fontWeight: isSelected ? FontWeight.w600 : null,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              )
-            : null,
-        onTap: () {
-          context.read<RoomBloc>().add(SelectRoom(room.roomId));
-        },
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(
+                Icons.group_add,
+                size: 16,
+                color: isSelected
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer.withAlpha(0x99)
+                    : Theme.of(context).colorScheme.onSurface.withAlpha(0x66),
+              ),
+              tooltip: 'Invite Members',
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(
+                Icons.settings,
+                size: 16,
+                color: isSelected
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer.withAlpha(0x99)
+                    : Theme.of(context).colorScheme.onSurface.withAlpha(0x66),
+              ),
+              tooltip: 'Channel Settings',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -267,12 +293,12 @@ class RoomList extends StatelessWidget {
     }
   }
 
-  void _showCreateRoomDialog(BuildContext context) {
+  void _showCreateRoomDialog(BuildContext context, {RoomType? roomType}) {
     final nameController = TextEditingController();
     final topicController = TextEditingController();
-    RoomType selectedType = RoomType.textChannel;
+    RoomType selectedType = roomType ?? RoomType.textChannel;
     bool isPublic = false;
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -300,9 +326,7 @@ class RoomList extends StatelessWidget {
               const SizedBox(height: 16),
               DropdownButtonFormField<RoomType>(
                 initialValue: selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Channel Type',
-                ),
+                decoration: const InputDecoration(labelText: 'Channel Type'),
                 items: const [
                   DropdownMenuItem(
                     value: RoomType.textChannel,
@@ -343,8 +367,10 @@ class RoomList extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 if (nameController.text.trim().isNotEmpty) {
-                  final selectedSpaceId = context.read<SpaceBloc>().state is SpaceLoaded
-                      ? (context.read<SpaceBloc>().state as SpaceLoaded).selectedSpaceId
+                  final selectedSpaceId =
+                      context.read<SpaceBloc>().state is SpaceLoaded
+                      ? (context.read<SpaceBloc>().state as SpaceLoaded)
+                            .selectedSpaceId
                       : null;
                   context.read<RoomBloc>().add(
                     CreateRoom(

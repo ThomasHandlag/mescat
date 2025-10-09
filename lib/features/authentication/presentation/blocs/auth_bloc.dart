@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../../../../core/matrix/domain/entities/matrix_entities.dart';
-import '../../../../core/matrix/domain/usecases/matrix_usecases.dart';
+import '../../../../core/mescat/domain/entities/mescat_entities.dart';
+import '../../../../core/mescat/domain/usecases/mescat_usecases.dart';
 
 // Authentication Events
 abstract class AuthEvent extends Equatable {
@@ -56,7 +56,7 @@ class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 
 class AuthAuthenticated extends AuthState {
-  final MatrixUser user;
+  final MCUser user;
 
   const AuthAuthenticated(this.user);
 
