@@ -1,34 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../core/constants/app_constants.dart';
+import 'package:matrix/matrix.dart';
 
-class ChatBox extends StatefulWidget {
-  final Function(String message, List<String>? attachments)? onSendMessage;
-  final Function()? onAttachFile;
-  final Function()? onEmojiPicker;
-  final String? placeholder;
-  final bool enabled;
-  final int maxLines;
+typedef MessageSendCallback = void Function(String content, String type);
+
+class MessageInput extends StatefulWidget {
+  final String roomId;
+  final MessageSendCallback onSendMessage;
   final String? channelName;
 
-  const ChatBox({
+  const MessageInput({
     super.key,
-    this.onSendMessage,
-    this.onAttachFile,
-    this.onEmojiPicker,
-    this.placeholder,
-    this.enabled = true,
-    this.maxLines = 5,
+    required this.roomId,
+    required this.onSendMessage,
     this.channelName,
   });
 
   @override
-  State<ChatBox> createState() => _ChatBoxState();
+  State<MessageInput> createState() => _MessageInputState();
 }
 
-class _ChatBoxState extends State<ChatBox> {
+class _MessageInputState extends State<MessageInput> {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
   bool _isTyping = false;
   final List<String> _attachments = [];
 
@@ -58,7 +52,7 @@ class _ChatBoxState extends State<ChatBox> {
   void _sendMessage() {
     final message = _messageController.text.trim();
     if (message.isNotEmpty || _attachments.isNotEmpty) {
-      widget.onSendMessage?.call(message, _attachments.isEmpty ? null : _attachments);
+      widget.onSendMessage(message, MessageTypes.Text);
       _messageController.clear();
       _attachments.clear();
       setState(() {
@@ -67,8 +61,6 @@ class _ChatBoxState extends State<ChatBox> {
     }
   }
 
-
-
   void _removeAttachment(int index) {
     setState(() {
       _attachments.removeAt(index);
@@ -76,7 +68,6 @@ class _ChatBoxState extends State<ChatBox> {
   }
 
   String get _placeholderText {
-    if (widget.placeholder != null) return widget.placeholder!;
     if (widget.channelName != null) {
       return 'Message #${widget.channelName}';
     }
@@ -87,17 +78,11 @@ class _ChatBoxState extends State<ChatBox> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outline.withAlpha(100),
-            width: 1,
-          ),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,20 +91,14 @@ class _ChatBoxState extends State<ChatBox> {
           // Attachments preview
           if (_attachments.isNotEmpty) ...[
             _buildAttachmentsPreview(),
-            const SizedBox(height: AppConstants.smallPadding),
+            const SizedBox(height: 2),
           ],
-          
+
           // Main chat input
           Container(
             decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: _focusNode.hasFocus 
-                    ? colorScheme.primary.withAlpha(145)
-                    : colorScheme.outline.withAlpha(100),
-                width: 1,
-              ),
+              color: const Color.fromARGB(255, 97, 97, 97),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -127,25 +106,22 @@ class _ChatBoxState extends State<ChatBox> {
                 // Attach file button
                 _buildActionButton(
                   icon: Icons.add,
-                  onPressed: widget.enabled ? widget.onAttachFile : null,
+                  onPressed: () {},
                   tooltip: 'Attach file',
                 ),
-                
+
                 // Text input
                 Expanded(
                   child: Container(
-                    constraints: BoxConstraints(
-                      maxHeight: widget.maxLines * 24.0,
-                    ),
+                    constraints: BoxConstraints(maxHeight: 20 * 24.0),
                     child: TextField(
                       controller: _messageController,
                       focusNode: _focusNode,
-                      enabled: widget.enabled,
                       maxLines: null,
-                      maxLength: AppConstants.maxMessageLength,
+                      maxLength: 500,
                       textInputAction: TextInputAction.newline,
                       keyboardType: TextInputType.multiline,
-                      onSubmitted: widget.enabled ? (_) => _sendMessage() : null,
+                      onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _placeholderText,
                         hintStyle: TextStyle(
@@ -166,17 +142,17 @@ class _ChatBoxState extends State<ChatBox> {
                     ),
                   ),
                 ),
-                
+
                 // Emoji button
                 _buildActionButton(
                   icon: Icons.emoji_emotions_outlined,
-                  onPressed: widget.enabled ? widget.onEmojiPicker : null,
+                  onPressed: () {},
                   tooltip: 'Add emoji',
                 ),
-                
+
                 // Send button
                 AnimatedContainer(
-                  duration: AppConstants.shortAnimation,
+                  duration: const Duration(milliseconds: 200),
                   child: _isTyping || _attachments.isNotEmpty
                       ? _buildSendButton()
                       : _buildMicButton(),
@@ -184,21 +160,18 @@ class _ChatBoxState extends State<ChatBox> {
               ],
             ),
           ),
-          
+
           // Character counter (when approaching limit)
-          if (_messageController.text.length > AppConstants.maxMessageLength * 0.8)
+          if (_messageController.text.length > 500 * 0.8)
             Padding(
-              padding: const EdgeInsets.only(
-                top: AppConstants.smallPadding,
-                right: AppConstants.smallPadding,
-              ),
+              padding: const EdgeInsets.only(top: 2, right: 2),
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  '${_messageController.text.length}/${AppConstants.maxMessageLength}',
+                  '${_messageController.text.length}/500',
                   style: TextStyle(
                     fontSize: 12,
-                    color: _messageController.text.length >= AppConstants.maxMessageLength
+                    color: _messageController.text.length >= 500
                         ? colorScheme.error
                         : colorScheme.onSurface.withAlpha(180),
                   ),
@@ -216,7 +189,7 @@ class _ChatBoxState extends State<ChatBox> {
     required String tooltip,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Padding(
       padding: const EdgeInsets.all(4),
       child: IconButton(
@@ -226,10 +199,7 @@ class _ChatBoxState extends State<ChatBox> {
         color: colorScheme.onSurface.withAlpha(200),
         hoverColor: colorScheme.primary.withAlpha(60),
         splashRadius: 20,
-        constraints: const BoxConstraints(
-          minWidth: 32,
-          minHeight: 32,
-        ),
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       ),
     );
   }
@@ -237,58 +207,52 @@ class _ChatBoxState extends State<ChatBox> {
   Widget _buildSendButton() {
     final colorScheme = Theme.of(context).colorScheme;
     final canSend = _isTyping || _attachments.isNotEmpty;
-    
+
     return Padding(
       padding: const EdgeInsets.all(4),
       child: IconButton(
         icon: const Icon(Icons.send_rounded, size: 20),
-        onPressed: canSend && widget.enabled ? _sendMessage : null,
+        onPressed: _sendMessage,
         tooltip: 'Send message',
-        color: canSend ? colorScheme.primary : colorScheme.onSurface.withAlpha(100),
+        color: canSend
+            ? colorScheme.primary
+            : colorScheme.onSurface.withAlpha(100),
         hoverColor: colorScheme.primary.withAlpha(60),
         splashRadius: 20,
-        constraints: const BoxConstraints(
-          minWidth: 32,
-          minHeight: 32,
-        ),
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       ),
     );
   }
 
   Widget _buildMicButton() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Padding(
       padding: const EdgeInsets.all(4),
       child: IconButton(
         icon: const Icon(Icons.mic, size: 20),
-        onPressed: widget.enabled ? () {
+        onPressed: () {
           // Handle voice message recording
-          HapticFeedback.lightImpact();
-        } : null,
+          // HapticFeedback.lightImpact();
+        },
         tooltip: 'Voice message',
         color: colorScheme.onSurface.withAlpha(190),
         hoverColor: colorScheme.primary.withAlpha(60),
         splashRadius: 20,
-        constraints: const BoxConstraints(
-          minWidth: 32,
-          minHeight: 32,
-        ),
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       ),
     );
   }
 
   Widget _buildAttachmentsPreview() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
-      padding: const EdgeInsets.all(AppConstants.smallPadding),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colorScheme.outline.withAlpha(100),
-        ),
+        border: Border.all(color: colorScheme.outline.withAlpha(100)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,14 +275,14 @@ class _ChatBoxState extends State<ChatBox> {
               ),
             ],
           ),
-          const SizedBox(height: AppConstants.smallPadding),
+          const SizedBox(height: 2),
           Wrap(
-            spacing: AppConstants.smallPadding,
-            runSpacing: AppConstants.smallPadding,
+            spacing: 2,
+            runSpacing: 2,
             children: _attachments.asMap().entries.map((entry) {
               final index = entry.key;
               final attachment = entry.value;
-              
+
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -359,20 +323,100 @@ class _ChatBoxState extends State<ChatBox> {
       ),
     );
   }
+
+  void _showEmojiPicker(BuildContext context) {
+    // TODO: Implement emoji picker
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Emoji picker coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _startVoiceRecording() {
+    // TODO: Implement voice recording
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Voice messages coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _pickImage() {
+    // TODO: Implement image picker
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Image sharing coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _pickVideo() {
+    // TODO: Implement video picker
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Video sharing coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _pickFile() {
+    // TODO: Implement file picker
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('File sharing coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _shareLocation() {
+    // TODO: Implement location sharing
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Location sharing coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 }
 
-// Extension for additional functionality
-extension ChatBoxHelper on ChatBox {
-  static void showEmojiPicker(BuildContext context) {
-    // Implement emoji picker modal
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        height: 300,
-        padding: const EdgeInsets.all(16),
-        child: const Center(
-          child: Text('Emoji Picker - To be implemented'),
-        ),
+class _AttachmentOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _AttachmentOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
       ),
     );
   }
