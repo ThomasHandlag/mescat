@@ -209,13 +209,15 @@ class MCReactionEvent extends MCEvent {
   final String relatedEventId;
   final String relType = "m.annotation";
   final List<String?> senderDisplayNames;
+  final List<MapEntry<String, String>> reactEventIds;
   final bool isCurrentUser;
 
   const MCReactionEvent({
     required this.key,
     required this.relatedEventId,
     required this.senderDisplayNames,
-    required super.eventId,
+    required this.reactEventIds,
+    super.eventId = "",
     required super.roomId,
     required super.senderId,
     required super.timestamp,
@@ -232,6 +234,8 @@ class MCReactionEvent extends MCEvent {
     String? senderId,
     DateTime? timestamp,
     String? eventTypes,
+    List<MapEntry<String, String>>? reactEventIds,
+    bool? isCurrentUser,
   }) {
     return MCReactionEvent(
       key: key ?? this.key,
@@ -242,7 +246,8 @@ class MCReactionEvent extends MCEvent {
       senderId: senderId ?? this.senderId,
       timestamp: timestamp ?? this.timestamp,
       eventTypes: eventTypes ?? this.eventTypes,
-      isCurrentUser: isCurrentUser,
+      reactEventIds: reactEventIds ?? this.reactEventIds,
+      isCurrentUser: isCurrentUser ?? this.isCurrentUser,
     );
   }
 

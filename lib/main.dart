@@ -45,6 +45,8 @@ class MescatApp extends StatelessWidget {
             sendMessageUseCase: getIt(),
             createRoomUseCase: getIt(),
             joinRoomUseCase: getIt(),
+            addReactionUseCase: getIt(),
+            removeReactionUseCase: getIt(),
           ),
         ),
         BlocProvider(

@@ -14,6 +14,8 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
   final SendMessageUseCase sendMessageUseCase;
   final CreateRoomUseCase createRoomUseCase;
   final JoinRoomUseCase joinRoomUseCase;
+  final AddReactionUseCase addReactionUseCase;
+  final RemoveReactionUseCase removeReactionUseCase;
 
   RoomBloc({
     required this.getRoomsUseCase,
@@ -21,6 +23,8 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     required this.sendMessageUseCase,
     required this.createRoomUseCase,
     required this.joinRoomUseCase,
+    required this.addReactionUseCase,
+    required this.removeReactionUseCase,
   }) : super(RoomInitial()) {
     on<LoadRooms>(_onLoadRooms);
     on<LoadMessages>(_onLoadMessages);
@@ -28,6 +32,8 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<CreateRoom>(_onCreateRoom);
     on<JoinRoom>(_onJoinRoom);
     on<SelectRoom>(_onSelectRoom);
+    on<AddReaction>(_onAddReaction);
+    on<RemoveReaction>(_onRemoveReaction);
   }
 
   Future<void> _onLoadRooms(LoadRooms event, Emitter<RoomState> emit) async {
@@ -130,5 +136,35 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
         add(LoadMessages(roomId: event.roomId!));
       }
     }
+  }
+
+  Future<void> _onAddReaction(
+    AddReaction event,
+    Emitter<RoomState> emit,
+  ) async {
+    final result = await addReactionUseCase(
+      roomId: event.roomId,
+      eventId: event.eventId,
+      emoji: event.emoji,
+    );
+
+    result.fold((failure) => emit(RoomError(failure.toString())), (success) {
+      // Optionally handle success, e.g., refresh messages or update state
+    });
+  }
+
+  Future<void> _onRemoveReaction(
+    RemoveReaction event,
+    Emitter<RoomState> emit,
+  ) async {
+    final result = await removeReactionUseCase(
+      roomId: event.roomId,
+      eventId: event.eventId,
+      emoji: event.emoji,
+    );
+
+    result.fold((failure) => emit(RoomError(failure.toString())), (success) {
+      // Optionally handle success, e.g., refresh messages or update state
+    });
   }
 }

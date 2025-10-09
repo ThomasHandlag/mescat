@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_item.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 
 class MessageBubble extends StatelessWidget {
   final MCMessageEvent message;
@@ -258,7 +261,25 @@ class MessageBubble extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               if (reaction.isCurrentUser) {
-                // Handle removing reaction
+                if (context.read<AuthBloc>().state is AuthAuthenticated) {
+                  final userId =
+                      (context.read<AuthBloc>().state as AuthAuthenticated)
+                          .user
+                          .userId;
+                  final existingReaction = reaction.reactEventIds.firstWhere(
+                    (entry) => entry.value == userId,
+                    orElse: () => MapEntry('', ''),
+                  );
+                  if (existingReaction.key.isNotEmpty) {
+                    context.read<RoomBloc>().add(
+                      RemoveReaction(
+                        roomId: reaction.roomId,
+                        eventId: existingReaction.key,
+                        emoji: reaction.key,
+                      ),
+                    );
+                  }
+                }
               } else {
                 // Handle adding reaction
               }

@@ -99,4 +99,7 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<GetRoomMembersUseCase>(
     () => GetRoomMembersUseCase(getIt<MCRepository>()),
   );
+  getIt.registerLazySingleton<RemoveReactionUseCase>(
+    () => RemoveReactionUseCase(getIt<MCRepository>()),
+  );
 }

@@ -280,13 +280,25 @@ final class MCRepositoryImpl implements MCRepository {
                       react.key == key &&
                       react.relatedEventId == reactedEventId,
                 );
+
+                final senderName =
+                    (await _matrixClientManager.client.getUserProfile(
+                      mtEvent.senderId,
+                    )).displayname;
+
                 final existedReaction = reactions.removeAt(reactIndex);
                 reactions.add(
                   existedReaction.copyWith(
                     senderDisplayNames: [
                       ...existedReaction.senderDisplayNames,
-                      mtEvent.senderId,
+                      senderName,
                     ],
+                    reactEventIds: [
+                      ...existedReaction.reactEventIds,
+                      MapEntry(mtEvent.eventId, mtEvent.senderId),
+                    ],
+                    isCurrentUser:
+                        mtEvent.senderId == _matrixClientManager.client.userID,
                   ),
                 );
                 matrixMessages[index] = msg.copyWith(reactions: reactions);
@@ -295,6 +307,9 @@ final class MCRepositoryImpl implements MCRepository {
                   final reactEvent = MCReactionEvent(
                     key: key,
                     relatedEventId: reactedEventId,
+                    reactEventIds: [
+                      MapEntry(mtEvent.eventId, mtEvent.senderId),
+                    ],
                     eventId: mtEvent.eventId,
                     roomId: roomId,
                     senderId: mtEvent.senderId,
@@ -554,8 +569,10 @@ final class MCRepositoryImpl implements MCRepository {
     required String roomId,
     required String eventId,
     required String emoji,
-  }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+  }) async {
+    final txnId = CryptoRNG().generate().toString();
+    await _matrixClientManager.client.redactEvent(roomId, eventId, txnId);
+    return Future.value(Right(true));
   }
 
   @override

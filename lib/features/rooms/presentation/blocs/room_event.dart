@@ -87,3 +87,33 @@ class SelectRoom extends RoomEvent {
   @override
   List<Object?> get props => [roomId];
 }
+
+class AddReaction extends RoomEvent {
+  final String roomId;
+  final String eventId;
+  final String emoji;
+
+  const AddReaction({
+    required this.roomId,
+    required this.eventId,
+    required this.emoji,
+  });
+
+  @override
+  List<Object?> get props => [roomId, eventId, emoji];
+}
+
+class RemoveReaction extends RoomEvent {
+  final String roomId;
+  final String eventId;
+  final String emoji;
+
+  const RemoveReaction({
+    required this.roomId,
+    required this.eventId,
+    required this.emoji,
+  });
+
+  @override
+  List<Object?> get props => [roomId, eventId, emoji];
+}
