@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/rooms/presentation/widgets/expanse_channel.dart';
 import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
-import '../blocs/room_bloc.dart';
-import '../../../../core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
+import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 
 class RoomList extends StatelessWidget {
   const RoomList({super.key});
@@ -24,7 +24,7 @@ class RoomList extends StatelessWidget {
               children: [
                 BlocBuilder<SpaceBloc, SpaceState>(
                   builder: (context, state) {
-                    return Text("Space name");
+                    return const Text("Space name");
                   },
                 ),
                 const Spacer(),
@@ -153,7 +153,7 @@ class RoomList extends StatelessWidget {
                           const SizedBox(height: 8),
                           ElevatedButton(
                             onPressed: () {
-                              context.read<RoomBloc>().add(LoadRooms());
+                              context.read<RoomBloc>().add(const LoadRooms());
                             },
                             child: const Text('Retry'),
                           ),

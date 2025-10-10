@@ -71,20 +71,21 @@ abstract class MCRepository {
   // Message management
   Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
     String roomId, {
-    int limit = 50,
+    int limit = 100,
     String? fromToken,
+    String? filter,
+    String? toToken,
   });
 
   Future<Either<MCFailure, MCMessageEvent>> sendMessage({
     required String roomId,
     required String content,
     String msgtype = MessageTypes.Text,
-    String? replyToEventId,
   });
 
   // Stream<Either<MatrixFailure, MatrixMessage>> streamMessages(String roomId);
 
-  Future<Either<MCFailure, bool>> editMessage({
+  Future<Either<MCFailure, MCMessageEvent>> editMessage({
     required String roomId,
     required String eventId,
     required String newContent,
@@ -157,5 +158,18 @@ abstract class MCRepository {
     int limit = 20,
   });
 
+  // reply a message
+  Future<Either<MCFailure, MCMessageEvent>> replyMessage({
+    required String roomId,
+    required String content,
+    required String replyToEventId,
+    String msgtype = MessageTypes.Text,
+  });
 
+  // edit message
+  Future<Either<MCFailure, MCMessageEvent>> editMessageContent({
+    required String roomId,
+    required String eventId,
+    required String newContent,
+  });
 }

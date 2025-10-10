@@ -16,7 +16,6 @@ class SendMessageUseCase {
       roomId: roomId,
       content: content,
       msgtype: type,
-      replyToEventId: replyToEventId,
     );
   }
 }
@@ -31,11 +30,15 @@ class GetMessagesUseCase {
     required String roomId,
     int limit = 50,
     String? fromToken,
+    String? filter,
+    String? toToken,
   }) async {
     return await repository.getMessages(
       roomId,
       limit: limit,
       fromToken: fromToken,
+      filter: filter,
+      toToken: toToken,
     );
   }
 }
@@ -111,6 +114,60 @@ class RemoveReactionUseCase {
       roomId: roomId,
       eventId: eventId,
       emoji: emoji,
+    );
+  }
+}
+
+class ReplyMessageUseCase {
+  final MCRepository repository;
+
+  ReplyMessageUseCase(this.repository);
+
+  Future<Either<MCFailure, MCMessageEvent>> call({
+    required String roomId,
+    required String content,
+    required String replyToEventId,
+    String msgtype = MessageTypes.Text,
+  }) async {
+    return await repository.replyMessage(
+      roomId: roomId,
+      content: content,
+      replyToEventId: replyToEventId,
+      msgtype: msgtype,
+    );
+  }
+}
+
+class EditMessageUseCase {
+  final MCRepository repository;
+
+  EditMessageUseCase(this.repository);
+
+  Future<Either<MCFailure, MCMessageEvent>> call({
+    required String roomId,
+    required String eventId,
+    required String newContent,
+  }) async {
+    return await repository.editMessage(
+      roomId: roomId,
+      eventId: eventId,
+      newContent: newContent,
+    );
+  }
+}
+
+class DeleteMessageUseCase {
+  final MCRepository repository;
+
+  DeleteMessageUseCase(this.repository);
+
+  Future<Either<MCFailure, bool>> call({
+    required String roomId,
+    required String eventId,
+  }) async {
+    return await repository.deleteMessage(
+      roomId: roomId,
+      eventId: eventId,
     );
   }
 }

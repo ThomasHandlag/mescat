@@ -53,23 +53,6 @@ class _MessageListState extends State<MessageList> {
     }
   }
 
-  // void _handleSendMessage(String message, List<String>? attachments) {
-  //   if (message.trim().isEmpty &&
-  //       (attachments == null || attachments.isEmpty)) {
-  //     return;
-  //   }
-
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     if (_scrollController.hasClients) {
-  //       _scrollController.animateTo(
-  //         _scrollController.position.maxScrollExtent,
-  //         duration: const Duration(milliseconds: 300),
-  //         curve: Curves.easeOut,
-  //       );
-  //     }
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading && widget.messages.isEmpty) {

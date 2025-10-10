@@ -31,7 +31,7 @@ class MessageActions extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: EdgeInsets.all(2),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
@@ -53,7 +53,7 @@ class MessageActions extends StatelessWidget {
             tooltip: 'Add Reaction',
             onPressed: onReact,
           ),
-          
+
           // Reply
           _buildActionButton(
             context,
@@ -61,7 +61,7 @@ class MessageActions extends StatelessWidget {
             tooltip: 'Reply',
             onPressed: onReply,
           ),
-          
+
           // Copy message
           _buildActionButton(
             context,
@@ -69,7 +69,7 @@ class MessageActions extends StatelessWidget {
             tooltip: 'Copy Text',
             onPressed: onCopy,
           ),
-          
+
           // Edit (only for current user)
           if (isCurrentUser)
             _buildActionButton(
@@ -78,7 +78,7 @@ class MessageActions extends StatelessWidget {
               tooltip: 'Edit',
               onPressed: onEdit,
             ),
-          
+
           // Pin message
           _buildActionButton(
             context,
@@ -86,15 +86,7 @@ class MessageActions extends StatelessWidget {
             tooltip: 'Pin Message',
             onPressed: onPin,
           ),
-          
-          // More actions
-          _buildActionButton(
-            context,
-            icon: Icons.more_horiz,
-            tooltip: 'More',
-            onPressed: () => _showMoreActions(context),
-          ),
-          
+
           // Delete (only for current user)
           if (isCurrentUser)
             _buildActionButton(
@@ -104,6 +96,14 @@ class MessageActions extends StatelessWidget {
               onPressed: onDelete,
               isDestructive: true,
             ),
+
+          // More actions
+          _buildActionButton(
+            context,
+            icon: Icons.more_horiz,
+            tooltip: 'More',
+            onPressed: () => _showMoreActions(context, onCopy, onReport, onEdit, onDelete),
+          ),
         ],
       ),
     );
@@ -117,7 +117,7 @@ class MessageActions extends StatelessWidget {
     bool isDestructive = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -132,7 +132,7 @@ class MessageActions extends StatelessWidget {
             child: Icon(
               icon,
               size: 16,
-              color: isDestructive 
+              color: isDestructive
                   ? colorScheme.error
                   : colorScheme.onSurface.withAlpha(0xCC),
             ),
@@ -142,98 +142,105 @@ class MessageActions extends StatelessWidget {
     );
   }
 
-  void _showMoreActions(BuildContext context) {
-    showModalBottomSheet(
+  void _showMoreActions(
+    BuildContext context,
+    VoidCallback? onCopy,
+    VoidCallback? onReport,
+    VoidCallback? onEdit,
+    VoidCallback? onDelete,
+  ) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset buttonPosition = button.localToGlobal(
+      Offset.zero,
+      ancestor: overlay,
+    );
+
+    showMenu(
+      popUpAnimationStyle: AnimationStyle.noAnimation,
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outline.withAlpha(0x4D),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Actions
-            _buildMoreActionTile(
-              context,
-              icon: Icons.content_copy,
-              title: 'Copy Message',
-              onTap: () {
-                Navigator.pop(context);
-                onCopy?.call();
-              },
-            ),
-            
-            _buildMoreActionTile(
-              context,
-              icon: Icons.copy_all,
-              title: 'Copy Message Link',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement copy message link
-              },
-            ),
-            
-            _buildMoreActionTile(
-              context,
-              icon: Icons.mark_chat_unread,
-              title: 'Mark Unread',
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement mark unread
-              },
-            ),
-            
-            if (!isCurrentUser)
-              _buildMoreActionTile(
-                context,
-                icon: Icons.flag,
-                title: 'Report Message',
-                onTap: () {
-                  Navigator.pop(context);
-                  onReport?.call();
-                },
-                isDestructive: true,
-              ),
-            
-            if (isCurrentUser) ...[
-              _buildMoreActionTile(
-                context,
-                icon: Icons.edit,
-                title: 'Edit Message',
-                onTap: () {
-                  Navigator.pop(context);
-                  onEdit?.call();
-                },
-              ),
-              
-              _buildMoreActionTile(
-                context,
-                icon: Icons.delete,
-                title: 'Delete Message',
-                onTap: () {
-                  Navigator.pop(context);
-                  onDelete?.call();
-                },
-                isDestructive: true,
-              ),
-            ],
-          ],
-        ),
+      position: RelativeRect.fromLTRB(
+        buttonPosition.dx,
+        buttonPosition.dy - 8,
+        buttonPosition.dx + button.size.width,
+        buttonPosition.dy + button.size.height + 8,
       ),
+      items: [
+        PopupMenuItem(
+          enabled: false,
+          child: Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.outline.withAlpha(0x4D),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        // Actions
+        PopupMenuItem(
+          child: _buildMoreActionTile(
+            context,
+            icon: Icons.content_copy,
+            title: 'Copy Message',
+            onTap: () {
+              onCopy?.call();
+            },
+          ),
+        ),
+        PopupMenuItem(
+          child: _buildMoreActionTile(
+            context,
+            icon: Icons.copy_all,
+            title: 'Copy Message Link',
+            onTap: () {},
+          ),
+        ),
+        PopupMenuItem(
+          child: _buildMoreActionTile(
+            context,
+            icon: Icons.mark_chat_unread,
+            title: 'Mark Unread',
+            onTap: () {},
+          ),
+        ),
+        if (!isCurrentUser)
+          PopupMenuItem(
+            child: _buildMoreActionTile(
+              context,
+              icon: Icons.flag,
+              title: 'Report Message',
+              onTap: () {
+                onReport?.call();
+              },
+              isDestructive: true,
+            ),
+          ),
+        if (isCurrentUser) ...[
+          PopupMenuItem(
+            child: _buildMoreActionTile(
+              context,
+              icon: Icons.edit,
+              title: 'Edit Message',
+              onTap: () {
+                onEdit?.call();
+              },
+            ),
+          ),
+          PopupMenuItem(
+            child: _buildMoreActionTile(
+              context,
+              icon: Icons.delete,
+              title: 'Delete Message',
+              onTap: () {
+                onDelete?.call();
+              },
+              isDestructive: true,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -245,16 +252,18 @@ class MessageActions extends StatelessWidget {
     bool isDestructive = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return ListTile(
       leading: Icon(
         icon,
         color: isDestructive ? colorScheme.error : colorScheme.onSurface,
+        size: 16,
       ),
       title: Text(
         title,
         style: TextStyle(
           color: isDestructive ? colorScheme.error : colorScheme.onSurface,
+          fontSize: 14,
         ),
       ),
       onTap: onTap,

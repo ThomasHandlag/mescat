@@ -6,7 +6,6 @@ import 'package:mescat/features/rooms/presentation/widgets/room_list.dart';
 import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 import 'package:mescat/features/spaces/presentation/widgets/space_sidebar.dart';
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -20,17 +19,17 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     // Load initial data
     context.read<SpaceBloc>().add(LoadSpaces());
-    context.read<RoomBloc>().add(LoadRooms());
+    context.read<RoomBloc>().add(const LoadRooms());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Row(
         children: [
-          const SpaceSidebar(),
-          const SizedBox(width: 250, child: RoomList()),
-          const Expanded(child: ChatPage()),
+          SpaceSidebar(),
+          SizedBox(width: 250, child: RoomList()),
+          Expanded(child: ChatPage()),
         ],
       ),
     );

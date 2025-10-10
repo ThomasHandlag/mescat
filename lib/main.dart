@@ -4,11 +4,11 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mescat/features/authentication/presentation/pages/auth_page.dart';
 import 'package:mescat/features/members/presentation/blocs/member_bloc.dart';
 import 'package:mescat/shared/pages/home_page.dart';
-import 'core/themes/app_themes.dart';
-import 'features/authentication/presentation/blocs/auth_bloc.dart';
-import 'features/rooms/presentation/blocs/room_bloc.dart';
-import 'features/spaces/presentation/blocs/space_bloc.dart';
-import 'dependency_injection.dart';
+import 'package:mescat/core/themes/app_themes.dart';
+import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
+import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
+import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 
 void main() async {
@@ -47,6 +47,9 @@ class MescatApp extends StatelessWidget {
             joinRoomUseCase: getIt(),
             addReactionUseCase: getIt(),
             removeReactionUseCase: getIt(),
+            deleteMessageUseCase: getIt(),
+            editMessageUseCase: getIt(),
+            replyMessageUseCase: getIt(),
           ),
         ),
         BlocProvider(

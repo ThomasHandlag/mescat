@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/auth_bloc.dart';
-import '../widgets/login_form.dart';
-import '../widgets/register_form.dart';
+import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
+import 'package:mescat/features/authentication/presentation/widgets/login_form.dart';
+import 'package:mescat/features/authentication/presentation/widgets/register_form.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -122,7 +122,7 @@ class _AuthPageState extends State<AuthPage>
                   },
                   child: TabBarView(
                     controller: _tabController,
-                    children: [const LoginForm(), const RegisterForm()],
+                    children: const [LoginForm(), RegisterForm()],
                   ),
                 ),
               ),

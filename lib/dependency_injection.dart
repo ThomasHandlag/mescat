@@ -7,7 +7,7 @@ import 'package:mescat/core/mescat/domain/repositories/matrix_repository.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'core/network/network_service.dart';
+import 'package:mescat/core/network/network_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -101,5 +101,14 @@ Future<void> setupDependencyInjection() async {
   );
   getIt.registerLazySingleton<RemoveReactionUseCase>(
     () => RemoveReactionUseCase(getIt<MCRepository>()),
+  );
+  getIt.registerLazySingleton<DeleteMessageUseCase>(
+    () => DeleteMessageUseCase(getIt<MCRepository>()),
+  );
+  getIt.registerLazySingleton<EditMessageUseCase>(
+    () => EditMessageUseCase(getIt<MCRepository>()),
+  );
+  getIt.registerLazySingleton<ReplyMessageUseCase>(
+    () => ReplyMessageUseCase(getIt<MCRepository>()),
   );
 }

@@ -27,7 +27,7 @@ class MCMessageEvent extends MCEvent {
   final bool isEdited;
   final DateTime? editedTimestamp;
   final List<MCReactionEvent> reactions;
-  final String? replyToEventId;
+  final RepliedEventContent? repliedEvent;
   final bool isEncrypted;
   final MessageStatus status;
   final Map<String, dynamic>? metadata;
@@ -49,12 +49,15 @@ class MCMessageEvent extends MCEvent {
     this.isEdited = false,
     this.editedTimestamp,
     this.reactions = const [],
-    this.replyToEventId,
+    this.repliedEvent,
     this.isEncrypted = false,
     this.status = MessageStatus.sent,
     this.metadata,
     this.file,
-  });
+  }) : assert(
+         msgtype != MessageTypes.Image || file != null,
+         'File must be provided for image messages',
+       );
 
   @override
   List<Object?> get props => [
@@ -67,11 +70,12 @@ class MCMessageEvent extends MCEvent {
     isEdited,
     editedTimestamp,
     reactions,
-    replyToEventId,
+    repliedEvent,
     isEncrypted,
     status,
     metadata,
     file,
+    isCurrentUser,
   ];
 
   MCMessageEvent copyWith({
@@ -87,12 +91,13 @@ class MCMessageEvent extends MCEvent {
     bool? isEdited,
     DateTime? editedTimestamp,
     List<MCReactionEvent>? reactions,
-    String? replyToEventId,
+    RepliedEventContent? repliedEvent,
     bool? isEncrypted,
     MessageStatus? status,
     Map<String, dynamic>? metadata,
     MatrixFile? file,
     bool? isCurrentUser,
+    String? replyToContent,
   }) {
     return MCMessageEvent(
       eventId: eventId ?? this.eventId,
@@ -107,7 +112,7 @@ class MCMessageEvent extends MCEvent {
       isEdited: isEdited ?? this.isEdited,
       editedTimestamp: editedTimestamp ?? this.editedTimestamp,
       reactions: reactions ?? this.reactions,
-      replyToEventId: replyToEventId ?? this.replyToEventId,
+      repliedEvent: repliedEvent ?? this.repliedEvent,
       isEncrypted: isEncrypted ?? this.isEncrypted,
       status: status ?? this.status,
       metadata: metadata ?? this.metadata,
@@ -136,7 +141,7 @@ class MCImageEvent extends MCMessageEvent {
     super.isEdited,
     super.editedTimestamp,
     super.reactions,
-    super.replyToEventId,
+    super.repliedEvent,
     super.isEncrypted,
     super.status,
     super.metadata,
@@ -163,7 +168,7 @@ class MCImageEvent extends MCMessageEvent {
     bool? isEdited,
     DateTime? editedTimestamp,
     List<MCReactionEvent>? reactions,
-    String? replyToEventId,
+    RepliedEventContent? repliedEvent,
     bool? isEncrypted,
     MessageStatus? status,
     Map<String, dynamic>? metadata,
@@ -174,6 +179,7 @@ class MCImageEvent extends MCMessageEvent {
     String? mimeType,
     MatrixFile? file,
     bool? isCurrentUser,
+    String? replyToContent,
   }) {
     return MCImageEvent(
       eventId: eventId ?? this.eventId,
@@ -187,7 +193,7 @@ class MCImageEvent extends MCMessageEvent {
       isEdited: isEdited ?? this.isEdited,
       editedTimestamp: editedTimestamp ?? this.editedTimestamp,
       reactions: reactions ?? this.reactions,
-      replyToEventId: replyToEventId ?? this.replyToEventId,
+      repliedEvent: repliedEvent ?? this.repliedEvent,
       isEncrypted: isEncrypted ?? this.isEncrypted,
       status: status ?? this.status,
       metadata: metadata ?? this.metadata,

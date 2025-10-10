@@ -79,7 +79,7 @@ class _ChatPageState extends State<ChatPage> {
 
               return Row(
                 children: [
-                  Icon(Icons.tag, size: 16),
+                 const Icon(Icons.tag, size: 16),
                   Text(
                     selectedRoom.name ?? 'Unnamed Room',
                     style: Theme.of(context).textTheme.titleMedium,

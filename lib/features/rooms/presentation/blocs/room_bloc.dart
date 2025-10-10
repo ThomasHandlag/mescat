@@ -10,21 +10,27 @@ part 'room_event.dart';
 // Room BLoC
 class RoomBloc extends Bloc<RoomEvent, RoomState> {
   final GetRoomsUseCase getRoomsUseCase;
-  final GetMessagesUseCase getMessagesUseCase;
-  final SendMessageUseCase sendMessageUseCase;
   final CreateRoomUseCase createRoomUseCase;
   final JoinRoomUseCase joinRoomUseCase;
+  final GetMessagesUseCase getMessagesUseCase;
+  final SendMessageUseCase sendMessageUseCase;
   final AddReactionUseCase addReactionUseCase;
   final RemoveReactionUseCase removeReactionUseCase;
+  final DeleteMessageUseCase deleteMessageUseCase;
+  final EditMessageUseCase editMessageUseCase;
+  final ReplyMessageUseCase replyMessageUseCase;
 
   RoomBloc({
     required this.getRoomsUseCase,
-    required this.getMessagesUseCase,
-    required this.sendMessageUseCase,
     required this.createRoomUseCase,
     required this.joinRoomUseCase,
+    required this.getMessagesUseCase,
+    required this.sendMessageUseCase,
     required this.addReactionUseCase,
     required this.removeReactionUseCase,
+    required this.deleteMessageUseCase,
+    required this.editMessageUseCase,
+    required this.replyMessageUseCase,
   }) : super(RoomInitial()) {
     on<LoadRooms>(_onLoadRooms);
     on<LoadMessages>(_onLoadMessages);
@@ -34,6 +40,10 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<SelectRoom>(_onSelectRoom);
     on<AddReaction>(_onAddReaction);
     on<RemoveReaction>(_onRemoveReaction);
+    on<DeleteMessage>(_onDeleteMessage);
+    on<EditMessage>(_onEditMessage);
+    on<ReplyMessage>(_onReplyMessage);
+    on<SetInputAction>(_onSetInputAction);
   }
 
   Future<void> _onLoadRooms(LoadRooms event, Emitter<RoomState> emit) async {
@@ -116,7 +126,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     result.fold((failure) => emit(RoomError(failure.toString())), (success) {
       if (success) {
         // Reload rooms to show the newly joined room
-        add(LoadRooms());
+        add(const LoadRooms());
       }
     });
   }
@@ -166,5 +176,82 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     result.fold((failure) => emit(RoomError(failure.toString())), (success) {
       // Optionally handle success, e.g., refresh messages or update state
     });
+  }
+
+  Future<void> _onDeleteMessage(
+    DeleteMessage event,
+    Emitter<RoomState> emit,
+  ) async {
+    final result = await deleteMessageUseCase(
+      roomId: event.roomId,
+      eventId: event.eventId,
+    );
+
+    result.fold((failure) => emit(RoomError(failure.toString())), (success) {
+      if (success && state is RoomLoaded) {
+        final currentState = state as RoomLoaded;
+        final updatedMessages = currentState.messages
+            .where((msg) => msg.eventId != event.eventId)
+            .toList();
+        emit(currentState.copyWith(messages: updatedMessages));
+      }
+    });
+  }
+
+  Future<void> _onEditMessage(
+    EditMessage event,
+    Emitter<RoomState> emit,
+  ) async {
+    final result = await editMessageUseCase(
+      roomId: event.roomId,
+      eventId: event.eventId,
+      newContent: event.newContent,
+    );
+
+    result.fold((failure) => emit(RoomError(failure.toString())), (
+      editedMessage,
+    ) {
+      if (state is RoomLoaded) {
+        final currentState = state as RoomLoaded;
+        final updatedMessages = currentState.messages.map((msg) {
+          return msg.eventId == editedMessage.eventId ? editedMessage : msg;
+        }).toList();
+        emit(currentState.copyWith(messages: updatedMessages));
+      }
+    });
+  }
+
+  Future<void> _onReplyMessage(
+    ReplyMessage event,
+    Emitter<RoomState> emit,
+  ) async {
+    final result = await replyMessageUseCase(
+      roomId: event.roomId,
+      content: event.content,
+      replyToEventId: event.replyToEventId,
+    );
+
+    result.fold((failure) => emit(RoomError(failure.toString())), (message) {
+      if (state is RoomLoaded) {
+        final currentState = state as RoomLoaded;
+        final updatedMessages = [...currentState.messages, message];
+        emit(currentState.copyWith(messages: updatedMessages));
+      }
+    });
+  }
+
+  Future<void> _onSetInputAction(
+    SetInputAction event,
+    Emitter<RoomState> emit,
+  ) async {
+    if (state is RoomLoaded) {
+      final currentState = state as RoomLoaded;
+      final updatedInputAction = InputActionData(
+        action: event.action,
+        targetEventId: event.targetEventId,
+        initialContent: event.initialContent,
+      );
+      emit(currentState.copyWith(inputAction: updatedInputAction));
+    }
   }
 }

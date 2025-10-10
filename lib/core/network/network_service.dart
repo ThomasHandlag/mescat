@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/app_constants.dart';
+import 'package:mescat/core/constants/app_constants.dart';
 
 class NetworkService {
   late final Dio _dio;

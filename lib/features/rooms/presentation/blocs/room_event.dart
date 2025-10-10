@@ -117,3 +117,60 @@ class RemoveReaction extends RoomEvent {
   @override
   List<Object?> get props => [roomId, eventId, emoji];
 }
+
+class DeleteMessage extends RoomEvent {
+  final String roomId;
+  final String eventId;
+
+  const DeleteMessage({required this.roomId, required this.eventId});
+
+  @override
+  List<Object?> get props => [roomId, eventId];
+}
+
+class EditMessage extends RoomEvent {
+  final String roomId;
+  final String eventId;
+  final String newContent;
+
+  const EditMessage({
+    required this.roomId,
+    required this.eventId,
+    required this.newContent,
+  });
+
+  @override
+  List<Object?> get props => [roomId, eventId, newContent];
+}
+
+class ReplyMessage extends RoomEvent {
+  final String roomId;
+  final String content;
+  final String replyToEventId;
+  final String type;
+
+  const ReplyMessage({
+    required this.roomId,
+    required this.content,
+    required this.replyToEventId,
+    this.type = MessageTypes.Text,
+  });
+
+  @override
+  List<Object?> get props => [roomId, content, replyToEventId, type];
+}
+
+class SetInputAction extends RoomEvent {
+  final InputAction action;
+  final String? targetEventId;
+  final String? initialContent;
+
+  const SetInputAction({
+    required this.action,
+    this.targetEventId,
+    this.initialContent,
+  });
+
+  @override
+  List<Object?> get props => [action];
+}

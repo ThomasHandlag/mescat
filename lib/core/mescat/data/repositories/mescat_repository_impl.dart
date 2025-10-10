@@ -18,9 +18,99 @@ final class MCRepositoryImpl implements MCRepository {
     required String roomId,
     required String eventId,
     required String emoji,
-  }) {
-    // _matrixClientManager.client.se
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+  }) async {
+    try {
+      await _matrixClientManager.client.sendMessage(
+      roomId,
+      EventTypes.Reaction,
+      CryptoRNG().generate().toString(),
+      {
+        'm.relates_to': {
+          'event_id': eventId,
+          'key': emoji,
+          'rel_type': 'm.annotation',
+        },
+      },
+    );
+    return Future.value(const Right(true));
+    } catch (e) {
+      return Future.value(const Left(MessageFailure(message: 'Failed to add reaction')));
+    }
+  }
+
+  @override
+  Future<Either<MCFailure, MCMessageEvent>> replyMessage({
+    required String roomId,
+    required String content,
+    required String replyToEventId,
+    String msgtype = MessageTypes.Text,
+  }) async {
+    // Construct the reply content according to Matrix spec
+    final replyContent = {
+      'msgtype': msgtype,
+      'body': content,
+      'm.relates_to': {
+        'm.in_reply_to': {'event_id': replyToEventId},
+      },
+    };
+    final txnId = CryptoRNG().generate().toString();
+
+    final nEvenId = await _matrixClientManager.client.sendMessage(
+      roomId,
+      EventTypes.Message,
+      txnId,
+      replyContent,
+    );
+
+    return Right(
+      MCMessageEvent(
+        eventTypes: EventTypes.Message,
+        eventId: nEvenId,
+        roomId: roomId,
+        senderId: _matrixClientManager.client.userID ?? 'unknown',
+        msgtype: msgtype,
+        body: content,
+        senderDisplayName: await _matrixClientManager.currentUserDisplayName,
+        timestamp: DateTime.now(),
+        isCurrentUser: true,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<MCFailure, MCMessageEvent>> editMessageContent({
+    required String roomId,
+    required String eventId,
+    required String newContent,
+  }) async {
+    final editContent = {
+      'msgtype': MessageTypes.Text,
+      'body': newContent,
+      'm.new_content': {'msgtype': MessageTypes.Text, 'body': newContent},
+      'm.relates_to': {'rel_type': 'm.replace', 'event_id': eventId},
+    };
+    final txnId = CryptoRNG().generate().toString();
+
+    final nEvenId = await _matrixClientManager.client.sendMessage(
+      roomId,
+      EventTypes.Message,
+      txnId,
+      editContent,
+    );
+
+    return Right(
+      MCMessageEvent(
+        eventTypes: EventTypes.Message,
+        eventId: nEvenId,
+        roomId: roomId,
+        senderId: _matrixClientManager.client.userID ?? 'unknown',
+        msgtype: MessageTypes.Text,
+        body: newContent,
+        senderDisplayName: await _matrixClientManager.currentUserDisplayName,
+        timestamp: DateTime.now(),
+        isCurrentUser: true,
+      ),
+    );
   }
 
   @override
@@ -31,7 +121,7 @@ final class MCRepositoryImpl implements MCRepository {
     final space = _matrixClientManager.client.getRoomById(spaceId);
     final room = _matrixClientManager.client.getRoomById(roomId);
     if (space == null || room == null) {
-      return Left(RoomFailure(message: 'Space or Room not found'));
+      return const Left(RoomFailure(message: 'Space or Room not found'));
     }
 
     try {
@@ -59,7 +149,7 @@ final class MCRepositoryImpl implements MCRepository {
         },
       );
 
-      return Right(true);
+      return const Right(true);
     } catch (e) {
       return Left(UnknownFailure(message: 'Failed to add room to space: $e'));
     }
@@ -101,7 +191,7 @@ final class MCRepositoryImpl implements MCRepository {
     final members = await _matrixClientManager.client.getMembersByRoom(roomId);
 
     if (members == null) {
-      return Right([]);
+      return const Right([]);
     }
 
     final matrixUsers = members.map((member) async {
@@ -152,22 +242,50 @@ final class MCRepositoryImpl implements MCRepository {
     required String roomId,
     required String eventId,
   }) async {
-    // await _matrixClientManager.client.deleteEvent(roomId, eventId);
-    return Right(true);
+    final txnId = CryptoRNG().generate().toString();
+    await _matrixClientManager.client.redactEvent(roomId, eventId, txnId);
+    return const Right(true);
   }
 
   @override
-  Future<Either<MCFailure, bool>> editMessage({
+  Future<Either<MCFailure, MCMessageEvent>> editMessage({
     required String roomId,
     required String eventId,
     required String newContent,
-  }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+  }) async {
+    try {
+      final result = await _matrixClientManager.client.sendMessage(
+        roomId,
+        EventTypes.Message,
+        CryptoRNG().generate().toString(),
+        {
+          'msgtype': MessageTypes.Text,
+          'body': newContent,
+          'm.new_content': {'msgtype': MessageTypes.Text, 'body': newContent},
+          'm.relates_to': {'rel_type': 'm.replace', 'event_id': eventId},
+        },
+      );
+      return Right(
+        MCMessageEvent(
+          eventTypes: EventTypes.Message,
+          eventId: result,
+          roomId: roomId,
+          senderId: _matrixClientManager.client.userID ?? 'unknown',
+          msgtype: MessageTypes.Text,
+          body: newContent,
+          senderDisplayName: await _matrixClientManager.currentUserDisplayName,
+          timestamp: DateTime.now(),
+          isCurrentUser: true,
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to edit message: $e'));
+    }
   }
 
   @override
   Future<Either<MCFailure, bool>> enableEncryption(String roomId) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
@@ -181,7 +299,7 @@ final class MCRepositoryImpl implements MCRepository {
         MCUser(displayName: userProfile.displayname, userId: userId),
       );
     } else {
-      return Left(AuthenticationFailure(message: 'No user logged in'));
+      return const Left(AuthenticationFailure(message: 'No user logged in'));
     }
   }
 
@@ -212,14 +330,15 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
     String roomId, {
-    int limit = 50,
+    int limit = 100,
     String? fromToken,
+    String? filter,
+    String? toToken,
   }) async {
     final eventsResponse = await _matrixClientManager.client.getRoomEvents(
       roomId,
-      Direction.f,
+      Direction.b,
       limit: limit,
-      from: fromToken,
     );
 
     final mtEvents = eventsResponse.chunk;
@@ -246,7 +365,68 @@ final class MCRepositoryImpl implements MCRepository {
                 file,
               );
               if (messageEvent != null) {
-                matrixMessages.add(messageEvent);
+                if (event.relationshipEventId != null) {
+                  if (event.relationshipType == RelationshipTypes.edit) {
+                    final originMessage = matrixMessages.firstWhere(
+                      (msg) => msg.eventId == event.relationshipEventId,
+                      orElse: () => MCMessageEvent(
+                        eventId: '',
+                        roomId: roomId,
+                        senderId: '',
+                        senderDisplayName: '',
+                        msgtype: '',
+                        body: '',
+                        timestamp: DateTime.now(),
+                        isCurrentUser: false,
+                        eventTypes: '',
+                      ),
+                    );
+                    if (originMessage.eventId.isNotEmpty) {
+                      final updatedMessage = originMessage.copyWith(
+                        body: messageEvent.body,
+                        isEdited: true,
+                        editedTimestamp: messageEvent.timestamp,
+                      );
+                      final index = matrixMessages.indexOf(originMessage);
+                      matrixMessages[index] = updatedMessage;
+                    } else {
+                      matrixMessages.add(messageEvent);
+                    }
+                  } else if (event.relationshipType ==
+                      RelationshipTypes.reply) {
+                    final repliedMTEvent = await _matrixClientManager.client
+                        .getOneRoomEvent(roomId, event.relationshipEventId!);
+
+                    final repliedEvent = Event.fromMatrixEvent(
+                      repliedMTEvent,
+                      room,
+                    );
+                    final repliedEventMsgtype =
+                        repliedMTEvent.content['msgtype'] as String? ??
+                        MessageTypes.Text;
+
+                    final senderName =
+                        (await _matrixClientManager.client.getUserProfile(
+                          repliedEvent.senderId,
+                        )).displayname;
+                    final content = switch (repliedEventMsgtype) {
+                      MessageTypes.Text =>
+                        repliedMTEvent.content['body'] as String? ?? '',
+                      _ => repliedEvent.attachmentMimetype,
+                    };
+                    matrixMessages.add(
+                      messageEvent.copyWith(
+                        repliedEvent: RepliedEventContent(
+                          eventId: repliedMTEvent.eventId,
+                          content: content,
+                          senderName: senderName ?? repliedEvent.senderId,
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  matrixMessages.add(messageEvent);
+                }
               }
             }
           }
@@ -366,7 +546,7 @@ final class MCRepositoryImpl implements MCRepository {
         ),
       );
     } else {
-      return Left(RoomFailure(message: 'Room not found'));
+      return const Left(RoomFailure(message: 'Room not found'));
     }
   }
 
@@ -478,7 +658,7 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Stream<Either<MCFailure, Map<String, dynamic>>> getSyncStream() {
-    return Stream.error(Left(UnknownFailure(message: 'Not implemented')));
+    return Stream.error(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
@@ -499,29 +679,29 @@ final class MCRepositoryImpl implements MCRepository {
     String userId,
   ) async {
     await _matrixClientManager.client.inviteUser(roomId, userId);
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> joinRoom(String roomId) async {
     await _matrixClientManager.client.joinRoom(roomId);
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> joinSpace(String spaceId) async {
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> leaveRoom(String roomId) async {
     await _matrixClientManager.client.leaveRoom(roomId);
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> leaveSpace(String spaceId) async {
-    return Right(true);
+    return const Right(true);
   }
 
   @override
@@ -535,7 +715,7 @@ final class MCRepositoryImpl implements MCRepository {
         password: password,
         identifier: AuthenticationUserIdentifier(user: username),
       );
-      return Right(true);
+      return const Right(true);
     } catch (e) {
       return Left(AuthenticationFailure(message: 'Login failed: $e'));
     }
@@ -544,7 +724,7 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, bool>> logout() async {
     await _matrixClientManager.client.logout();
-    return Right(true);
+    return const Right(true);
   }
 
   @override
@@ -559,9 +739,9 @@ final class MCRepositoryImpl implements MCRepository {
     );
 
     if (result.accessToken == null) {
-      return Left(AuthenticationFailure(message: 'Registration failed'));
+      return const Left(AuthenticationFailure(message: 'Registration failed'));
     }
-    return Right(true);
+    return const Right(true);
   }
 
   @override
@@ -572,7 +752,7 @@ final class MCRepositoryImpl implements MCRepository {
   }) async {
     final txnId = CryptoRNG().generate().toString();
     await _matrixClientManager.client.redactEvent(roomId, eventId, txnId);
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
@@ -583,7 +763,7 @@ final class MCRepositoryImpl implements MCRepository {
     final space = _matrixClientManager.client.getRoomById(spaceId);
     final room = _matrixClientManager.client.getRoomById(roomId);
     if (space == null || room == null) {
-      return Left(RoomFailure(message: 'Space or Room not found'));
+      return const Left(RoomFailure(message: 'Space or Room not found'));
     }
 
     try {
@@ -603,7 +783,7 @@ final class MCRepositoryImpl implements MCRepository {
         {},
       );
 
-      return Right(true);
+      return const Right(true);
     } catch (e) {
       return Left(
         UnknownFailure(message: 'Failed to remove room from space: $e'),
@@ -617,7 +797,7 @@ final class MCRepositoryImpl implements MCRepository {
     String? roomId,
     int limit = 20,
   }) async {
-    return Left(UnknownFailure(message: 'Failed to search messages'));
+    return const Left(UnknownFailure(message: 'Failed to search messages'));
   }
 
   @override
@@ -637,7 +817,7 @@ final class MCRepositoryImpl implements MCRepository {
         ),
       ]);
     }
-    return Left(UnknownFailure(message: 'Failed to search rooms'));
+    return const Left(UnknownFailure(message: 'Failed to search rooms'));
   }
 
   @override
@@ -645,7 +825,7 @@ final class MCRepositoryImpl implements MCRepository {
     required String query,
     int limit = 20,
   }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
@@ -655,7 +835,7 @@ final class MCRepositoryImpl implements MCRepository {
     required String fileName,
     String type = MessageTypes.File,
   }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
@@ -664,7 +844,6 @@ final class MCRepositoryImpl implements MCRepository {
     required String content,
     String msgtype = MessageTypes.Text,
     String eventType = EventTypes.Message,
-    String? replyToEventId,
   }) async {
     final transactionId = CryptoRNG().generate().toString();
     final result = await _matrixClientManager.client.sendMessage(
@@ -694,22 +873,22 @@ final class MCRepositoryImpl implements MCRepository {
     String roomId,
     bool isTyping,
   ) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
   Future<Either<MCFailure, bool>> setPresence(UserPresence presence) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
   Future<Either<MCFailure, bool>> startSync() {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
   Future<Either<MCFailure, bool>> stopSync() {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
@@ -717,7 +896,7 @@ final class MCRepositoryImpl implements MCRepository {
     String? displayName,
     String? avatarUrl,
   }) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
@@ -726,12 +905,12 @@ final class MCRepositoryImpl implements MCRepository {
     required String fileName,
     String? mimeType,
   }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
   Future<Either<MCFailure, bool>> verifyDevice(String userId, String deviceId) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   Future<MCMessageEvent?> _mapMessageEvent(

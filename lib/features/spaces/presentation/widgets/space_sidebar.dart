@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/spaces/presentation/widgets/space_icon.dart';
-import '../blocs/space_bloc.dart';
+import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 
 class SpaceSidebar extends StatelessWidget {
   const SpaceSidebar({super.key});

@@ -60,3 +60,15 @@ class MCUser extends Equatable {
 
 /// User presence states
 enum UserPresence { online, offline, idle, doNotDisturb, invisible }
+
+final class RepliedEventContent {
+  final String eventId;
+  final String content;
+  final String senderName;
+
+  const RepliedEventContent({
+    required this.eventId,
+    required this.content,
+    required this.senderName,
+  });
+}

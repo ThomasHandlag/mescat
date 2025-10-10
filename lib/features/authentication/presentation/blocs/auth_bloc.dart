@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../../../../core/mescat/domain/entities/mescat_entities.dart';
-import '../../../../core/mescat/domain/usecases/mescat_usecases.dart';
+import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 
 // Authentication Events
 abstract class AuthEvent extends Equatable {

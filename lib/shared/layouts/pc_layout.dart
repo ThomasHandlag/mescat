@@ -18,7 +18,7 @@ class PCLayout extends StatelessWidget {
           // Main content area
           Expanded(
             child: Container(
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               child: child,
             ),
           ),

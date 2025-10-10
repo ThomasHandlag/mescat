@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/auth_bloc.dart';
+import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -203,7 +203,7 @@ class _RegisterFormState extends State<RegisterForm> {
                   Text(
                     'By registering, you agree to our Terms of Service and Privacy Policy',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(0x99),
                     ),
                     textAlign: TextAlign.center,
                   ),

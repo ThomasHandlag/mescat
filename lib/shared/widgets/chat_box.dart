@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../core/constants/app_constants.dart';
+import 'package:mescat/core/constants/app_constants.dart';
 
 class ChatBox extends StatefulWidget {
   final Function(String message, List<String>? attachments)? onSendMessage;
