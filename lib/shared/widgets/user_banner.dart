@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class UserBanner extends StatelessWidget {
   final String? username;
   final String? avatarUrl;
+  final List<Widget>? actions;
 
   const UserBanner({
     super.key,
     required this.username,
     required this.avatarUrl,
+    this.actions,
   });
 
   @override
@@ -38,15 +40,27 @@ class UserBanner extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: 12),
-           SizedBox(
-            width: 150,
-            child: Text(
-            username ?? 'Unknown User',
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: const Color(0xFFFFFFFF)),
-          ),)
+          SizedBox(
+            width: 100,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 150,
+                  child: Text(
+                    username ?? 'Unknown User',
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: const Color(0xFFFFFFFF),
+                    ),
+                  ),
+                ),
+                const Text('Idle', style: TextStyle(color: Colors.white70)),
+              ],
+            ),
+          ),
+          const Spacer(),
+          ...?actions,
         ],
       ),
     );

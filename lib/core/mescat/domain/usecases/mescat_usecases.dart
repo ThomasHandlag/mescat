@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
-import 'package:mescat/core/mescat/domain/repositories/matrix_repository.dart';
+import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
 
 part 'mc_message_usecases.dart';
 part 'mc_room_usecases.dart';

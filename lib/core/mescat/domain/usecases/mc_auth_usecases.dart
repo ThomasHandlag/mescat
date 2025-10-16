@@ -6,7 +6,7 @@ class LoginUseCase {
 
   LoginUseCase(this.repository);
 
-  Future<Either<MCFailure, bool>> call({
+  Future<Either<MCFailure, MCUser>> call({
     required String username,
     required String password,
   }) async {

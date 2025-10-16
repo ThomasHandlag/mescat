@@ -3,77 +3,8 @@ import 'package:equatable/equatable.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 
-// Authentication Events
-abstract class AuthEvent extends Equatable {
-  const AuthEvent();
-
-  @override
-  List<Object?> get props => [];
-}
-
-class LoginRequested extends AuthEvent {
-  final String username;
-  final String password;
-
-  const LoginRequested({
-    required this.username,
-    required this.password,
-  });
-
-  @override
-  List<Object?> get props => [username, password];
-}
-
-class RegisterRequested extends AuthEvent {
-  final String username;
-  final String password;
-  final String? email;
-
-  const RegisterRequested({
-    required this.username,
-    required this.password,
-    this.email,
-  });
-
-  @override
-  List<Object?> get props => [username, password, email];
-}
-
-class LogoutRequested extends AuthEvent {}
-
-class CheckAuthStatus extends AuthEvent {}
-
-// Authentication States
-abstract class AuthState extends Equatable {
-  const AuthState();
-
-  @override
-  List<Object?> get props => [];
-}
-
-class AuthInitial extends AuthState {}
-
-class AuthLoading extends AuthState {}
-
-class AuthAuthenticated extends AuthState {
-  final MCUser user;
-
-  const AuthAuthenticated(this.user);
-
-  @override
-  List<Object?> get props => [user];
-}
-
-class AuthUnauthenticated extends AuthState {}
-
-class AuthError extends AuthState {
-  final String message;
-
-  const AuthError(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
+part 'auth_event.dart';
+part 'auth_state.dart';
 
 // Authentication BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -99,26 +30,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     final result = await loginUseCase(
       username: event.username,
       password: event.password,
     );
-    
-    await result.fold(
-      (failure) async => emit(AuthError(failure.message)),
-      (success) async {
-        if (success) {
-          final userResult = await getCurrentUserUseCase();
-          await userResult.fold(
-            (failure) async => emit(AuthError(failure.message)),
-            (user) async => emit(AuthAuthenticated(user)),
-          );
-        } else {
-          emit(const AuthError('Login failed'));
-        }
-      },
-    );
+
+    await result.fold((failure) async => emit(AuthError(failure.message)), (
+      success,
+    ) async {
+      final userResult = await getCurrentUserUseCase();
+      userResult.fold(
+        (failure) => emit(AuthError(failure.message)),
+        (user) => emit(
+          AuthAuthenticated(
+            user.copyWith(
+              accessToken: success.accessToken,
+              refreshToken: success.refreshToken,
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Future<void> _onRegisterRequested(
@@ -126,27 +59,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     final result = await registerUseCase(
       username: event.username,
       password: event.password,
       email: event.email,
     );
-    
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (success) async {
-        if (success) {
-          final userResult = await getCurrentUserUseCase();
-          userResult.fold(
-            (failure) => emit(AuthError(failure.message)),
-            (user) => emit(AuthAuthenticated(user)),
-          );
-        } else {
-          emit(const AuthError('Registration failed'));
-        }
-      },
-    );
+
+    result.fold((failure) => emit(AuthError(failure.message)), (success) async {
+      if (success) {
+        final userResult = await getCurrentUserUseCase();
+        userResult.fold(
+          (failure) => emit(AuthError(failure.message)),
+          (user) => emit(AuthAuthenticated(user)),
+        );
+      } else {
+        emit(const AuthError('Registration failed'));
+      }
+    });
   }
 
   Future<void> _onLogoutRequested(
@@ -154,9 +84,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     final result = await logoutUseCase();
-    
+
     result.fold(
       (failure) => emit(AuthError(failure.message)),
       (success) => emit(AuthUnauthenticated()),
@@ -168,9 +98,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+    await Future.delayed(const Duration(milliseconds: 3000));
     final result = await getCurrentUserUseCase();
-    
+
     result.fold(
       (failure) => emit(AuthUnauthenticated()),
       (user) => emit(AuthAuthenticated(user)),

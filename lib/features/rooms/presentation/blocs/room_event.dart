@@ -174,3 +174,12 @@ class SetInputAction extends RoomEvent {
   @override
   List<Object?> get props => [action];
 }
+
+
+class LoadMoreMessages extends RoomEvent {
+  final int limit;
+  const LoadMoreMessages({this.limit = 50});
+
+  @override
+  List<Object?> get props => [limit];
+}

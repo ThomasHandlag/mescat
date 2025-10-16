@@ -5,7 +5,7 @@ import 'package:matrix/matrix.dart';
 /// Repository interface for Matrix client operations
 abstract class MCRepository {
   // Authentication
-  Future<Either<MCFailure, bool>> login({
+  Future<Either<MCFailure, MCUser>> login({
     required String username,
     required String password,
   });

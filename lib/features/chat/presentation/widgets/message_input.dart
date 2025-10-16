@@ -3,17 +3,11 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/features/chat/presentation/widgets/input_action_banner.dart';
 import 'package:mescat/features/chat/presentation/widgets/reaction_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
-import 'package:mescat/shared/util/mc_dialog.dart';
-import 'package:mescat/shared/widgets/mc_button.dart';
-// import 'package:record/record.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-import 'dart:async';
 
 typedef MessageSendCallback = void Function(String content, String type);
 
@@ -33,27 +27,13 @@ class MessageInput extends StatefulWidget {
   State<MessageInput> createState() => _MessageInputState();
 }
 
-final class _Attachment {
-  final String path;
-  final FileType type;
-
-  _Attachment({required this.path, required this.type});
-}
-
 class _MessageInputState extends State<MessageInput> {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
   bool _isTyping = false;
-  final List<_Attachment> _attachments = [];
-
-  // Voice recording state
-  // final AudioRecorder _audioRecorder = AudioRecorder();
-  // bool _isRecording = false;
-  // bool _isRecordingLocked = false;
-  // String? _recordingPath;
-  // Timer? _recordingTimer;
-  // Duration _recordingDuration = Duration.zero;
+  final List<String> _attachments = [];
+  int _lines = 1;
 
   @override
   void initState() {
@@ -66,13 +46,15 @@ class _MessageInputState extends State<MessageInput> {
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _focusNode.dispose();
-    // _recordingTimer?.cancel();
-    // _audioRecorder.dispose();
     super.dispose();
   }
 
   void _onMessageChanged() {
     final hasText = _messageController.text.trim().isNotEmpty;
+    final text = _messageController.text;
+    setState(() {
+      _lines = '\n'.allMatches(text).length + 1;
+    });
     if (hasText != _isTyping) {
       if (mounted) {
         setState(() {
@@ -131,9 +113,7 @@ class _MessageInputState extends State<MessageInput> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
     return Container(
-      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,34 +144,29 @@ class _MessageInputState extends State<MessageInput> {
           ],
 
           // Main chat input
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+          Container(
             decoration: BoxDecoration(
-              color: false
-                  ? colorScheme.errorContainer.withAlpha(100)
-                  : const Color.fromARGB(255, 97, 97, 97),
+              color: const Color.fromARGB(255, 97, 97, 97),
               borderRadius: BorderRadius.circular(10),
-              border: false
-                  ? Border.all(
-                      color: colorScheme.error.withAlpha(100),
-                      width: 2,
-                    )
-                  : null,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Attach file button
                 _buildActionButton(
-                  icon: Icons.add,
+                  icon: Icons.attach_file_outlined,
                   onPressed: () => _pickFile(),
                   tooltip: 'Attach file',
                 ),
-
                 // Text input
                 Expanded(
                   child: Container(
-                    constraints: const BoxConstraints(maxHeight: 20 * 24.0),
+                    constraints: const BoxConstraints(
+                      maxHeight: UIConstraints.mMessageInputHeight + (10 * 16),
+                    ),
+                    height:
+                        (_lines > 1 ? (_lines * 16) : 0) +
+                        UIConstraints.mMessageInputHeight,
                     child: BlocListener<RoomBloc, RoomState>(
                       listener: (context, state) {
                         if (state is RoomLoaded &&
@@ -205,12 +180,14 @@ class _MessageInputState extends State<MessageInput> {
                       },
                       child: TextField(
                         controller: _messageController,
+                        expands: true,
                         focusNode: _focusNode,
                         maxLines: null,
                         maxLength: 500,
                         textInputAction: TextInputAction.newline,
                         keyboardType: TextInputType.multiline,
                         onSubmitted: (_) => _sendMessage(),
+                        textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
                           hintText: _placeholderText,
                           hintStyle: TextStyle(
@@ -218,10 +195,6 @@ class _MessageInputState extends State<MessageInput> {
                             fontSize: 16,
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
                           counterText: '', // Hide character counter
                         ),
                         style: const TextStyle(fontSize: 16),
@@ -240,12 +213,10 @@ class _MessageInputState extends State<MessageInput> {
                   tooltip: 'Add emoji',
                 ),
 
-                // Send button or voice recording
+                // Send button
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  child: false
-                      ? _buildRecordingInterface()
-                      : (_isTyping || _attachments.isNotEmpty)
+                  child: _isTyping || _attachments.isNotEmpty
                       ? _buildSendButton()
                       : _buildMicButton(),
                 ),
@@ -340,120 +311,19 @@ class _MessageInputState extends State<MessageInput> {
   Widget _buildMicButton() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (false) {
-      return _buildRecordingInterface();
-    }
-
     return Padding(
       padding: const EdgeInsets.all(4),
-      child: GestureDetector(
-        onTap: false ? null : _startVoiceRecording,
-        onLongPressStart: (_) => _startVoiceRecording(),
-        onLongPressEnd: (_) {
-          if (!false) {
-            _stopVoiceRecording();
-          }
+      child: IconButton(
+        icon: const Icon(Icons.mic, size: 20),
+        onPressed: () {
+          // Handle voice message recording
+          // HapticFeedback.lightImpact();
         },
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: false
-                ? colorScheme.error.withAlpha(100)
-                : Colors.transparent,
-          ),
-          child: Icon(
-            Icons.mic,
-            size: 20,
-            color: false
-                ? colorScheme.error
-                : colorScheme.onSurface.withAlpha(190),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecordingInterface() {
-    final colorScheme = Theme.of(context).colorScheme;
-    // final minutes = _recordingDuration.inMinutes;
-    // final seconds = _recordingDuration.inSeconds % 60;
-    final minutes = 10;
-    final seconds = 130;
-    final timeText =
-        '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Recording indicator
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: colorScheme.error,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Recording time
-          Text(
-            timeText,
-            style: TextStyle(
-              color: colorScheme.onErrorContainer,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Lock button (to keep recording when releasing)
-          if (!false)
-            GestureDetector(
-              onTap: () {
-                // setState(() {
-                //   _isRecordingLocked = true;
-                // });
-              },
-              child: Icon(
-                Icons.lock_open,
-                size: 16,
-                color: colorScheme.onErrorContainer.withAlpha(180),
-              ),
-            ),
-
-          // if (_isRecordingLocked) ...[
-          if (false) ...[
-            // Cancel button
-            GestureDetector(
-              onTap: _cancelVoiceRecording,
-              child: Icon(
-                Icons.close,
-                size: 20,
-                color: colorScheme.onErrorContainer,
-              ),
-            ),
-            const SizedBox(width: 8),
-
-            // Send button
-            GestureDetector(
-              onTap: () => _stopVoiceRecording(send: true),
-              child: Icon(
-                Icons.send,
-                size: 20,
-                color: colorScheme.onErrorContainer,
-              ),
-            ),
-          ],
-        ],
+        tooltip: 'Voice message',
+        color: colorScheme.onSurface.withAlpha(190),
+        hoverColor: colorScheme.primary.withAlpha(60),
+        splashRadius: 20,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       ),
     );
   }
@@ -493,84 +363,41 @@ class _MessageInputState extends State<MessageInput> {
           Wrap(
             spacing: 2,
             runSpacing: 2,
-            children: _attachments.indexed.map((attachment) {
+            children: _attachments.asMap().entries.map((entry) {
+              final index = entry.key;
+              final attachment = entry.value;
+
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colorScheme.outline.withAlpha(100)),
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Column(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      padding: const EdgeInsets.all(2),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        spacing: 4,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          McButton(
-                            style: ButtonStyle(
-                              backgroundColor: WidgetStateProperty.all(
-                                const Color(0xFFFF0000),
-                              ),
-                            ),
-                            onPressed: () => _removeAttachment(attachment.$1),
-                            child: const Icon(Icons.close),
-                          ),
-                          McButton(
-                            onPressed: () => showImageDialog(context, attachment.$2.path),
-                            child: const Icon(Icons.remove_red_eye),
-                          ),
-                        ],
+                    Icon(
+                      Icons.insert_drive_file,
+                      size: 14,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      attachment.split('/').last,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onPrimaryContainer,
                       ),
                     ),
-                    if (attachment.$2.type == FileType.image) ...[
-                      Image.file(
-                        File(attachment.$2.path),
-                        width: 140,
-                        height: 140,
-                        fit: BoxFit.cover,
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => _removeAttachment(index),
+                      child: Icon(
+                        Icons.close,
+                        size: 14,
+                        color: colorScheme.onPrimaryContainer,
                       ),
-                    ] else if (attachment.$2.type == FileType.video) ...[
-                      // Placeholder for video thumbnail
-                      Container(
-                        width: 100,
-                        height: 100,
-                        color: colorScheme.onSurface.withAlpha(50),
-                        child: const Icon(
-                          Icons.videocam,
-                          size: 40,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ] else if (attachment.$2.type == FileType.audio) ...[
-                      // Placeholder for audio file
-                      Container(
-                        width: 100,
-                        height: 100,
-                        color: colorScheme.onSurface.withAlpha(50),
-                        child: const Icon(
-                          Icons.audiotrack,
-                          size: 40,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ] else ...[
-                      // Generic file icon
-                      Container(
-                        width: 100,
-                        height: 100,
-                        color: colorScheme.onSurface.withAlpha(50),
-                        child: const Icon(
-                          Icons.insert_drive_file,
-                          size: 40,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               );
@@ -618,158 +445,17 @@ class _MessageInputState extends State<MessageInput> {
     }
   }
 
-  Future<void> _startVoiceRecording() async {
-    // Request microphone permission
-    final permission = await Permission.microphone.request();
-    if (permission != PermissionStatus.granted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Microphone permission is required to record voice messages',
-            ),
-          ),
-        );
-      }
-      return;
-    }
+  void _startVoiceRecording() {}
 
-    // try {
-    //   // Get temporary directory for recording
-    //   final directory = await getTemporaryDirectory();
-    //   final fileName =
-    //       'voice_message_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    //   _recordingPath = '${directory.path}/$fileName';
-
-    //   // Start recording
-    //   await _audioRecorder.start(
-    //     const RecordConfig(
-    //       encoder: AudioEncoder.aacLc,
-    //       bitRate: 128000,
-    //       sampleRate: 44100,
-    //     ),
-    //     path: _recordingPath!,
-    //   );
-
-    //   if (mounted) {
-    //     setState(() {
-    //       _isRecording = true;
-    //       _recordingDuration = Duration.zero;
-    //     });
-    //   }
-
-    //   // Start timer to track recording duration
-    //   _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-    //     if (mounted) {
-    //       setState(() {
-    //         _recordingDuration = Duration(seconds: timer.tick);
-    //       });
-    //     }
-    //   });
-    // } catch (e) {
-    //   if (mounted) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       SnackBar(content: Text('Failed to start recording: $e')),
-    //     );
-    //   }
-    // }
-  }
-
-  Future<void> _stopVoiceRecording({bool send = true}) async {
-    // try {
-    //   await _audioRecorder.stop();
-    //   _recordingTimer?.cancel();
-
-    //   if (mounted) {
-    //     setState(() {
-    //       _isRecording = false;
-    //       _isRecordingLocked = false;
-    //     });
-    //   }
-
-    //   if (send && _recordingPath != null) {
-    //     // Add the voice message to attachments or send directly
-    //     final file = File(_recordingPath!);
-    //     if (await file.exists()) {
-    //       widget.onSendMessage(_recordingPath!, MessageTypes.Audio);
-    //     }
-    //   }
-
-    //   _recordingPath = null;
-    //   _recordingDuration = Duration.zero;
-    // } catch (e) {
-    //   if (mounted) {
-    //     ScaffoldMessenger.of(
-    //       context,
-    //     ).showSnackBar(SnackBar(content: Text('Failed to stop recording: $e')));
-    //   }
-    // }
-  }
-
-  Future<void> _cancelVoiceRecording() async {
-    await _stopVoiceRecording(send: false);
-
-    // // Delete the recording file
-    // if (_recordingPath != null) {
-    //   final file = File(_recordingPath!);
-    //   if (await file.exists()) {
-    //     await file.delete();
-    //   }
-    // }
-  }
-
-  void _pickFile({FileType fileType = FileType.any}) async {
-    final filePickerResult = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: fileType,
-    );
+  void _pickFile() async {
+    final filePickerResult = await FilePicker.platform.pickFiles();
     if (filePickerResult != null && filePickerResult.files.isNotEmpty) {
-      if (filePickerResult.files.first.path != null) {
+      final filePath = filePickerResult.files.first.path;
+      if (filePath != null) {
         setState(() {
-          _attachments.addAll(
-            filePickerResult.files.map(
-              (file) => _Attachment(
-                path: file.path!,
-                type: _mapFileExtensionToFileType(file.extension),
-              ),
-            ),
-          );
+          _attachments.add(filePath);
         });
       }
-    }
-  }
-
-  FileType _mapFileExtensionToFileType(String? extension) {
-    switch (extension?.toLowerCase()) {
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-      case 'bmp':
-      case 'webp':
-        return FileType.image;
-      case 'mp4':
-      case 'mov':
-      case 'avi':
-      case 'mkv':
-      case 'webm':
-        return FileType.video;
-      case 'mp3':
-      case 'wav':
-      case 'm4a':
-      case 'aac':
-        return FileType.audio;
-      case 'pdf':
-      case 'doc':
-      case 'docx':
-      case 'xls':
-      case 'xlsx':
-      case 'ppt':
-      case 'pptx':
-      case 'txt':
-        return FileType.custom;
-      default:
-        return FileType.any;
     }
   }
 

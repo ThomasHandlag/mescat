@@ -12,19 +12,17 @@ class McButton extends StatelessWidget {
   final Widget child;
   final ButtonStyle? style;
 
-  const McButton.elevated({
-    super.key,
-    required this.onPressed,
-    required this.child,
-    this.style,
-  });
-
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: style,
-      child: child,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(8.0),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8.0),
+        onTap: onPressed,
+        hoverColor: Colors.white.withAlpha(15),
+        child: Padding(padding: const EdgeInsets.all(4.0), child: child),
+      ),
     );
   }
 }

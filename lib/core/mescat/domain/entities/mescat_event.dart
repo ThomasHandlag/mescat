@@ -8,6 +8,9 @@ class MCEvent extends Equatable {
   final DateTime timestamp;
   final String eventTypes;
 
+  static String? endToken;
+  static String? startToken;
+
   const MCEvent({
     required this.eventId,
     required this.roomId,
@@ -34,6 +37,9 @@ class MCMessageEvent extends MCEvent {
   final MatrixFile? file;
   final bool isCurrentUser;
   final String body;
+  final int? height;
+  final int? width;
+  final String? mimeType;
 
   const MCMessageEvent({
     required super.eventId,
@@ -54,6 +60,9 @@ class MCMessageEvent extends MCEvent {
     this.status = MessageStatus.sent,
     this.metadata,
     this.file,
+    this.height,
+    this.width,
+    this.mimeType,
   }) : assert(
          msgtype != MessageTypes.Image || file != null,
          'File must be provided for image messages',
@@ -116,90 +125,6 @@ class MCMessageEvent extends MCEvent {
       isEncrypted: isEncrypted ?? this.isEncrypted,
       status: status ?? this.status,
       metadata: metadata ?? this.metadata,
-      file: file ?? this.file,
-      isCurrentUser: isCurrentUser ?? this.isCurrentUser,
-    );
-  }
-}
-
-class MCImageEvent extends MCMessageEvent {
-  final int height;
-  final int width;
-  final String mimeType;
-
-  const MCImageEvent({
-    required super.eventId,
-    required super.roomId,
-    required super.senderId,
-    super.senderDisplayName,
-    super.senderAvatarUrl,
-    super.msgtype = MessageTypes.Image,
-    super.eventTypes = EventTypes.Message,
-    super.body = "",
-    required super.timestamp,
-    required super.file,
-    super.isEdited,
-    super.editedTimestamp,
-    super.reactions,
-    super.repliedEvent,
-    super.isEncrypted,
-    super.status,
-    super.metadata,
-    required this.height,
-    required this.width,
-    required this.mimeType,
-    required super.isCurrentUser,
-  });
-
-  @override
-  List<Object?> get props => [...super.props, height, mimeType];
-
-  @override
-  MCImageEvent copyWith({
-    String? eventId,
-    String? roomId,
-    String? senderId,
-    String? senderDisplayName,
-    String? senderAvatarUrl,
-    String? msgtype,
-    String? eventTypes,
-    String? body,
-    DateTime? timestamp,
-    bool? isEdited,
-    DateTime? editedTimestamp,
-    List<MCReactionEvent>? reactions,
-    RepliedEventContent? repliedEvent,
-    bool? isEncrypted,
-    MessageStatus? status,
-    Map<String, dynamic>? metadata,
-    String? url,
-    int? width,
-    int? height,
-    int? size,
-    String? mimeType,
-    MatrixFile? file,
-    bool? isCurrentUser,
-    String? replyToContent,
-  }) {
-    return MCImageEvent(
-      eventId: eventId ?? this.eventId,
-      roomId: roomId ?? this.roomId,
-      senderId: senderId ?? this.senderId,
-      senderDisplayName: senderDisplayName ?? this.senderDisplayName,
-      senderAvatarUrl: senderAvatarUrl ?? this.senderAvatarUrl,
-      msgtype: MessageTypes.Image,
-      body: body ?? this.body,
-      timestamp: timestamp ?? this.timestamp,
-      isEdited: isEdited ?? this.isEdited,
-      editedTimestamp: editedTimestamp ?? this.editedTimestamp,
-      reactions: reactions ?? this.reactions,
-      repliedEvent: repliedEvent ?? this.repliedEvent,
-      isEncrypted: isEncrypted ?? this.isEncrypted,
-      status: status ?? this.status,
-      metadata: metadata ?? this.metadata,
-      height: height ?? this.height,
-      width: width ?? this.width,
-      mimeType: mimeType ?? this.mimeType,
       file: file ?? this.file,
       isCurrentUser: isCurrentUser ?? this.isCurrentUser,
     );

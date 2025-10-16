@@ -246,7 +246,7 @@ class MessageBubble extends StatelessWidget {
                     child: Text.rich(
                       TextSpan(
                         text:
-                            'Replying to ${message.repliedEvent!.senderName}: ',
+                            'Replying to ${message.repliedEvent?.senderName}: ',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
@@ -278,7 +278,6 @@ class MessageBubble extends StatelessWidget {
 
       case MessageTypes.Image:
         {
-          final imageMessage = message as MCImageEvent;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,10 +285,10 @@ class MessageBubble extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.memory(
-                  imageMessage.file!.bytes,
+                  message.file!.bytes,
                   fit: BoxFit.cover,
-                  width: imageMessage.width.toDouble(),
-                  height: imageMessage.height.toDouble(),
+                  width: message.width?.toDouble(),
+                  height: message.height?.toDouble(),
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       width: 300,

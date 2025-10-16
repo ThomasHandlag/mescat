@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
+import 'package:mescat/core/notifications/event_pusher.dart';
 
 part 'space_event.dart';
 part 'space_state.dart';
@@ -10,10 +11,12 @@ part 'space_state.dart';
 class SpaceBloc extends Bloc<SpaceEvent, SpaceState> {
   final GetSpacesUseCase getSpacesUseCase;
   final CreateSpaceUseCase createSpaceUseCase;
+  final EventPusher eventPusher;
 
   SpaceBloc({
     required this.getSpacesUseCase,
     required this.createSpaceUseCase,
+    required this.eventPusher,
   }) : super(SpaceInitial()) {
     on<LoadSpaces>(_onLoadSpaces);
     on<CreateSpace>(_onCreateSpace);

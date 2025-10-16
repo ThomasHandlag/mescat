@@ -12,13 +12,6 @@ class SpaceSidebar extends StatelessWidget {
       width: 60,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(50),
-            blurRadius: 5,
-            offset: const Offset(2, 0),
-          ),
-        ],
         border: Border(
           right: BorderSide(
             color: Theme.of(context).colorScheme.onSurface.withAlpha(60),

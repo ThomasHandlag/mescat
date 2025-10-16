@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/notifications/event_pusher.dart';
 
 part 'room_state.dart';
 part 'room_event.dart';
@@ -19,6 +20,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
   final DeleteMessageUseCase deleteMessageUseCase;
   final EditMessageUseCase editMessageUseCase;
   final ReplyMessageUseCase replyMessageUseCase;
+  final EventPusher eventPusher;
 
   RoomBloc({
     required this.getRoomsUseCase,
@@ -31,6 +33,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     required this.deleteMessageUseCase,
     required this.editMessageUseCase,
     required this.replyMessageUseCase,
+    required this.eventPusher,
   }) : super(RoomInitial()) {
     on<LoadRooms>(_onLoadRooms);
     on<LoadMessages>(_onLoadMessages);
@@ -44,7 +47,10 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<EditMessage>(_onEditMessage);
     on<ReplyMessage>(_onReplyMessage);
     on<SetInputAction>(_onSetInputAction);
+    on<LoadMoreMessages>(_onLoadMoreMessages);
   }
+
+
 
   Future<void> _onLoadRooms(LoadRooms event, Emitter<RoomState> emit) async {
     emit(RoomLoading());
@@ -159,7 +165,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     );
 
     result.fold((failure) => emit(RoomError(failure.toString())), (success) {
-      // Optionally handle success, e.g., refresh messages or update state
+      
     });
   }
 
@@ -252,6 +258,37 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
         initialContent: event.initialContent,
       );
       emit(currentState.copyWith(inputAction: updatedInputAction));
+    }
+  }
+
+  Future<void> _onLoadMoreMessages(
+    LoadMoreMessages event,
+    Emitter<RoomState> emit,
+  ) async {
+    if (state is RoomLoaded) {
+      final currentState = state as RoomLoaded;
+      if (currentState.selectedRoomId == null) return;
+
+      emit(currentState.copyWith(isLoadingMore: true));
+
+      final result = await getMessagesUseCase(
+        roomId: currentState.selectedRoomId!,
+        limit: event.limit,
+        fromToken: MCEvent.endToken,
+      );
+
+      result.fold((failure) => emit(RoomError(failure.toString())), (
+        newMessages,
+      ) {
+        // Prepend new messages to the existing list
+        final updatedMessages = [...newMessages, ...currentState.messages];
+        emit(
+          currentState.copyWith(
+            messages: updatedMessages,
+            isLoadingMore: false,
+          ),
+        );
+      });
     }
   }
 }

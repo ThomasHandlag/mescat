@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_input.dart';
@@ -30,18 +31,24 @@ class ChatView extends StatelessWidget {
                   isLoading: state.isLoadingMessages,
                 ),
               ),
-              MessageInput(
-                roomId: selectedRoom.roomId,
-                channelName: selectedRoom.name,
-                onSendMessage: (content, type) {
-                  context.read<RoomBloc>().add(
-                    SendMessage(
-                      roomId: selectedRoom.roomId,
-                      content: content,
-                      type: type,
-                    ),
-                  );
-                },
+              Padding(
+                padding: const EdgeInsets.only(
+                  bottom: UIConstraints.smallPadding,
+                  right: UIConstraints.smallPadding,
+                ),
+                child: MessageInput(
+                  roomId: selectedRoom.roomId,
+                  channelName: selectedRoom.name,
+                  onSendMessage: (content, type) {
+                    context.read<RoomBloc>().add(
+                      SendMessage(
+                        roomId: selectedRoom.roomId,
+                        content: content,
+                        type: type,
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           );
@@ -51,8 +58,6 @@ class ChatView extends StatelessWidget {
       },
     );
   }
-
-  
 
   Widget _buildEmptyState(BuildContext context, String message) {
     return Center(

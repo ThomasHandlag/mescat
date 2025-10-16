@@ -1,19 +1,23 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/notifications/event_pusher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/data/repositories/mescat_repository_impl.dart';
-import 'package:mescat/core/mescat/domain/repositories/matrix_repository.dart';
+import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:mescat/core/network/network_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
 final Logger _logger = Logger();
 
-Future<Client> createMatrixClient(String clientName, String homeserverUrl) async {
+Future<Client> createMatrixClient(
+  String clientName,
+  String homeserverUrl,
+) async {
   try {
     final directory = await getApplicationDocumentsDirectory();
     sqfliteFfiInit();
@@ -48,18 +52,21 @@ Future<Client> createMatrixClient(String clientName, String homeserverUrl) async
 
 Future<void> setupDependencyInjection() async {
   final matrixClient = await createMatrixClient("Mescat", "https://matrix.org");
+  final sharedPref = await SharedPreferences.getInstance();
+
   // Regist core dependencies
-  getIt.registerLazySingleton<NetworkService>(() => NetworkService());
   getIt.registerLazySingleton<MatrixClientManager>(
-    () => MatrixClientManager(matrixClient),
+    () => MatrixClientManager(matrixClient, sharedPref),
   );
   getIt.registerLazySingleton<MCRepository>(
     () => MCRepositoryImpl(getIt<MatrixClientManager>()),
   );
 
-  // Add other dependencies here as they are implemented
-  // Example:
-  // getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
+  getIt.registerLazySingleton<EventPusher>(
+    () => EventPusher(clientManager: getIt<MatrixClientManager>()),
+  );
+
+  // Original use cases (maintain compatibility)
   getIt.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(getIt<MCRepository>()),
   );
