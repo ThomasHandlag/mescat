@@ -29,7 +29,7 @@ class SpaceIcon extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.surface,
+                : const Color(0xFF808080),
             borderRadius: BorderRadius.circular(10),
             boxShadow: isSelected
                 ? [
@@ -52,8 +52,22 @@ class SpaceIcon extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) => _buildIcon(),
                   ),
                 )
-              : _buildIcon(),
+              : icon != null
+              ? _buildIcon()
+              : _buildText(),
         ),
+      ),
+    );
+  }
+
+  Widget _buildText() {
+    return Center(
+      child: Text(
+        icon == null
+            ? _getInitials(label)
+            : String.fromCharCode(icon!.codePoint),
+        style: const TextStyle(fontSize: 14),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -64,5 +78,15 @@ class SpaceIcon extends StatelessWidget {
       color: isSelected ? Colors.white : null,
       size: 18,
     );
+  }
+
+  String _getInitials(String name) {
+    final words = name.split(' ');
+    if (words.length >= 2) {
+      return '${words[0][0]}${words[1][0]}'.toUpperCase();
+    } else if (words.isNotEmpty) {
+      return words[0][0].toUpperCase();
+    }
+    return '?';
   }
 }

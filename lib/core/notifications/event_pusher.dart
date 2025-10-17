@@ -4,24 +4,19 @@ import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
-import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
-import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 
 final class EventPusher {
   final MatrixClientManager clientManager;
-  // final SpaceBloc spaceBloc;
-  // final RoomBloc roomBloc;
 
   final Logger _logger = Logger();
 
-  EventPusher({
-    required this.clientManager,
-    // required this.spaceBloc,
-    // required this.roomBloc,
-  }) {
+  EventPusher({required this.clientManager}) {
     _logger.log(Level.info, "EventPusher initializing...");
     clientManager.client.onTimelineEvent.stream.listen((event) async {
-      _logger.log(Level.debug, "New timeline event: ${event.type} ${event.content}");
+      _logger.log(
+        Level.debug,
+        "New timeline event: ${event.type} ${event.content}",
+      );
       final user = await clientManager.client.getUserProfile(event.senderId);
 
       if (event.type == EventTypes.Message) {
@@ -41,7 +36,7 @@ final class EventPusher {
             repliedEventContent = RepliedEventContent(
               content: repliedEvent.body,
               eventId: repliedEvent.eventId,
-              senderName: // TODO: check exceptions here
+              senderName:
                   repliedEvent.asUser.displayName ?? repliedEvent.senderId,
             );
           }

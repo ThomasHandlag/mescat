@@ -8,6 +8,7 @@ abstract class MCRepository {
   Future<Either<MCFailure, MCUser>> login({
     required String username,
     required String password,
+    String? serverUrl,
   });
 
   Future<Either<MCFailure, bool>> register({
@@ -172,4 +173,8 @@ abstract class MCRepository {
     required String eventId,
     required String newContent,
   });
+
+  Future<Either<MCFailure, bool>> setServer(String serverUrl);
+
+  Future<Either<MCFailure, MatrixRoom>> updateRoom(MatrixRoom room);
 }

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:matrix/matrix.dart';
+
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_item.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mescat/features/chat/presentation/widgets/reaction_picker.dart';
 import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
+// import 'package:mescat/shared/util/string_util.dart';
 
 class MessageBubble extends StatelessWidget {
   final MCMessageEvent message;
@@ -232,6 +235,7 @@ class MessageBubble extends StatelessWidget {
               ),
             );
           }
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -272,13 +276,13 @@ class MessageBubble extends StatelessWidget {
                 TextSpan(text: message.body, children: textSpanLists),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
+              // if (isValidYoutubeUrl(message.body))
             ],
           );
         }
 
       case MessageTypes.Image:
         {
-
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -452,9 +456,9 @@ class MessageBubble extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               if (reaction.isCurrentUser) {
-                if (context.read<AuthBloc>().state is AuthAuthenticated) {
+                if (context.read<AuthBloc>().state is Authenticated) {
                   final userId =
-                      (context.read<AuthBloc>().state as AuthAuthenticated)
+                      (context.read<AuthBloc>().state as Authenticated)
                           .user
                           .userId;
                   final existingReaction = reaction.reactEventIds.firstWhere(

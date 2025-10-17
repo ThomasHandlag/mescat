@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
 import 'package:mescat/features/authentication/presentation/widgets/login_form.dart';
 import 'package:mescat/features/authentication/presentation/widgets/register_form.dart';
 
@@ -74,25 +72,9 @@ class _AuthPageState extends State<AuthPage>
                 ),
                 SizedBox(
                   height: 300,
-                  child: BlocListener<AuthBloc, AuthState>(
-                    listener: (context, state) {
-                      if (state is AuthError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(state.message),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.error,
-                          ),
-                        );
-                      } else if (state is AuthAuthenticated) {
-                        Navigator.of(context).pushReplacementNamed('/home');
-                      }
-                    },
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: const [LoginForm(), RegisterForm()],
-                    ),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: const [LoginForm(), RegisterForm()],
                   ),
                 ),
               ],

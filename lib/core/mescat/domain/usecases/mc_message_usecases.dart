@@ -165,9 +165,16 @@ class DeleteMessageUseCase {
     required String roomId,
     required String eventId,
   }) async {
-    return await repository.deleteMessage(
-      roomId: roomId,
-      eventId: eventId,
-    );
+    return await repository.deleteMessage(roomId: roomId, eventId: eventId);
+  }
+}
+
+final class UpdateRoomUseCase {
+  final MCRepository repository;
+
+  UpdateRoomUseCase(this.repository);
+
+  Future<Either<MCFailure, MatrixRoom>> call({required MatrixRoom room}) async {
+    return await repository.updateRoom(room);
   }
 }

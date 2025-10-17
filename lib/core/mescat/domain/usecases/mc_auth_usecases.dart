@@ -9,10 +9,12 @@ class LoginUseCase {
   Future<Either<MCFailure, MCUser>> call({
     required String username,
     required String password,
+    String? serverUrl,
   }) async {
     return await repository.login(
       username: username,
       password: password,
+      serverUrl: serverUrl,
     );
   }
 }

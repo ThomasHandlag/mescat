@@ -12,12 +12,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final RegisterUseCase registerUseCase;
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
+  final SetServerUseCase setServerUseCase;
 
   AuthBloc({
     required this.loginUseCase,
     required this.registerUseCase,
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
+    required this.setServerUseCase,
   }) : super(AuthInitial()) {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
@@ -34,6 +36,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await loginUseCase(
       username: event.username,
       password: event.password,
+      serverUrl: event.serverUrl,
     );
 
     await result.fold((failure) async => emit(AuthError(failure.message)), (
@@ -43,7 +46,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       userResult.fold(
         (failure) => emit(AuthError(failure.message)),
         (user) => emit(
-          AuthAuthenticated(
+          Authenticated(
             user.copyWith(
               accessToken: success.accessToken,
               refreshToken: success.refreshToken,
@@ -71,7 +74,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final userResult = await getCurrentUserUseCase();
         userResult.fold(
           (failure) => emit(AuthError(failure.message)),
-          (user) => emit(AuthAuthenticated(user)),
+          (user) => emit(Authenticated(user)),
         );
       } else {
         emit(const AuthError('Registration failed'));
@@ -89,7 +92,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (success) => emit(AuthUnauthenticated()),
+      (success) => emit(Unauthenticated()),
     );
   }
 
@@ -102,8 +105,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await getCurrentUserUseCase();
 
     result.fold(
-      (failure) => emit(AuthUnauthenticated()),
-      (user) => emit(AuthAuthenticated(user)),
+      (failure) => emit(Unauthenticated()),
+      (user) => emit(Authenticated(user)),
     );
   }
 }

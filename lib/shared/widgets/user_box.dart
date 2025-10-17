@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/features/settings/presentation/pages/setting_page.dart';
+import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/shared/widgets/user_banner.dart';
 
@@ -83,9 +84,9 @@ class _UserBoxState extends State<UserBox> {
                 ),
                 McButton(
                   onPressed: () {
-                    context.go('/home/settings');
+                    showFullscreenDialog(context, const SettingPage());
                   },
-                  child:const Icon(Icons.settings),
+                  child: const Icon(Icons.settings),
                 ),
               ],
             ),

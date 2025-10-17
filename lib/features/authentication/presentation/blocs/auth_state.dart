@@ -11,16 +11,16 @@ class AuthInitial extends AuthState {}
 
 class AuthLoading extends AuthState {}
 
-class AuthAuthenticated extends AuthState {
+class Authenticated extends AuthState {
   final MCUser user;
 
-  const AuthAuthenticated(this.user);
+  const Authenticated(this.user);
 
   @override
   List<Object?> get props => [user];
 }
 
-class AuthUnauthenticated extends AuthState {}
+class Unauthenticated extends AuthState {}
 
 class AuthError extends AuthState {
   final String message;

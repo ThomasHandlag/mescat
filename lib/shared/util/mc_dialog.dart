@@ -18,3 +18,17 @@ void showImageDialog(BuildContext context, String imageUrl) {
     },
   );
 }
+
+void showFullscreenDialog(BuildContext context, Widget child) {
+  showDialog(
+    context: context,
+    fullscreenDialog: true,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: child,
+      );
+    },
+  );
+}

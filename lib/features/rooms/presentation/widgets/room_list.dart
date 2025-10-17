@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mescat/features/rooms/presentation/pages/room_setting_page.dart';
 import 'package:mescat/features/rooms/presentation/widgets/expanse_channel.dart';
 import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/shared/util/mc_dialog.dart';
 
 class RoomList extends StatelessWidget {
   const RoomList({super.key});
@@ -24,7 +26,24 @@ class RoomList extends StatelessWidget {
               children: [
                 BlocBuilder<SpaceBloc, SpaceState>(
                   builder: (context, state) {
-                    return const Text("Space name");
+                    String spaceName = 'Space Name';
+                    if (state is SpaceLoaded) {
+                      final selectedSpace =
+                          state.spaces.indexWhere(
+                                (space) =>
+                                    space.spaceId == state.selectedSpaceId,
+                              ) !=
+                              -1
+                          ? state.spaces.firstWhere(
+                              (space) => space.spaceId == state.selectedSpaceId,
+                            )
+                          : null;
+                      spaceName = selectedSpace?.name ?? 'Space Name';
+                    }
+                    return Text(
+                      spaceName,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    );
                   },
                 ),
                 const Spacer(),
@@ -211,7 +230,13 @@ class RoomList extends StatelessWidget {
     final isSelected = room.roomId == selectedRoomId;
 
     return GestureDetector(
-      onTap: () => context.read<RoomBloc>().add(SelectRoom(room.roomId)),
+      onTap: () {
+        if (room.canHaveCall) {
+          context.read<RoomBloc>().add(SelectRoomWithCall(room.roomId));
+        } else {
+          context.read<RoomBloc>().add(SelectRoom(room.roomId));
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
@@ -260,7 +285,9 @@ class RoomList extends StatelessWidget {
               tooltip: 'Invite Members',
             ),
             IconButton(
-              onPressed: () {},
+              onPressed: () {
+                showFullscreenDialog(context, RoomSettingPage(room: room));
+              },
               icon: Icon(
                 Icons.settings,
                 size: 16,

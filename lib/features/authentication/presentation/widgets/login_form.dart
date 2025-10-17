@@ -14,6 +14,7 @@ class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _serverController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -29,6 +30,9 @@ class _LoginFormState extends State<LoginForm> {
         LoginRequested(
           username: _usernameController.text.trim(),
           password: _passwordController.text,
+          serverUrl: _serverController.text.trim().isEmpty
+              ? 'https://matrix.org'
+              : _serverController.text.trim(),
         ),
       );
     }
@@ -43,7 +47,20 @@ class _LoginFormState extends State<LoginForm> {
           key: _formKey,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 10,
             children: [
+              TextFormField(
+                controller: _serverController,
+                enabled: !isLoading,
+                decoration: const InputDecoration(
+                  labelText: 'Server',
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  hintText: 'https://matrix.org',
+                  labelStyle: TextStyle(color: Color(0xFF707E75)),
+                ),
+              ),
               // Username field
               TextFormField(
                 controller: _usernameController,
@@ -64,7 +81,6 @@ class _LoginFormState extends State<LoginForm> {
                 },
               ),
 
-              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
                 enabled: !isLoading,
@@ -95,8 +111,6 @@ class _LoginFormState extends State<LoginForm> {
                   return null;
                 },
               ),
-
-              const SizedBox(height: 24),
 
               // Login button
               SizedBox(

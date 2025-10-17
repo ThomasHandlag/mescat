@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:logger/logger.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:matrix/matrix.dart';
@@ -21,6 +22,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
   final EditMessageUseCase editMessageUseCase;
   final ReplyMessageUseCase replyMessageUseCase;
   final EventPusher eventPusher;
+  final Logger _logger = Logger();
 
   RoomBloc({
     required this.getRoomsUseCase,
@@ -48,9 +50,64 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<ReplyMessage>(_onReplyMessage);
     on<SetInputAction>(_onSetInputAction);
     on<LoadMoreMessages>(_onLoadMoreMessages);
+    on<ReceiveMessage>(_onReceiveMessage);
+    on<MessageReacted>(_onMessageReacted);
+    on<UpdateRoom>(_onUpdateRoom);
+    on<SelectRoomWithCall>(_onSelectRoomWithCall);
+    _eventSubscription();
   }
 
+  void _eventSubscription() {
+    eventPusher.eventStream.listen((event) {
+      if (state is RoomLoaded) {
+        final currentState = state as RoomLoaded;
+        if (event.roomId == currentState.selectedRoomId) {
+          if (event is MCMessageEvent) {
+            add(ReceiveMessage(event));
+          }
+        } else if (event is MCReactionEvent) {
+          add(MessageReacted(event: event));
+        }
+      }
+    });
+  }
 
+  Future<void> _onSelectRoomWithCall(
+    SelectRoomWithCall event,
+    Emitter<RoomState> emit,
+  ) async {}
+
+  Future<void> _onUpdateRoom(UpdateRoom event, Emitter<RoomState> emit) async {
+    if (state is RoomLoaded) {}
+  }
+
+  void _onReceiveMessage(ReceiveMessage event, Emitter<RoomState> emit) {
+    if (state is RoomLoaded) {
+      final currentState = state as RoomLoaded;
+      if (event.message.roomId == currentState.selectedRoomId) {
+        final updatedMessages = [...currentState.messages, event.message];
+        emit(currentState.copyWith(messages: updatedMessages));
+      }
+    }
+  }
+
+  void _onMessageReacted(MessageReacted event, Emitter<RoomState> emit) {
+    if (state is RoomLoaded) {
+      final currentState = state as RoomLoaded;
+      final updatedMessages = List<MCMessageEvent>.from(currentState.messages);
+      final messageIndex = updatedMessages.indexWhere(
+        (msg) => msg.eventId == event.event.relatedEventId,
+      );
+      if (messageIndex != -1) {
+        final message = updatedMessages[messageIndex];
+        updatedMessages[messageIndex] = message.copyWith(
+          reactions: [...message.reactions, event.event],
+        );
+
+        emit(currentState.copyWith(messages: List.from(updatedMessages)));
+      }
+    }
+  }
 
   Future<void> _onLoadRooms(LoadRooms event, Emitter<RoomState> emit) async {
     emit(RoomLoading());
@@ -64,6 +121,13 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
           selectedRoomId: rooms.isNotEmpty ? rooms.first.roomId : null,
         ),
       );
+
+      if (state is RoomLoaded) {
+        final currentState = state as RoomLoaded;
+        if (currentState.selectedRoomId != null) {
+          add(LoadMessages(roomId: currentState.selectedRoomId!));
+        }
+      }
     });
   }
 
@@ -146,7 +210,6 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
           messages: [], // Clear messages when switching rooms
         ),
       );
-
       // Load messages for the selected room
       if (event.roomId != null) {
         add(LoadMessages(roomId: event.roomId!));
@@ -164,9 +227,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
       emoji: event.emoji,
     );
 
-    result.fold((failure) => emit(RoomError(failure.toString())), (success) {
-      
-    });
+    result.fold((failure) => emit(RoomError(failure.toString())), (success) {});
   }
 
   Future<void> _onRemoveReaction(

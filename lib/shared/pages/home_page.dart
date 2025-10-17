@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    if (state is! AuthAuthenticated) {
+                    if (state is! Authenticated) {
                       return const SizedBox.shrink();
                     }
                     return UserBox(

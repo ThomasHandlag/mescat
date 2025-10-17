@@ -33,7 +33,10 @@ class SpaceSidebar extends StatelessWidget {
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           child: SpaceIcon(
                             icon: Icons.home,
                             label: 'Home',
@@ -95,7 +98,7 @@ class SpaceSidebar extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
             child: SpaceIcon(
               icon: Icons.add,
               label: 'Create Space',

@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:dartz/dartz.dart';
-import 'package:matrix/matrix.dart';
+import 'package:logger/logger.dart';
+import 'package:matrix/matrix.dart' hide Level;
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
@@ -293,11 +294,7 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, MCUser>> getCurrentUser() async {
     final userId = _matrixClientManager.client.userID;
-    log('Current user ID: $userId');
-    log('Access Token: ${_matrixClientManager.client.accessToken}');
-    log('Is logged: ${_matrixClientManager.client.isLogged()}');
-    log('Beaerer Token: ${_matrixClientManager.client.bearerToken}');
-    if (userId != null) {
+    if (_matrixClientManager.client.isLogged() && userId != null) {
       final userProfile = await _matrixClientManager.client.getUserProfile(
         userId,
       );
@@ -334,7 +331,6 @@ final class MCRepositoryImpl implements MCRepository {
     final List<MCMessageEvent> matrixMessages = [];
 
     for (final mtEvent in mtEvents.reversed) {
-      // log('Processing event: ${mtEvent.eventId}, content: ${mtEvent.content}');
       switch (mtEvent.type) {
         case EventTypes.Message:
           {
@@ -561,8 +557,6 @@ final class MCRepositoryImpl implements MCRepository {
   Future<Either<MCFailure, List<MatrixRoom>>> getRooms() async {
     final roomsId = await _matrixClientManager.client.getJoinedRooms();
 
-    log('Joined rooms: $roomsId');
-
     final rooms = roomsId
         .map((roomId) {
           final room = _matrixClientManager.client.getRoomById(roomId);
@@ -581,8 +575,6 @@ final class MCRepositoryImpl implements MCRepository {
         .whereType<MatrixRoom>()
         .toList();
 
-    log('Fetched rooms: $rooms');
-
     return Right(rooms);
   }
 
@@ -591,9 +583,6 @@ final class MCRepositoryImpl implements MCRepository {
     final spaceHierachie = await _matrixClientManager.client.getSpaceHierarchy(
       spaceId,
     );
-    log('Fetching space with ID: $spaceId');
-    log('Spaces: ${spaceHierachie.rooms}');
-
     final spaceInfo = _matrixClientManager.client.getRoomById(spaceId);
 
     final space = MatrixSpace(
@@ -612,66 +601,70 @@ final class MCRepositoryImpl implements MCRepository {
   Future<Either<MCFailure, List<MatrixRoom>>> getSpaceRooms(
     String spaceId,
   ) async {
-    final spaceHierachie = await _matrixClientManager.client.getSpaceHierarchy(
-      spaceId,
-    );
+    try {
+      final rooms = _matrixClientManager.client.rooms
+          .map((room) {
+            bool isVoiceRoom = room.canJoinGroupCall & false;
 
-    final rooms = spaceHierachie.rooms
-        .map((room) {
-          final isVoiceRoom =
-              room.roomType != null &&
-              room.roomType == 'org.matrix.msc3417.call';
-          if (room.roomId != spaceId) {
-            return MatrixRoom(
-              roomId: room.roomId,
-              name: room.name,
-              topic: room.topic,
-              type: isVoiceRoom ? RoomType.voiceChannel : RoomType.textChannel,
-              isPublic: room.guestCanJoin,
-              parentSpaceId: spaceId,
-            );
-          }
-        })
-        .whereType<MatrixRoom>()
-        .toList();
+            final createEvent = room.getState(EventTypes.RoomCreate);
 
-    return Right(rooms);
+            if (createEvent != null &&
+                createEvent.content.containsKey('type')) {
+              final roomType = createEvent.content['type'] as String;
+              // 'org.matrix.msc3417.call'
+              if (roomType == 'org.matrix.msc3417.call') {
+                isVoiceRoom = room.canJoinGroupCall & true;
+              }
+            }
+
+            if (room.id != spaceId &&
+                room.spaceParents.any((parent) => parent.roomId == spaceId)) {
+              return MatrixRoom(
+                roomId: room.id,
+                name: room.name,
+                topic: room.topic,
+                type: isVoiceRoom
+                    ? RoomType.voiceChannel
+                    : RoomType.textChannel,
+                isPublic: room.guestAccess == GuestAccess.canJoin,
+                parentSpaceId: spaceId,
+                avatarUrl: room.avatar?.toFilePath(),
+                canHaveCall: isVoiceRoom,
+                isEncrypted: room.encrypted,
+                isMuted: room.isArchived,
+                lastActivity: room.latestEventReceivedTime,
+                lastMessage: room.lastEvent?.content['body'] as String?,
+                memberCount: room.summary.mJoinedMemberCount ?? 0,
+              );
+            }
+          })
+          .whereType<MatrixRoom>()
+          .toList();
+
+      return Right(rooms);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to fetch space rooms: $e'));
+    }
   }
 
   @override
   Future<Either<MCFailure, List<MatrixSpace>>> getSpaces() async {
-    // final roomsId = await _matrixClientManager.client.getJoinedRooms();
     final rooms = _matrixClientManager.client.rooms;
-
-    // final spaces = roomsId
-    //     .map((roomId) {
-    //       final room = _matrixClientManager.client.getRoomById(roomId);
-    //       if (room != null && room.isSpace) {
-    //         return MatrixSpace(
-    //           spaceId: roomId,
-    //           name: room.name,
-    //           description: room.topic,
-    //           isPublic: room.isFederated,
-    //           createdAt: DateTime.now(),
-    //         );
-    //       } else {
-    //         return null;
-    //       }
-    //     })
-    //     .whereType<MatrixSpace>()
-    //     .toList();
-
-    final spaces = rooms.map((r) {
-      if (r.isSpace) {
-        return MatrixSpace(
+    _matrixClientManager.logger.log(Level.debug, 'All rooms: $rooms');
+    final spaces = rooms
+        .map((r) {
+          if (r.isSpace) {
+            return MatrixSpace(
               spaceId: r.id,
               name: r.name,
               description: r.topic,
               isPublic: r.isFederated,
               createdAt: DateTime.now(),
             );
-      }
-    }).whereType<MatrixSpace>().toList();
+          }
+        })
+        .whereType<MatrixSpace>()
+        .toList();
 
     return Right(spaces);
   }
@@ -728,8 +721,12 @@ final class MCRepositoryImpl implements MCRepository {
   Future<Either<MCFailure, MCUser>> login({
     required String username,
     required String password,
+    String? serverUrl,
   }) async {
     try {
+      if (serverUrl != null && serverUrl.isNotEmpty) {
+        await _matrixClientManager.client.checkHomeserver(Uri.parse(serverUrl));
+      }
       final loginResponse = await _matrixClientManager.client.login(
         LoginType.mLoginPassword,
         password: password,
@@ -739,16 +736,6 @@ final class MCRepositoryImpl implements MCRepository {
       final user = await _matrixClientManager.client.getUserProfile(
         loginResponse.userId,
       );
-
-      _matrixClientManager.client.accessToken = loginResponse.accessToken;
-      _matrixClientManager.store.setString('userId', loginResponse.userId);
-
-      if (loginResponse.refreshToken != null) {
-        _matrixClientManager.store.setString(
-          'refreshToken',
-          loginResponse.refreshToken!,
-        );
-      }
 
       return Right(
         MCUser(
@@ -767,6 +754,7 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, bool>> logout() async {
     try {
+      await _matrixClientManager.store.clear();
       await _matrixClientManager.client.logout();
       return const Right(true);
     } catch (e) {
@@ -958,5 +946,54 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, bool>> verifyDevice(String userId, String deviceId) {
     return Future.value(const Right(true));
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> setServer(String serverUrl) async {
+    try {
+      await _matrixClientManager.client.checkHomeserver(Uri.parse(serverUrl));
+      return const Right(true);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to set server: $e'));
+    }
+  }
+
+  @override
+  Future<Either<MCFailure, MatrixRoom>> updateRoom(MatrixRoom room) async {
+    final existingRoom = _matrixClientManager.client.getRoomById(room.roomId);
+    if (existingRoom == null) {
+      return const Left(RoomFailure(message: 'Room not found'));
+    }
+    try {
+      if (room.name != null && room.name != existingRoom.name) {
+        existingRoom.setName(room.name!);
+      }
+      if (room.topic != null && room.topic != existingRoom.topic) {
+        existingRoom.setDescription(room.topic!);
+      }
+
+      if (room.isPublic != existingRoom.isFederated) {
+        existingRoom.setGuestAccess(
+          room.isPublic ? GuestAccess.canJoin : GuestAccess.forbidden,
+        );
+      }
+
+      if (room.isEncrypted) {
+        existingRoom.enableEncryption();
+      }
+
+      final updatedRoom = MatrixRoom(
+        roomId: room.roomId,
+        name: room.name ?? existingRoom.name,
+        topic: room.topic ?? existingRoom.topic,
+        type: room.type,
+        isPublic: room.isPublic,
+        parentSpaceId: room.parentSpaceId,
+      );
+
+      return Right(updatedRoom);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to update room: $e'));
+    }
   }
 }

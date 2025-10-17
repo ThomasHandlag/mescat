@@ -10,14 +10,16 @@ abstract class AuthEvent extends Equatable {
 class LoginRequested extends AuthEvent {
   final String username;
   final String password;
+  final String? serverUrl;
 
   const LoginRequested({
     required this.username,
     required this.password,
+    this.serverUrl,
   });
 
   @override
-  List<Object?> get props => [username, password];
+  List<Object?> get props => [username, password, serverUrl];
 }
 
 class RegisterRequested extends AuthEvent {
@@ -38,3 +40,12 @@ class RegisterRequested extends AuthEvent {
 class LogoutRequested extends AuthEvent {}
 
 class CheckAuthStatus extends AuthEvent {}
+
+class SetServer extends AuthEvent {
+  final String serverUrl;
+
+  const SetServer({required this.serverUrl});
+
+  @override
+  List<Object?> get props => [serverUrl];
+}

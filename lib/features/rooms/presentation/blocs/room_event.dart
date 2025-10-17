@@ -175,11 +175,46 @@ class SetInputAction extends RoomEvent {
   List<Object?> get props => [action];
 }
 
-
 class LoadMoreMessages extends RoomEvent {
   final int limit;
   const LoadMoreMessages({this.limit = 50});
 
   @override
   List<Object?> get props => [limit];
+}
+
+class ReceiveMessage extends RoomEvent {
+  final MCMessageEvent message;
+
+  const ReceiveMessage(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class UpdateRoom extends RoomEvent {
+  final MatrixRoom room;
+
+  const UpdateRoom(this.room);
+
+  @override
+  List<Object?> get props => [room];
+}
+
+final class MessageReacted extends RoomEvent {
+  final MCReactionEvent event;
+
+  const MessageReacted({required this.event});
+
+  @override
+  List<Object?> get props => [event];
+}
+
+final class SelectRoomWithCall extends RoomEvent {
+  final String roomId;
+
+  const SelectRoomWithCall(this.roomId);
+
+  @override
+  List<Object?> get props => [roomId];
 }

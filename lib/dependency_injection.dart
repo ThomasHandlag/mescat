@@ -35,10 +35,7 @@ Future<Client> createMatrixClient(
         AuthenticationTypes.sso,
       },
     );
-
-    // Set homeserver URL
-    await client.checkHomeserver(Uri.parse(homeserverUrl));
-
+    await client.init(newHomeserver: Uri.parse(homeserverUrl));
     return client;
   } catch (e, stackTrace) {
     _logger.e(
@@ -54,7 +51,6 @@ Future<void> setupDependencyInjection() async {
   final matrixClient = await createMatrixClient("Mescat", "https://matrix.org");
   final sharedPref = await SharedPreferences.getInstance();
 
-  // Regist core dependencies
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),
   );
@@ -66,7 +62,6 @@ Future<void> setupDependencyInjection() async {
     () => EventPusher(clientManager: getIt<MatrixClientManager>()),
   );
 
-  // Original use cases (maintain compatibility)
   getIt.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(getIt<MCRepository>()),
   );
@@ -117,5 +112,8 @@ Future<void> setupDependencyInjection() async {
   );
   getIt.registerLazySingleton<ReplyMessageUseCase>(
     () => ReplyMessageUseCase(getIt<MCRepository>()),
+  );
+  getIt.registerLazySingleton<SetServerUseCase>(
+    () => SetServerUseCase(getIt<MCRepository>()),
   );
 }
