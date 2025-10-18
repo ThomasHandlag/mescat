@@ -41,7 +41,7 @@ class _UserBoxState extends State<UserBox> {
       child: Container(
         height: _joinedVoice ? 150 : UIConstraints.mMessageInputHeight,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 70, 70, 70),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8.0),
         ),
         child: Column(

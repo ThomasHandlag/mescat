@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/features/chat/presentation/widgets/call_view.dart';
 import 'package:mescat/features/chat/presentation/widgets/chat_view.dart';
 import 'package:mescat/features/members/presentation/widgets/space_members.dart';
 import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
@@ -13,7 +14,6 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-
   bool _showMembers = true;
 
   @override
@@ -63,53 +63,64 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: BlocBuilder<RoomBloc, RoomState>(
-          builder: (context, state) {
-            if (state is RoomLoaded && state.selectedRoomId != null) {
-              final selectedRoom = state.rooms.firstWhere(
-                (room) => room.roomId == state.selectedRoomId,
-                orElse: () => const MatrixRoom(roomId: ''),
-              );
+    return BlocBuilder<RoomBloc, RoomState>(
+      builder: (context, state) {
+        return Scaffold(appBar: _buildAppBar(state), body: _buildView(state));
+      },
+    );
+  }
 
-              if (selectedRoom.roomId.isEmpty) {
-                return const Text('Room not found');
-              }
+  PreferredSizeWidget? _buildAppBar(RoomState state) {
+    if (state is RoomLoaded && state.selectedRoom != null) {
+      if (state.selectedRoom!.canHaveCall) {
+        return null;
+      } else {
+        return AppBar(
+          title: Row(
+            children: [
+              const Icon(Icons.tag, size: 16),
+              Text(
+                state.selectedRoom?.name ?? 'Unnamed Room',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          actions: [_buildChatHeader(context)],
+        );
+      }
+    } else if (state is RoomLoading) {
+      return AppBar(title: const Text('Loading...'));
+    } else {
+      return null;
+    }
+  }
 
-              return Row(
-                children: [
-                 const Icon(Icons.tag, size: 16),
-                  Text(
-                    selectedRoom.name ?? 'Unnamed Room',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              );
-            }
-
-            return const Text('Select a channel to start chatting');
-          },
-        ),
-        actions: [_buildChatHeader(context)],
-      ),
-      body: Row(
-        children: [
-          const Expanded(child: ChatView()),
-          if (_showMembers)
-            Container(
-              width: 250,
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: Theme.of(context).dividerColor.withAlpha(50),
+  Widget _buildView(RoomState state) {
+    if (state is RoomLoaded) {
+      final selectedRoom = state.selectedRoom;
+      if (selectedRoom != null && selectedRoom.canHaveCall) {
+        return const CallView();
+      } else {
+        return Row(
+          children: [
+            const Expanded(child: ChatView()),
+            if (_showMembers)
+              Container(
+                width: 250,
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: Theme.of(context).dividerColor.withAlpha(50),
+                    ),
                   ),
                 ),
+                child: const SpaceMembersList(),
               ),
-              child: const SpaceMembersList(),
-            ),
-        ],
-      ),
-    );
+          ],
+        );
+      }
+    } else {
+      return const Text('Select a channel to start chatting');
+    }
   }
 }

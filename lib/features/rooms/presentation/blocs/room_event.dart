@@ -81,11 +81,12 @@ class LeaveRoom extends RoomEvent {
 
 class SelectRoom extends RoomEvent {
   final String? roomId;
+  final RoomType? roomType;
 
-  const SelectRoom(this.roomId);
+  const SelectRoom(this.roomId, {this.roomType});
 
   @override
-  List<Object?> get props => [roomId];
+  List<Object?> get props => [roomId, roomType];
 }
 
 class AddReaction extends RoomEvent {
@@ -210,10 +211,10 @@ final class MessageReacted extends RoomEvent {
   List<Object?> get props => [event];
 }
 
-final class SelectRoomWithCall extends RoomEvent {
+final class JoinCall extends RoomEvent {
   final String roomId;
 
-  const SelectRoomWithCall(this.roomId);
+  const JoinCall(this.roomId);
 
   @override
   List<Object?> get props => [roomId];

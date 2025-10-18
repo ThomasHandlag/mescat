@@ -15,6 +15,7 @@ class RoomLoading extends RoomState {}
 class RoomLoaded extends RoomState {
   final List<MatrixRoom> rooms;
   final String? selectedRoomId;
+  final MatrixRoom? selectedRoom;
   final List<MCMessageEvent> messages;
   final bool isLoadingMessages;
   final InputActionData inputAction;
@@ -27,6 +28,7 @@ class RoomLoaded extends RoomState {
     this.messages = const [],
     this.isLoadingMessages = false,
     this.isLoadingMore = false,
+    this.selectedRoom,
   });
 
   @override
@@ -37,6 +39,7 @@ class RoomLoaded extends RoomState {
     isLoadingMessages,
     inputAction,
     isLoadingMore,
+    selectedRoom,
   ];
 
   RoomLoaded copyWith({
@@ -46,6 +49,7 @@ class RoomLoaded extends RoomState {
     bool? isLoadingMessages,
     InputActionData? inputAction,
     bool? isLoadingMore,
+    MatrixRoom? selectedRoom,
   }) {
     return RoomLoaded(
       rooms: rooms ?? this.rooms,
@@ -54,6 +58,7 @@ class RoomLoaded extends RoomState {
       isLoadingMessages: isLoadingMessages ?? this.isLoadingMessages,
       inputAction: inputAction ?? this.inputAction,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      selectedRoom: selectedRoom ?? this.selectedRoom,
     );
   }
 }

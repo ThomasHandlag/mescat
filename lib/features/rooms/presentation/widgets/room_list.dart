@@ -13,15 +13,11 @@ class RoomList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
       child: Column(
         children: [
           // Header
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
             child: Row(
               children: [
                 BlocBuilder<SpaceBloc, SpaceState>(
@@ -230,13 +226,9 @@ class RoomList extends StatelessWidget {
     final isSelected = room.roomId == selectedRoomId;
 
     return GestureDetector(
-      onTap: () {
-        if (room.canHaveCall) {
-          context.read<RoomBloc>().add(SelectRoomWithCall(room.roomId));
-        } else {
-          context.read<RoomBloc>().add(SelectRoom(room.roomId));
-        }
-      },
+      onTap: () => context.read<RoomBloc>().add(
+        SelectRoom(room.roomId, roomType: room.type),
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(

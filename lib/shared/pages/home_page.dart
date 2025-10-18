@@ -29,7 +29,8 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: Row(
         children: [
-          SizedBox(
+          Container(
+            color: const Color.fromARGB(255, 35, 35, 42),
             width: 310,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

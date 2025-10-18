@@ -35,6 +35,7 @@ class ChatView extends StatelessWidget {
                 padding: const EdgeInsets.only(
                   bottom: UIConstraints.smallPadding,
                   right: UIConstraints.smallPadding,
+                  left: UIConstraints.smallPadding,
                 ),
                 child: MessageInput(
                   roomId: selectedRoom.roomId,

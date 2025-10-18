@@ -53,7 +53,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<ReceiveMessage>(_onReceiveMessage);
     on<MessageReacted>(_onMessageReacted);
     on<UpdateRoom>(_onUpdateRoom);
-    on<SelectRoomWithCall>(_onSelectRoomWithCall);
+    on<JoinCall>(_onJoinCall);
     _eventSubscription();
   }
 
@@ -72,8 +72,8 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     });
   }
 
-  Future<void> _onSelectRoomWithCall(
-    SelectRoomWithCall event,
+  Future<void> _onJoinCall(
+    JoinCall event,
     Emitter<RoomState> emit,
   ) async {}
 
@@ -119,6 +119,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
         RoomLoaded(
           rooms: rooms,
           selectedRoomId: rooms.isNotEmpty ? rooms.first.roomId : null,
+          selectedRoom: rooms.isNotEmpty ? rooms.first : null,
         ),
       );
 
@@ -204,9 +205,17 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
   Future<void> _onSelectRoom(SelectRoom event, Emitter<RoomState> emit) async {
     if (state is RoomLoaded) {
       final currentState = state as RoomLoaded;
+      MatrixRoom? selectedRoom;
+      final index = currentState.rooms.indexWhere(
+        (room) => room.roomId == event.roomId,
+      );
+      if (index != -1) {
+        selectedRoom = currentState.rooms[index];
+      }
       emit(
         currentState.copyWith(
           selectedRoomId: event.roomId,
+          selectedRoom: selectedRoom,
           messages: [], // Clear messages when switching rooms
         ),
       );
