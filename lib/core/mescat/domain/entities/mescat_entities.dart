@@ -15,6 +15,8 @@ class MCUser extends Equatable {
   final DateTime? lastActiveTime;
   final String? presenceMessage;
   final UserPresence presence;
+  final String? refreshToken;
+  final String? accessToken;
 
   const MCUser({
     required this.userId,
@@ -24,6 +26,8 @@ class MCUser extends Equatable {
     this.lastActiveTime,
     this.presenceMessage,
     this.presence = UserPresence.offline,
+    this.refreshToken,
+    this.accessToken,
   });
 
   @override
@@ -45,6 +49,8 @@ class MCUser extends Equatable {
     DateTime? lastActiveTime,
     String? presenceMessage,
     UserPresence? presence,
+    String? refreshToken,
+    String? accessToken,
   }) {
     return MCUser(
       userId: userId ?? this.userId,
@@ -60,3 +66,15 @@ class MCUser extends Equatable {
 
 /// User presence states
 enum UserPresence { online, offline, idle, doNotDisturb, invisible }
+
+final class RepliedEventContent {
+  final String eventId;
+  final String content;
+  final String senderName;
+
+  const RepliedEventContent({
+    required this.eventId,
+    required this.content,
+    required this.senderName,
+  });
+}

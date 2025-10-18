@@ -16,6 +16,8 @@ class MatrixRoom extends Equatable {
   final List<String> tags;
   final String? parentSpaceId;
   final bool canHaveCall;
+  final Map<String, dynamic>? permission;
+  final Map<String, String>? bannedIds;
 
   const MatrixRoom({
     required this.roomId,
@@ -33,6 +35,8 @@ class MatrixRoom extends Equatable {
     this.tags = const [],
     this.parentSpaceId,
     this.canHaveCall = false,
+    this.permission,
+    this.bannedIds,
   });
 
   @override
@@ -52,6 +56,8 @@ class MatrixRoom extends Equatable {
     tags,
     parentSpaceId,
     canHaveCall,
+    permission,
+    bannedIds,
   ];
 
   MatrixRoom copyWith({
@@ -70,6 +76,8 @@ class MatrixRoom extends Equatable {
     List<String>? tags,
     String? parentSpaceId,
     bool? canHaveCall,
+    Map<String, dynamic>? permission,
+    Map<String, String>? bannedIds,
   }) {
     return MatrixRoom(
       roomId: roomId ?? this.roomId,
@@ -87,6 +95,8 @@ class MatrixRoom extends Equatable {
       tags: tags ?? this.tags,
       parentSpaceId: parentSpaceId ?? this.parentSpaceId,
       canHaveCall: canHaveCall ?? this.canHaveCall,
+      permission: permission ?? this.permission,
+      bannedIds: bannedIds ?? this.bannedIds,
     );
   }
 }

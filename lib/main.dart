@@ -1,30 +1,34 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:mescat/features/authentication/presentation/pages/auth_page.dart';
-import 'package:mescat/features/members/presentation/blocs/member_bloc.dart';
-import 'package:mescat/shared/pages/home_page.dart';
-import 'core/themes/app_themes.dart';
-import 'features/authentication/presentation/blocs/auth_bloc.dart';
-import 'features/rooms/presentation/blocs/room_bloc.dart';
-import 'features/spaces/presentation/blocs/space_bloc.dart';
-import 'dependency_injection.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+import 'package:matrix/matrix.dart';
+import 'package:mescat/core/mescat/matrix_client.dart';
+import 'package:mescat/features/authentication/presentation/pages/auth_page.dart';
+import 'package:mescat/shared/pages/home_page.dart';
+import 'package:mescat/shared/pages/loading_page.dart';
+import 'package:rive/rive.dart';
+
+import 'package:mescat/features/members/presentation/blocs/member_bloc.dart';
+import 'package:mescat/core/themes/app_themes.dart';
+import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
+import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
+import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
+import 'package:mescat/dependency_injection.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Hive.initFlutter();
-
   await vod.init();
-
   await setupDependencyInjection();
-
-  runApp(const MescatApp());
+  await RiveNative.init();
+  runApp(const MescatBlocProvider());
 }
 
-class MescatApp extends StatelessWidget {
-  const MescatApp({super.key});
+final class MescatBlocProvider extends StatelessWidget {
+  const MescatBlocProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +40,7 @@ class MescatApp extends StatelessWidget {
             registerUseCase: getIt(),
             logoutUseCase: getIt(),
             getCurrentUserUseCase: getIt(),
+            setServerUseCase: getIt(),
           )..add(CheckAuthStatus()),
         ),
         BlocProvider(
@@ -47,11 +52,18 @@ class MescatApp extends StatelessWidget {
             joinRoomUseCase: getIt(),
             addReactionUseCase: getIt(),
             removeReactionUseCase: getIt(),
+            deleteMessageUseCase: getIt(),
+            editMessageUseCase: getIt(),
+            replyMessageUseCase: getIt(),
+            eventPusher: getIt(),
           ),
         ),
         BlocProvider(
-          create: (context) =>
-              SpaceBloc(getSpacesUseCase: getIt(), createSpaceUseCase: getIt()),
+          create: (context) => SpaceBloc(
+            getSpacesUseCase: getIt(),
+            createSpaceUseCase: getIt(),
+            eventPusher: getIt(),
+          ),
         ),
         BlocProvider(
           create: (context) => MemberBloc(getRoomMembersUseCase: getIt()),
@@ -63,21 +75,31 @@ class MescatApp extends StatelessWidget {
         theme: AppThemes.lightTheme,
         darkTheme: AppThemes.darkTheme,
         themeMode: ThemeMode.system,
-        home: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            final authState = context.watch<AuthBloc>().state;
-            if (authState is AuthAuthenticated) {
-              return const HomePage();
-            } else if (authState is AuthLoading) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            } else {
-              return const AuthPage();
-            }
-          },
-        ),
+        home: MescatApp(client: getIt<MatrixClientManager>().client),
       ),
+    );
+  }
+}
+
+class MescatApp extends StatelessWidget {
+  const MescatApp({super.key, required this.client});
+
+  final Client client;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is Authenticated) {
+          return const HomePage();
+        } else if (state is AuthLoading || state is AuthInitial) {
+          return const LoadingPage();
+        } else {
+          final navigator = Navigator.of(context);
+          log('Can pop: ${navigator.canPop()}');
+          return const AuthPage();
+        }
+      },
     );
   }
 }

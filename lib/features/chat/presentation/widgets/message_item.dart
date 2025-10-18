@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
-import 'message_actions.dart';
+import 'package:mescat/features/chat/presentation/widgets/message_actions.dart';
 
 class MessageItem extends StatefulWidget {
   final Widget child;

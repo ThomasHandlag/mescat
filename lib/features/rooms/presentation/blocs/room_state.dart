@@ -17,28 +17,43 @@ class RoomLoaded extends RoomState {
   final String? selectedRoomId;
   final List<MCMessageEvent> messages;
   final bool isLoadingMessages;
+  final InputActionData inputAction;
+  final bool isLoadingMore;
 
   const RoomLoaded({
     required this.rooms,
     this.selectedRoomId,
+    this.inputAction = const InputActionData(action: InputAction.none),
     this.messages = const [],
     this.isLoadingMessages = false,
+    this.isLoadingMore = false,
   });
 
   @override
-  List<Object?> get props => [rooms, selectedRoomId, messages, isLoadingMessages];
+  List<Object?> get props => [
+    rooms,
+    selectedRoomId,
+    messages,
+    isLoadingMessages,
+    inputAction,
+    isLoadingMore,
+  ];
 
   RoomLoaded copyWith({
     List<MatrixRoom>? rooms,
     String? selectedRoomId,
     List<MCMessageEvent>? messages,
     bool? isLoadingMessages,
+    InputActionData? inputAction,
+    bool? isLoadingMore,
   }) {
     return RoomLoaded(
       rooms: rooms ?? this.rooms,
       selectedRoomId: selectedRoomId ?? this.selectedRoomId,
       messages: messages ?? this.messages,
       isLoadingMessages: isLoadingMessages ?? this.isLoadingMessages,
+      inputAction: inputAction ?? this.inputAction,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 }
@@ -50,4 +65,21 @@ class RoomError extends RoomState {
 
   @override
   List<Object?> get props => [message];
+}
+
+enum InputAction { none, reply, edit }
+
+class InputActionData extends Equatable {
+  final InputAction action;
+  final String? targetEventId;
+  final String? initialContent;
+
+  const InputActionData({
+    required this.action,
+    this.targetEventId,
+    this.initialContent,
+  });
+
+  @override
+  List<Object?> get props => [action, targetEventId, initialContent];
 }

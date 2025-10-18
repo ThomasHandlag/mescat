@@ -10,3 +10,13 @@ class GetCurrentUserUseCase {
     return await repository.getCurrentUser();
   }
 }
+
+class SetServerUseCase {
+  final MCRepository repository;
+
+  SetServerUseCase(this.repository);
+
+  Future<Either<MCFailure, bool>> call(String serverUrl) async {
+    return await repository.setServer(serverUrl);
+  }
+}

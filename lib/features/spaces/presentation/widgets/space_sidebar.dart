@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/spaces/presentation/widgets/space_icon.dart';
-import '../blocs/space_bloc.dart';
+import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 
 class SpaceSidebar extends StatelessWidget {
   const SpaceSidebar({super.key});
@@ -12,13 +12,6 @@ class SpaceSidebar extends StatelessWidget {
       width: 60,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(50),
-            blurRadius: 5,
-            offset: const Offset(2, 0),
-          ),
-        ],
         border: Border(
           right: BorderSide(
             color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
@@ -40,7 +33,10 @@ class SpaceSidebar extends StatelessWidget {
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           child: SpaceIcon(
                             icon: Icons.home,
                             label: 'Home',
@@ -102,7 +98,7 @@ class SpaceSidebar extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
             child: SpaceIcon(
               icon: Icons.add,
               label: 'Create Space',

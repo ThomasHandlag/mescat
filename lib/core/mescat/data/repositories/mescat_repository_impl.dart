@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:dartz/dartz.dart';
-import 'package:matrix/matrix.dart';
+import 'package:logger/logger.dart';
+import 'package:matrix/matrix.dart' hide Level;
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
-import 'package:mescat/core/mescat/domain/repositories/matrix_repository.dart';
+import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
 import 'package:uuid/rng.dart';
 
 final class MCRepositoryImpl implements MCRepository {
@@ -18,9 +19,101 @@ final class MCRepositoryImpl implements MCRepository {
     required String roomId,
     required String eventId,
     required String emoji,
-  }) {
-    // _matrixClientManager.client.se
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+  }) async {
+    try {
+      await _matrixClientManager.client.sendMessage(
+        roomId,
+        EventTypes.Reaction,
+        CryptoRNG().generate().toString(),
+        {
+          'm.relates_to': {
+            'event_id': eventId,
+            'key': emoji,
+            'rel_type': 'm.annotation',
+          },
+        },
+      );
+      return Future.value(const Right(true));
+    } catch (e) {
+      return Future.value(
+        const Left(MessageFailure(message: 'Failed to add reaction')),
+      );
+    }
+  }
+
+  @override
+  Future<Either<MCFailure, MCMessageEvent>> replyMessage({
+    required String roomId,
+    required String content,
+    required String replyToEventId,
+    String msgtype = MessageTypes.Text,
+  }) async {
+    // Construct the reply content according to Matrix spec
+    final replyContent = {
+      'msgtype': msgtype,
+      'body': content,
+      'm.relates_to': {
+        'm.in_reply_to': {'event_id': replyToEventId},
+      },
+    };
+    final txnId = CryptoRNG().generate().toString();
+
+    final nEvenId = await _matrixClientManager.client.sendMessage(
+      roomId,
+      EventTypes.Message,
+      txnId,
+      replyContent,
+    );
+
+    return Right(
+      MCMessageEvent(
+        eventTypes: EventTypes.Message,
+        eventId: nEvenId,
+        roomId: roomId,
+        senderId: _matrixClientManager.client.userID ?? 'unknown',
+        msgtype: msgtype,
+        body: content,
+        senderDisplayName: await _matrixClientManager.currentUserDisplayName,
+        timestamp: DateTime.now(),
+        isCurrentUser: true,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<MCFailure, MCMessageEvent>> editMessageContent({
+    required String roomId,
+    required String eventId,
+    required String newContent,
+  }) async {
+    final editContent = {
+      'msgtype': MessageTypes.Text,
+      'body': newContent,
+      'm.new_content': {'msgtype': MessageTypes.Text, 'body': newContent},
+      'm.relates_to': {'rel_type': 'm.replace', 'event_id': eventId},
+    };
+    final txnId = CryptoRNG().generate().toString();
+
+    final nEvenId = await _matrixClientManager.client.sendMessage(
+      roomId,
+      EventTypes.Message,
+      txnId,
+      editContent,
+    );
+
+    return Right(
+      MCMessageEvent(
+        eventTypes: EventTypes.Message,
+        eventId: nEvenId,
+        roomId: roomId,
+        senderId: _matrixClientManager.client.userID ?? 'unknown',
+        msgtype: MessageTypes.Text,
+        body: newContent,
+        senderDisplayName: await _matrixClientManager.currentUserDisplayName,
+        timestamp: DateTime.now(),
+        isCurrentUser: true,
+      ),
+    );
   }
 
   @override
@@ -31,7 +124,7 @@ final class MCRepositoryImpl implements MCRepository {
     final space = _matrixClientManager.client.getRoomById(spaceId);
     final room = _matrixClientManager.client.getRoomById(roomId);
     if (space == null || room == null) {
-      return Left(RoomFailure(message: 'Space or Room not found'));
+      return const Left(RoomFailure(message: 'Space or Room not found'));
     }
 
     try {
@@ -59,7 +152,7 @@ final class MCRepositoryImpl implements MCRepository {
         },
       );
 
-      return Right(true);
+      return const Right(true);
     } catch (e) {
       return Left(UnknownFailure(message: 'Failed to add room to space: $e'));
     }
@@ -101,7 +194,7 @@ final class MCRepositoryImpl implements MCRepository {
     final members = await _matrixClientManager.client.getMembersByRoom(roomId);
 
     if (members == null) {
-      return Right([]);
+      return const Right([]);
     }
 
     final matrixUsers = members.map((member) async {
@@ -116,7 +209,7 @@ final class MCRepositoryImpl implements MCRepository {
       return MCUser(
         displayName: user.displayname,
         userId: member.senderId,
-        avatarUrl: user.avatarUrl?.toString(),
+        avatarUrl: user.avatarUrl?.toFilePath(),
         isOnline: isOnline,
       );
     }).toList();
@@ -152,28 +245,56 @@ final class MCRepositoryImpl implements MCRepository {
     required String roomId,
     required String eventId,
   }) async {
-    // await _matrixClientManager.client.deleteEvent(roomId, eventId);
-    return Right(true);
+    final txnId = CryptoRNG().generate().toString();
+    await _matrixClientManager.client.redactEvent(roomId, eventId, txnId);
+    return const Right(true);
   }
 
   @override
-  Future<Either<MCFailure, bool>> editMessage({
+  Future<Either<MCFailure, MCMessageEvent>> editMessage({
     required String roomId,
     required String eventId,
     required String newContent,
-  }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+  }) async {
+    try {
+      final result = await _matrixClientManager.client.sendMessage(
+        roomId,
+        EventTypes.Message,
+        CryptoRNG().generate().toString(),
+        {
+          'msgtype': MessageTypes.Text,
+          'body': newContent,
+          'm.new_content': {'msgtype': MessageTypes.Text, 'body': newContent},
+          'm.relates_to': {'rel_type': 'm.replace', 'event_id': eventId},
+        },
+      );
+      return Right(
+        MCMessageEvent(
+          eventTypes: EventTypes.Message,
+          eventId: result,
+          roomId: roomId,
+          senderId: _matrixClientManager.client.userID ?? 'unknown',
+          msgtype: MessageTypes.Text,
+          body: newContent,
+          senderDisplayName: await _matrixClientManager.currentUserDisplayName,
+          timestamp: DateTime.now(),
+          isCurrentUser: true,
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to edit message: $e'));
+    }
   }
 
   @override
   Future<Either<MCFailure, bool>> enableEncryption(String roomId) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
   Future<Either<MCFailure, MCUser>> getCurrentUser() async {
     final userId = _matrixClientManager.client.userID;
-    if (userId != null) {
+    if (_matrixClientManager.client.isLogged() && userId != null) {
       final userProfile = await _matrixClientManager.client.getUserProfile(
         userId,
       );
@@ -181,72 +302,134 @@ final class MCRepositoryImpl implements MCRepository {
         MCUser(displayName: userProfile.displayname, userId: userId),
       );
     } else {
-      return Left(AuthenticationFailure(message: 'No user logged in'));
+      return const Left(AuthenticationFailure(message: 'No user logged in'));
     }
   }
-
-  // @override
-  // Stream<Either<MatrixFailure, MatrixMessage>> streamMessages(String roomId) {
-  //   final controller = StreamController<Either<MatrixFailure, MatrixMessage>>();
-  //   _matrixClientManager.client.onTimelineEvent.stream.listen((event) {
-  //     if (event.roomId == roomId) {
-  //       final content = event.content['body'] as String? ?? '';
-  //       if (content.isNotEmpty) {
-  //         final message = MatrixMessage(
-  //           eventId: event.eventId,
-  //           senderDisplayName: null,
-  //           roomId: roomId,
-  //           senderId: event.senderId,
-  //           type: MessageType.text,
-  //           content: content,
-  //           timestamp: event.originServerTs,
-  //         );
-  //         controller.add(Right(message));
-  //       }
-  //     }
-  //   });
-
-  //   return controller.stream;
-  // }
 
   @override
   Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
     String roomId, {
-    int limit = 50,
+    int limit = 100,
     String? fromToken,
+    String? filter,
+    String? toToken,
   }) async {
     final eventsResponse = await _matrixClientManager.client.getRoomEvents(
       roomId,
-      Direction.f,
+      Direction.b,
       limit: limit,
+      filter: filter,
       from: fromToken,
+      to: toToken,
     );
 
     final mtEvents = eventsResponse.chunk;
 
+    MCEvent.startToken = eventsResponse.start;
+    MCEvent.endToken = eventsResponse.end;
+
     final List<MCMessageEvent> matrixMessages = [];
 
-    for (final mtEvent in mtEvents) {
-      log('Processing event: ${mtEvent.eventId}, content: ${mtEvent.content}');
+    for (final mtEvent in mtEvents.reversed) {
       switch (mtEvent.type) {
         case EventTypes.Message:
           {
             final room = _matrixClientManager.client.getRoomById(roomId);
-            MatrixFile? file;
+            if (mtEvent.content.isEmpty) {
+              continue;
+            }
             if (room != null) {
               final event = Event.fromMatrixEvent(mtEvent, room);
+              final user = await _matrixClientManager.client.getUserProfile(
+                mtEvent.senderId,
+              );
+
+              MatrixFile? file;
+              RepliedEventContent? repliedEventContent;
+              final text = event.content['body'] as String? ?? '';
+              final imageInfo = event.content['info'] as Map<String, dynamic>?;
+              final width = imageInfo != null ? imageInfo['w'] : null;
+              final height = imageInfo != null ? imageInfo['h'] : null;
 
               if (event.hasAttachment) {
                 file = await event.downloadAndDecryptAttachment();
               }
 
-              final messageEvent = await _mapMessageEvent(
-                mtEvent,
-                roomId,
-                file,
+              if (event.relationshipType == RelationshipTypes.reply) {
+                final repliedMTEvent = await _matrixClientManager.client
+                    .getOneRoomEvent(roomId, event.relationshipEventId!);
+
+                final repliedEvent = Event.fromMatrixEvent(
+                  repliedMTEvent,
+                  room,
+                );
+                final repliedEventMsgtype =
+                    repliedMTEvent.content['msgtype'] as String? ??
+                    MessageTypes.Text;
+
+                final senderName =
+                    (await _matrixClientManager.client.getUserProfile(
+                      repliedEvent.senderId,
+                    )).displayname;
+                final content = switch (repliedEventMsgtype) {
+                  MessageTypes.Text =>
+                    repliedMTEvent.content['body'] as String? ?? '',
+                  _ => repliedEvent.attachmentMimetype,
+                };
+                repliedEventContent = RepliedEventContent(
+                  content: content,
+                  eventId: repliedMTEvent.eventId,
+                  senderName: senderName ?? repliedEvent.senderId,
+                );
+              }
+              final messageEvent = MCMessageEvent(
+                eventId: mtEvent.eventId,
+                roomId: roomId,
+                senderId: mtEvent.senderId,
+                senderDisplayName: user.displayname ?? mtEvent.senderId,
+                senderAvatarUrl: user.avatarUrl?.toFilePath(),
+                msgtype: event.messageType,
+                body: text,
+                timestamp: mtEvent.originServerTs,
+                eventTypes: mtEvent.type,
+                isCurrentUser:
+                    mtEvent.senderId == _matrixClientManager.client.userID,
+                metadata: mtEvent.content,
+                file: file,
+                height: height,
+                width: width,
+                mimeType: event.attachmentMimetype,
+                repliedEvent: repliedEventContent,
               );
-              if (messageEvent != null) {
-                matrixMessages.add(messageEvent);
+
+              matrixMessages.add(messageEvent);
+
+              if (event.relationshipType == RelationshipTypes.edit) {
+                final originMessage = matrixMessages.firstWhere(
+                  (msg) => msg.eventId == event.relationshipEventId,
+                  orElse: () => MCMessageEvent(
+                    eventId: '',
+                    roomId: roomId,
+                    senderId: '',
+                    senderDisplayName: '',
+                    msgtype: '',
+                    body: '',
+                    timestamp: DateTime.now(),
+                    isCurrentUser: false,
+                    eventTypes: '',
+                  ),
+                );
+                if (originMessage.eventId.isNotEmpty) {
+                  final updatedMessage = originMessage.copyWith(
+                    body: messageEvent.body,
+                    isEdited: true,
+                    editedTimestamp: messageEvent.timestamp,
+                  );
+                  final index = matrixMessages.indexOf(originMessage);
+                  matrixMessages[index] = updatedMessage;
+                } else {
+                  matrixMessages.add(messageEvent);
+                }
               }
             }
           }
@@ -366,15 +549,13 @@ final class MCRepositoryImpl implements MCRepository {
         ),
       );
     } else {
-      return Left(RoomFailure(message: 'Room not found'));
+      return const Left(RoomFailure(message: 'Room not found'));
     }
   }
 
   @override
   Future<Either<MCFailure, List<MatrixRoom>>> getRooms() async {
     final roomsId = await _matrixClientManager.client.getJoinedRooms();
-
-    log('Joined rooms: $roomsId');
 
     final rooms = roomsId
         .map((roomId) {
@@ -394,8 +575,6 @@ final class MCRepositoryImpl implements MCRepository {
         .whereType<MatrixRoom>()
         .toList();
 
-    log('Fetched rooms: $rooms');
-
     return Right(rooms);
   }
 
@@ -404,9 +583,6 @@ final class MCRepositoryImpl implements MCRepository {
     final spaceHierachie = await _matrixClientManager.client.getSpaceHierarchy(
       spaceId,
     );
-    log('Fetching space with ID: $spaceId');
-    log('Spaces: ${spaceHierachie.rooms}');
-
     final spaceInfo = _matrixClientManager.client.getRoomById(spaceId);
 
     final space = MatrixSpace(
@@ -425,49 +601,66 @@ final class MCRepositoryImpl implements MCRepository {
   Future<Either<MCFailure, List<MatrixRoom>>> getSpaceRooms(
     String spaceId,
   ) async {
-    final spaceHierachie = await _matrixClientManager.client.getSpaceHierarchy(
-      spaceId,
-    );
+    try {
+      final rooms = _matrixClientManager.client.rooms
+          .map((room) {
+            bool isVoiceRoom = room.canJoinGroupCall & false;
 
-    final rooms = spaceHierachie.rooms
-        .map((room) {
-          final isVoiceRoom =
-              room.roomType != null &&
-              room.roomType == 'org.matrix.msc3417.call';
-          if (room.roomId != spaceId) {
-            return MatrixRoom(
-              roomId: room.roomId,
-              name: room.name,
-              topic: room.topic,
-              type: isVoiceRoom ? RoomType.voiceChannel : RoomType.textChannel,
-              isPublic: room.guestCanJoin,
-              parentSpaceId: spaceId,
-            );
-          }
-        })
-        .whereType<MatrixRoom>()
-        .toList();
+            final createEvent = room.getState(EventTypes.RoomCreate);
 
-    return Right(rooms);
+            if (createEvent != null &&
+                createEvent.content.containsKey('type')) {
+              final roomType = createEvent.content['type'] as String;
+              // 'org.matrix.msc3417.call'
+              if (roomType == 'org.matrix.msc3417.call') {
+                isVoiceRoom = room.canJoinGroupCall & true;
+              }
+            }
+
+            if (room.id != spaceId &&
+                room.spaceParents.any((parent) => parent.roomId == spaceId)) {
+              return MatrixRoom(
+                roomId: room.id,
+                name: room.name,
+                topic: room.topic,
+                type: isVoiceRoom
+                    ? RoomType.voiceChannel
+                    : RoomType.textChannel,
+                isPublic: room.guestAccess == GuestAccess.canJoin,
+                parentSpaceId: spaceId,
+                avatarUrl: room.avatar?.toFilePath(),
+                canHaveCall: isVoiceRoom,
+                isEncrypted: room.encrypted,
+                isMuted: room.isArchived,
+                lastActivity: room.latestEventReceivedTime,
+                lastMessage: room.lastEvent?.content['body'] as String?,
+                memberCount: room.summary.mJoinedMemberCount ?? 0,
+              );
+            }
+          })
+          .whereType<MatrixRoom>()
+          .toList();
+
+      return Right(rooms);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to fetch space rooms: $e'));
+    }
   }
 
   @override
   Future<Either<MCFailure, List<MatrixSpace>>> getSpaces() async {
-    final roomsId = await _matrixClientManager.client.getJoinedRooms();
-
-    final spaces = roomsId
-        .map((roomId) {
-          final room = _matrixClientManager.client.getRoomById(roomId);
-          if (room != null && room.isSpace) {
+    final rooms = _matrixClientManager.client.rooms;
+    _matrixClientManager.logger.log(Level.debug, 'All rooms: $rooms');
+    final spaces = rooms
+        .map((r) {
+          if (r.isSpace) {
             return MatrixSpace(
-              spaceId: roomId,
-              name: room.name,
-              description: room.topic,
-              isPublic: room.isFederated,
+              spaceId: r.id,
+              name: r.name,
+              description: r.topic,
+              isPublic: r.isFederated,
               createdAt: DateTime.now(),
             );
-          } else {
-            return null;
           }
         })
         .whereType<MatrixSpace>()
@@ -478,7 +671,7 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Stream<Either<MCFailure, Map<String, dynamic>>> getSyncStream() {
-    return Stream.error(Left(UnknownFailure(message: 'Not implemented')));
+    return Stream.error(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
@@ -499,43 +692,60 @@ final class MCRepositoryImpl implements MCRepository {
     String userId,
   ) async {
     await _matrixClientManager.client.inviteUser(roomId, userId);
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> joinRoom(String roomId) async {
     await _matrixClientManager.client.joinRoom(roomId);
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> joinSpace(String spaceId) async {
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> leaveRoom(String roomId) async {
     await _matrixClientManager.client.leaveRoom(roomId);
-    return Right(true);
+    return const Right(true);
   }
 
   @override
   Future<Either<MCFailure, bool>> leaveSpace(String spaceId) async {
-    return Right(true);
+    return const Right(true);
   }
 
   @override
-  Future<Either<MCFailure, bool>> login({
+  Future<Either<MCFailure, MCUser>> login({
     required String username,
     required String password,
+    String? serverUrl,
   }) async {
     try {
-      await _matrixClientManager.client.login(
+      if (serverUrl != null && serverUrl.isNotEmpty) {
+        await _matrixClientManager.client.checkHomeserver(Uri.parse(serverUrl));
+      }
+      final loginResponse = await _matrixClientManager.client.login(
         LoginType.mLoginPassword,
         password: password,
         identifier: AuthenticationUserIdentifier(user: username),
       );
-      return Right(true);
+
+      final user = await _matrixClientManager.client.getUserProfile(
+        loginResponse.userId,
+      );
+
+      return Right(
+        MCUser(
+          displayName: user.displayname,
+          userId: loginResponse.userId,
+          avatarUrl: user.avatarUrl?.toFilePath(),
+          accessToken: loginResponse.accessToken,
+          refreshToken: loginResponse.refreshToken,
+        ),
+      );
     } catch (e) {
       return Left(AuthenticationFailure(message: 'Login failed: $e'));
     }
@@ -543,8 +753,13 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Future<Either<MCFailure, bool>> logout() async {
-    await _matrixClientManager.client.logout();
-    return Right(true);
+    try {
+      await _matrixClientManager.store.clear();
+      await _matrixClientManager.client.logout();
+      return const Right(true);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Logout failed: $e'));
+    }
   }
 
   @override
@@ -559,9 +774,9 @@ final class MCRepositoryImpl implements MCRepository {
     );
 
     if (result.accessToken == null) {
-      return Left(AuthenticationFailure(message: 'Registration failed'));
+      return const Left(AuthenticationFailure(message: 'Registration failed'));
     }
-    return Right(true);
+    return const Right(true);
   }
 
   @override
@@ -572,7 +787,7 @@ final class MCRepositoryImpl implements MCRepository {
   }) async {
     final txnId = CryptoRNG().generate().toString();
     await _matrixClientManager.client.redactEvent(roomId, eventId, txnId);
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
@@ -583,7 +798,7 @@ final class MCRepositoryImpl implements MCRepository {
     final space = _matrixClientManager.client.getRoomById(spaceId);
     final room = _matrixClientManager.client.getRoomById(roomId);
     if (space == null || room == null) {
-      return Left(RoomFailure(message: 'Space or Room not found'));
+      return const Left(RoomFailure(message: 'Space or Room not found'));
     }
 
     try {
@@ -603,7 +818,7 @@ final class MCRepositoryImpl implements MCRepository {
         {},
       );
 
-      return Right(true);
+      return const Right(true);
     } catch (e) {
       return Left(
         UnknownFailure(message: 'Failed to remove room from space: $e'),
@@ -617,7 +832,7 @@ final class MCRepositoryImpl implements MCRepository {
     String? roomId,
     int limit = 20,
   }) async {
-    return Left(UnknownFailure(message: 'Failed to search messages'));
+    return const Left(UnknownFailure(message: 'Failed to search messages'));
   }
 
   @override
@@ -637,7 +852,7 @@ final class MCRepositoryImpl implements MCRepository {
         ),
       ]);
     }
-    return Left(UnknownFailure(message: 'Failed to search rooms'));
+    return const Left(UnknownFailure(message: 'Failed to search rooms'));
   }
 
   @override
@@ -645,7 +860,7 @@ final class MCRepositoryImpl implements MCRepository {
     required String query,
     int limit = 20,
   }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
@@ -655,7 +870,7 @@ final class MCRepositoryImpl implements MCRepository {
     required String fileName,
     String type = MessageTypes.File,
   }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
@@ -664,7 +879,6 @@ final class MCRepositoryImpl implements MCRepository {
     required String content,
     String msgtype = MessageTypes.Text,
     String eventType = EventTypes.Message,
-    String? replyToEventId,
   }) async {
     final transactionId = CryptoRNG().generate().toString();
     final result = await _matrixClientManager.client.sendMessage(
@@ -694,22 +908,22 @@ final class MCRepositoryImpl implements MCRepository {
     String roomId,
     bool isTyping,
   ) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
   Future<Either<MCFailure, bool>> setPresence(UserPresence presence) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
   Future<Either<MCFailure, bool>> startSync() {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
   Future<Either<MCFailure, bool>> stopSync() {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
@@ -717,7 +931,7 @@ final class MCRepositoryImpl implements MCRepository {
     String? displayName,
     String? avatarUrl,
   }) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
   @override
@@ -726,111 +940,60 @@ final class MCRepositoryImpl implements MCRepository {
     required String fileName,
     String? mimeType,
   }) {
-    return Future.value(Left(UnknownFailure(message: 'Not implemented')));
+    return Future.value(const Left(UnknownFailure(message: 'Not implemented')));
   }
 
   @override
   Future<Either<MCFailure, bool>> verifyDevice(String userId, String deviceId) {
-    return Future.value(Right(true));
+    return Future.value(const Right(true));
   }
 
-  Future<MCMessageEvent?> _mapMessageEvent(
-    MatrixEvent event,
-    String roomId,
-    MatrixFile? file,
-  ) async {
-    final eventType = (event.content['msgtype'] as String?);
-    final senderName = await _matrixClientManager.client.getUserProfile(
-      event.senderId,
-    );
+  @override
+  Future<Either<MCFailure, bool>> setServer(String serverUrl) async {
+    try {
+      await _matrixClientManager.client.checkHomeserver(Uri.parse(serverUrl));
+      return const Right(true);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to set server: $e'));
+    }
+  }
 
-    switch (eventType) {
-      case MessageTypes.Text:
-        {
-          final content = event.content['body'] as String? ?? '';
-          return MCMessageEvent(
-            eventTypes: EventTypes.Message,
-            eventId: event.eventId,
-            senderDisplayName: senderName.displayname,
-            roomId: roomId,
-            senderId: event.senderId,
-            msgtype: eventType!,
-            body: content,
-            timestamp: event.originServerTs,
-            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
-          );
-        }
-      case MessageTypes.Image:
-        {
-          final info = event.content['info'] as Map<String, dynamic>? ?? {};
-          final thumbnailInfo =
-              info['thumbnail_info'] as Map<String, dynamic>? ?? {};
+  @override
+  Future<Either<MCFailure, MatrixRoom>> updateRoom(MatrixRoom room) async {
+    final existingRoom = _matrixClientManager.client.getRoomById(room.roomId);
+    if (existingRoom == null) {
+      return const Left(RoomFailure(message: 'Room not found'));
+    }
+    try {
+      if (room.name != null && room.name != existingRoom.name) {
+        existingRoom.setName(room.name!);
+      }
+      if (room.topic != null && room.topic != existingRoom.topic) {
+        existingRoom.setDescription(room.topic!);
+      }
 
-          return MCImageEvent(
-            height: thumbnailInfo['h'] as int? ?? 0,
-            width: thumbnailInfo['w'] as int? ?? 0,
-            mimeType: thumbnailInfo['mimetype'] as String? ?? '',
-            eventId: event.eventId,
-            senderDisplayName: senderName.displayname,
-            roomId: roomId,
-            senderId: event.senderId,
-            msgtype: eventType!,
-            timestamp: event.originServerTs,
-            file: file!,
-            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
-          );
-        }
-      case MessageTypes.File:
-        {
-          final content = event.content['body'] as String? ?? '';
-          return MCMessageEvent(
-            eventTypes: EventTypes.Message,
-            eventId: event.eventId,
-            senderDisplayName: senderName.displayname,
-            roomId: roomId,
-            senderId: event.senderId,
-            msgtype: eventType!,
-            body: content,
-            timestamp: event.originServerTs,
-            file: file,
-            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
-          );
-        }
-      case MessageTypes.Audio:
-        {
-          final content = event.content['body'] as String? ?? '';
-          return MCMessageEvent(
-            eventTypes: EventTypes.Message,
-            eventId: event.eventId,
-            senderDisplayName: senderName.displayname,
-            roomId: roomId,
-            senderId: event.senderId,
-            msgtype: eventType!,
-            body: content,
-            timestamp: event.originServerTs,
-            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
-          );
-        }
-      case MessageTypes.Video:
-        {
-          final content = event.content['body'] as String? ?? '';
-          return MCMessageEvent(
-            eventTypes: EventTypes.Message,
-            eventId: event.eventId,
-            senderDisplayName: senderName.displayname,
-            roomId: roomId,
-            senderId: event.senderId,
-            msgtype: eventType!,
-            body: content,
-            timestamp: event.originServerTs,
-            isCurrentUser: event.senderId == _matrixClientManager.client.userID,
-            file: file,
-          );
-        }
-      default:
-        {
-          return null;
-        }
+      if (room.isPublic != existingRoom.isFederated) {
+        existingRoom.setGuestAccess(
+          room.isPublic ? GuestAccess.canJoin : GuestAccess.forbidden,
+        );
+      }
+
+      if (room.isEncrypted) {
+        existingRoom.enableEncryption();
+      }
+
+      final updatedRoom = MatrixRoom(
+        roomId: room.roomId,
+        name: room.name ?? existingRoom.name,
+        topic: room.topic ?? existingRoom.topic,
+        type: room.type,
+        isPublic: room.isPublic,
+        parentSpaceId: room.parentSpaceId,
+      );
+
+      return Right(updatedRoom);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to update room: $e'));
     }
   }
 }

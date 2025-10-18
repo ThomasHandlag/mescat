@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_bubble.dart';
+import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 
 class MessageList extends StatefulWidget {
   final List<MCMessageEvent> messages;
@@ -19,11 +21,27 @@ class MessageList extends StatefulWidget {
 class _MessageListState extends State<MessageList> {
   final ScrollController _scrollController = ScrollController();
 
+  bool _isTop = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
+    _scrollController.addListener(() {
+      if (_scrollController.position.atEdge) {
+        if (_scrollController.position.pixels == 0) {
+          if (!_isTop) {
+            setState(() {
+              _isTop = true;
+            });
+          }
+        } else {
+          if (_isTop) {
+            setState(() {
+              _isTop = false;
+            });
+          }
+        }
+      }
     });
   }
 
@@ -53,22 +71,9 @@ class _MessageListState extends State<MessageList> {
     }
   }
 
-  // void _handleSendMessage(String message, List<String>? attachments) {
-  //   if (message.trim().isEmpty &&
-  //       (attachments == null || attachments.isEmpty)) {
-  //     return;
-  //   }
-
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     if (_scrollController.hasClients) {
-  //       _scrollController.animateTo(
-  //         _scrollController.position.maxScrollExtent,
-  //         duration: const Duration(milliseconds: 300),
-  //         curve: Curves.easeOut,
-  //       );
-  //     }
-  //   });
-  // }
+  void _loadMoreMessages() {
+    context.read<RoomBloc>().add(const LoadMoreMessages());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,23 +110,85 @@ class _MessageListState extends State<MessageList> {
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: widget.messages.length,
-      itemBuilder: (context, index) {
-        final message = widget.messages[index];
-        final previousMessage = index > 0 ? widget.messages[index - 1] : null;
-        final showSender =
-            previousMessage?.senderId != message.senderId ||
-            (message.timestamp
-                    .difference(previousMessage?.timestamp ?? DateTime.now())
-                    .inMinutes
-                    .abs() >
-                5);
+    return Stack(
+      children: [
+        ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          itemCount: widget.messages.length,
+          itemBuilder: (context, index) {
+            final message = widget.messages[index];
+            final previousMessage = index > 0
+                ? widget.messages[index - 1]
+                : null;
+            final showSender =
+                previousMessage?.senderId != message.senderId ||
+                (message.timestamp
+                        .difference(
+                          previousMessage?.timestamp ?? DateTime.now(),
+                        )
+                        .inMinutes
+                        .abs() >
+                    5);
 
-        return MessageBubble(message: message, showSender: showSender);
-      },
+            return MessageBubble(message: message, showSender: showSender);
+          },
+        ),
+        if (MCEvent.endToken != null && _isTop)
+          Positioned(
+            top: 8,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: BlocBuilder<RoomBloc, RoomState>(
+                builder: (context, state) {
+                  if (state is RoomLoaded) {
+                    if (state.isLoadingMessages) {
+                      return const CircularProgressIndicator();
+                    }
+
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => _loadMoreMessages(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF505050),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withAlpha(0x1A),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'Load more messages',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withAlpha(0xB3),
+                                ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

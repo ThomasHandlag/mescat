@@ -1,5 +1,13 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/features/chat/presentation/widgets/input_action_banner.dart';
+import 'package:mescat/features/chat/presentation/widgets/reaction_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 
 typedef MessageSendCallback = void Function(String content, String type);
 
@@ -25,6 +33,7 @@ class _MessageInputState extends State<MessageInput> {
 
   bool _isTyping = false;
   final List<String> _attachments = [];
+  int _lines = 1;
 
   @override
   void initState() {
@@ -42,10 +51,16 @@ class _MessageInputState extends State<MessageInput> {
 
   void _onMessageChanged() {
     final hasText = _messageController.text.trim().isNotEmpty;
+    final text = _messageController.text;
+    setState(() {
+      _lines = '\n'.allMatches(text).length + 1;
+    });
     if (hasText != _isTyping) {
-      setState(() {
-        _isTyping = hasText;
-      });
+      if (mounted) {
+        setState(() {
+          _isTyping = hasText;
+        });
+      }
     }
   }
 
@@ -59,6 +74,26 @@ class _MessageInputState extends State<MessageInput> {
         _isTyping = false;
       });
     }
+  }
+
+  void _editMessage(String eventId) {
+    context.read<RoomBloc>().add(
+      EditMessage(
+        roomId: widget.roomId,
+        eventId: eventId,
+        newContent: _messageController.text.trim(),
+      ),
+    );
+  }
+
+  void _replyToMessage(String eventId) {
+    context.read<RoomBloc>().add(
+      ReplyMessage(
+        roomId: widget.roomId,
+        content: _messageController.text.trim(),
+        replyToEventId: eventId,
+      ),
+    );
   }
 
   void _removeAttachment(int index) {
@@ -78,16 +113,30 @@ class _MessageInputState extends State<MessageInput> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
     return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-      ),
+      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          BlocBuilder<RoomBloc, RoomState>(
+            builder: (context, state) {
+              if (state is RoomLoaded &&
+                  state.inputAction.action != InputAction.none) {
+                return InputActionBanner(
+                  inputAction: state.inputAction,
+                  onCancel: () {
+                    context.read<RoomBloc>().add(
+                      const SetInputAction(action: InputAction.none),
+                    );
+                    _messageController.clear();
+                    _focusNode.unfocus();
+                  },
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           // Attachments preview
           if (_attachments.isNotEmpty) ...[
             _buildAttachmentsPreview(),
@@ -105,40 +154,54 @@ class _MessageInputState extends State<MessageInput> {
               children: [
                 // Attach file button
                 _buildActionButton(
-                  icon: Icons.add,
-                  onPressed: () {},
+                  icon: Icons.attach_file_outlined,
+                  onPressed: () => _pickFile(),
                   tooltip: 'Attach file',
                 ),
-
                 // Text input
                 Expanded(
                   child: Container(
-                    constraints: BoxConstraints(maxHeight: 20 * 24.0),
-                    child: TextField(
-                      controller: _messageController,
-                      focusNode: _focusNode,
-                      maxLines: null,
-                      maxLength: 500,
-                      textInputAction: TextInputAction.newline,
-                      keyboardType: TextInputType.multiline,
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: InputDecoration(
-                        hintText: _placeholderText,
-                        hintStyle: TextStyle(
-                          color: colorScheme.onSurface.withAlpha(180),
-                          fontSize: 16,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        counterText: '', // Hide character counter
-                      ),
-                      style: const TextStyle(fontSize: 16),
-                      onChanged: (text) {
-                        // Handle typing indicator here if needed
+                    constraints: const BoxConstraints(
+                      maxHeight: UIConstraints.mMessageInputHeight + (10 * 16),
+                    ),
+                    height:
+                        (_lines > 1 ? (_lines * 16) : 0) +
+                        UIConstraints.mMessageInputHeight,
+                    child: BlocListener<RoomBloc, RoomState>(
+                      listener: (context, state) {
+                        if (state is RoomLoaded &&
+                            state.inputAction.action != InputAction.none) {
+                          if (state.inputAction.action == InputAction.edit) {
+                            _messageController.text =
+                                state.inputAction.initialContent ?? '';
+                          }
+                          _focusNode.requestFocus();
+                        }
                       },
+                      child: TextField(
+                        controller: _messageController,
+                        expands: true,
+                        focusNode: _focusNode,
+                        maxLines: null,
+                        maxLength: 500,
+                        textInputAction: TextInputAction.newline,
+                        keyboardType: TextInputType.multiline,
+                        onSubmitted: (_) => _sendMessage(),
+                        textAlignVertical: TextAlignVertical.center,
+                        decoration: InputDecoration(
+                          hintText: _placeholderText,
+                          hintStyle: TextStyle(
+                            color: colorScheme.onSurface.withAlpha(180),
+                            fontSize: 16,
+                          ),
+                          border: InputBorder.none,
+                          counterText: '', // Hide character counter
+                        ),
+                        style: const TextStyle(fontSize: 16),
+                        onChanged: (text) {
+                          // Handle typing indicator here if needed
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -146,7 +209,7 @@ class _MessageInputState extends State<MessageInput> {
                 // Emoji button
                 _buildActionButton(
                   icon: Icons.emoji_emotions_outlined,
-                  onPressed: () {},
+                  onPressed: () => _showEmojiPicker(context),
                   tooltip: 'Add emoji',
                 ),
 
@@ -210,16 +273,37 @@ class _MessageInputState extends State<MessageInput> {
 
     return Padding(
       padding: const EdgeInsets.all(4),
-      child: IconButton(
-        icon: const Icon(Icons.send_rounded, size: 20),
-        onPressed: _sendMessage,
-        tooltip: 'Send message',
-        color: canSend
-            ? colorScheme.primary
-            : colorScheme.onSurface.withAlpha(100),
-        hoverColor: colorScheme.primary.withAlpha(60),
-        splashRadius: 20,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      child: BlocBuilder<RoomBloc, RoomState>(
+        builder: (context, state) {
+          return IconButton(
+            icon: const Icon(Icons.send_rounded, size: 20),
+            onPressed: canSend
+                ? () {
+                    if (state is RoomLoaded &&
+                        state.inputAction.action == InputAction.edit &&
+                        state.inputAction.targetEventId != null) {
+                      _editMessage(state.inputAction.targetEventId!);
+                    } else if (state is RoomLoaded &&
+                        state.inputAction.action == InputAction.reply &&
+                        state.inputAction.targetEventId != null) {
+                      _replyToMessage(state.inputAction.targetEventId!);
+                    } else {
+                      _sendMessage();
+                    }
+                    context.read<RoomBloc>().add(
+                      const SetInputAction(action: InputAction.none),
+                    );
+                  }
+                : null,
+            tooltip: 'Send message',
+            color: canSend
+                ? colorScheme.primary
+                : colorScheme.onSurface.withAlpha(100),
+            hoverColor: colorScheme.primary.withAlpha(60),
+            splashRadius: 20,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          );
+        },
       ),
     );
   }
@@ -325,99 +409,55 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   void _showEmojiPicker(BuildContext context) {
-    // TODO: Implement emoji picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Emoji picker coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _startVoiceRecording() {
-    // TODO: Implement voice recording
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Voice messages coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _pickImage() {
-    // TODO: Implement image picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Image sharing coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _pickVideo() {
-    // TODO: Implement video picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Video sharing coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _pickFile() {
-    // TODO: Implement file picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('File sharing coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _shareLocation() {
-    // TODO: Implement location sharing
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Location sharing coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-}
-
-class _AttachmentOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _AttachmentOption({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          constraints: const BoxConstraints(maxWidth: 300, maxHeight: 400),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ReactionPicker(onReactionSelected: onReactionSelected),
             ),
-            child: Icon(icon, color: color, size: 28),
           ),
-          const SizedBox(height: 8),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
+        );
+      },
     );
   }
+
+  void onReactionSelected(String emoji) {
+    // Insert the selected emoji at the current cursor position
+    final text = _messageController.text;
+    final selection = _messageController.selection;
+    if (selection.isValid) {
+      final newText = text.replaceRange(selection.start, selection.end, emoji);
+      final newSelectionIndex = selection.start + emoji.length;
+      _messageController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newSelectionIndex),
+      );
+    } else {
+      // If no valid selection, append to the end
+      _messageController.text += emoji;
+      _messageController.selection = TextSelection.collapsed(
+        offset: _messageController.text.length,
+      );
+    }
+  }
+
+  void _startVoiceRecording() {}
+
+  void _pickFile() async {
+    final filePickerResult = await FilePicker.platform.pickFiles();
+    if (filePickerResult != null && filePickerResult.files.isNotEmpty) {
+      final filePath = filePickerResult.files.first.path;
+      if (filePath != null) {
+        setState(() {
+          _attachments.add(filePath);
+        });
+      }
+    }
+  }
+
+  // void _shareLocation() {}
 }

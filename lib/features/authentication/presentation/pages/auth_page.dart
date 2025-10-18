@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/auth_bloc.dart';
-import '../widgets/login_form.dart';
-import '../widgets/register_form.dart';
+import 'package:mescat/features/authentication/presentation/widgets/login_form.dart';
+import 'package:mescat/features/authentication/presentation/widgets/register_form.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -31,102 +29,56 @@ class _AuthPageState extends State<AuthPage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary.withAlpha(0x1A),
-              Theme.of(context).colorScheme.secondary.withAlpha(0x1A),
+              Color.fromARGB(255, 58, 123, 213),
+              Color.fromARGB(255, 0, 210, 255),
             ],
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App branding
-              Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            constraints: const BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(6.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(0x1A),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 80,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
                     Text(
-                      'Mescat',
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Secure messaging with Matrix protocol',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha(0xB3),
+                      "Login to Mescat",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-              ),
-
-              // Tab bar
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 32),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(0x1A),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(25),
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  labelColor: Theme.of(context).colorScheme.onPrimary,
-                  unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
-                  tabs: const [
-                    Tab(text: 'Login'),
-                    Tab(text: 'Register'),
-                  ],
-                ),
-              ),
-
-              // Tab content
-              Expanded(
-                child: BlocListener<AuthBloc, AuthState>(
-                  listener: (context, state) {
-                    if (state is AuthError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                      );
-                    } else if (state is AuthAuthenticated) {
-                      Navigator.of(context).pushReplacementNamed('/home');
-                    }
-                  },
+                SizedBox(
+                  height: 300,
                   child: TabBarView(
                     controller: _tabController,
-                    children: [const LoginForm(), const RegisterForm()],
+                    children: const [LoginForm(), RegisterForm()],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
