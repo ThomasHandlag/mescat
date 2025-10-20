@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
+import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
 import 'package:flutter/material.dart';
 
 class InputActionBanner extends StatelessWidget {
@@ -49,7 +49,7 @@ class InputActionBanner extends StatelessWidget {
           ),
           GestureDetector(
             onTap: () {
-              context.read<RoomBloc>().add(
+              context.read<ChatBloc>().add(
                 const SetInputAction(action: InputAction.none),
               );
               onCancel?.call();

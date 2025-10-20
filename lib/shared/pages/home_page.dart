@@ -6,6 +6,7 @@ import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 import 'package:mescat/features/rooms/presentation/widgets/room_list.dart';
 import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 import 'package:mescat/features/spaces/presentation/widgets/space_sidebar.dart';
+import 'package:mescat/features/voip/presentation/blocs/call_bloc.dart';
 import 'package:mescat/shared/widgets/user_box.dart';
 
 class HomePage extends StatefulWidget {
@@ -50,10 +51,15 @@ class _HomePageState extends State<HomePage> {
                     if (state is! Authenticated) {
                       return const SizedBox.shrink();
                     }
-                    return UserBox(
-                      username: state.user.displayName,
-                      avatarUrl: state.user.avatarUrl,
-                    );
+                    return BlocBuilder<CallBloc, MCCallState>(builder: (context, roomState) {
+                      return UserBox(
+                        username: state.user.displayName,
+                        avatarUrl: state.user.avatarUrl,
+                        joinedVoice: roomState is CallInProgress,
+                        voiceEnabled: roomState is CallInProgress && roomState.voiceOn,
+                        headphonesEnabled: roomState is CallInProgress && roomState.muted,
+                      );
+                    });
                   },
                 ),
               ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/chat/presentation/widgets/call_view.dart';
 import 'package:mescat/features/chat/presentation/widgets/chat_view.dart';
 import 'package:mescat/features/members/presentation/widgets/space_members.dart';
@@ -24,6 +23,15 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<RoomBloc, RoomState>(
+      builder: (context, state) {
+        return Scaffold(appBar: _buildAppBar(state), body: _buildView(state));
+      },
+    );
   }
 
   Widget _buildChatHeader(BuildContext context) {
@@ -61,14 +69,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<RoomBloc, RoomState>(
-      builder: (context, state) {
-        return Scaffold(appBar: _buildAppBar(state), body: _buildView(state));
-      },
-    );
-  }
+  
 
   PreferredSizeWidget? _buildAppBar(RoomState state) {
     if (state is RoomLoaded && state.selectedRoom != null) {

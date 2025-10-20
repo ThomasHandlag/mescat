@@ -1,13 +1,11 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/presentation/widgets/input_action_banner.dart';
 import 'package:mescat/features/chat/presentation/widgets/reaction_picker.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 
 typedef MessageSendCallback = void Function(String content, String type);
 
@@ -77,7 +75,7 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   void _editMessage(String eventId) {
-    context.read<RoomBloc>().add(
+    context.read<ChatBloc>().add(
       EditMessage(
         roomId: widget.roomId,
         eventId: eventId,
@@ -87,7 +85,7 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   void _replyToMessage(String eventId) {
-    context.read<RoomBloc>().add(
+    context.read<ChatBloc>().add(
       ReplyMessage(
         roomId: widget.roomId,
         content: _messageController.text.trim(),
@@ -119,14 +117,14 @@ class _MessageInputState extends State<MessageInput> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          BlocBuilder<RoomBloc, RoomState>(
+          BlocBuilder<ChatBloc, ChatState>(
             builder: (context, state) {
-              if (state is RoomLoaded &&
+              if (state is ChatLoaded &&
                   state.inputAction.action != InputAction.none) {
                 return InputActionBanner(
                   inputAction: state.inputAction,
                   onCancel: () {
-                    context.read<RoomBloc>().add(
+                    context.read<ChatBloc>().add(
                       const SetInputAction(action: InputAction.none),
                     );
                     _messageController.clear();
@@ -167,9 +165,9 @@ class _MessageInputState extends State<MessageInput> {
                     height:
                         (_lines > 1 ? (_lines * 16) : 0) +
                         UIConstraints.mMessageInputHeight,
-                    child: BlocListener<RoomBloc, RoomState>(
+                    child: BlocListener<ChatBloc, ChatState>(
                       listener: (context, state) {
-                        if (state is RoomLoaded &&
+                        if (state is ChatLoaded &&
                             state.inputAction.action != InputAction.none) {
                           if (state.inputAction.action == InputAction.edit) {
                             _messageController.text =
@@ -273,24 +271,24 @@ class _MessageInputState extends State<MessageInput> {
 
     return Padding(
       padding: const EdgeInsets.all(4),
-      child: BlocBuilder<RoomBloc, RoomState>(
+      child: BlocBuilder<ChatBloc, ChatState>(
         builder: (context, state) {
           return IconButton(
             icon: const Icon(Icons.send_rounded, size: 20),
             onPressed: canSend
                 ? () {
-                    if (state is RoomLoaded &&
+                    if (state is ChatLoaded &&
                         state.inputAction.action == InputAction.edit &&
                         state.inputAction.targetEventId != null) {
                       _editMessage(state.inputAction.targetEventId!);
-                    } else if (state is RoomLoaded &&
+                    } else if (state is ChatLoaded &&
                         state.inputAction.action == InputAction.reply &&
                         state.inputAction.targetEventId != null) {
                       _replyToMessage(state.inputAction.targetEventId!);
                     } else {
                       _sendMessage();
                     }
-                    context.read<RoomBloc>().add(
+                    context.read<ChatBloc>().add(
                       const SetInputAction(action: InputAction.none),
                     );
                   }

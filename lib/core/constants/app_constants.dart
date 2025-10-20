@@ -10,6 +10,7 @@ final class Assets {
   static const String imageAsset = 'assets/images';
   static const String iconAsset = 'assets/icons';
   static const String riveAsset = 'assets/rive';
+  static const String audioAsset = 'audios';
 }
 
 final class AnimationConfig {

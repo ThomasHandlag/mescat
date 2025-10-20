@@ -309,7 +309,7 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
     String roomId, {
-    int limit = 100,
+    int limit = 150,
     String? fromToken,
     String? filter,
     String? toToken,
@@ -604,7 +604,7 @@ final class MCRepositoryImpl implements MCRepository {
     try {
       final rooms = _matrixClientManager.client.rooms
           .map((room) {
-            bool isVoiceRoom = room.canJoinGroupCall & false;
+            bool isVoiceRoom = false;
 
             final createEvent = room.getState(EventTypes.RoomCreate);
 
@@ -995,5 +995,42 @@ final class MCRepositoryImpl implements MCRepository {
     } catch (e) {
       return Left(UnknownFailure(message: 'Failed to update room: $e'));
     }
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> startCall({
+    required String roomId,
+    required bool isVideo,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> endCall({required String roomId}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> toggleAudio({required bool isMuted}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> toggleVideo({
+    required bool isCameraOn,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> switchCamera() async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, List<CallParticipant>>> getCallParticipants({
+    required String roomId,
+  }) async {
+    throw UnimplementedError();
   }
 }

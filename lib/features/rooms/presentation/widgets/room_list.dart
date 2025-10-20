@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
 import 'package:mescat/features/rooms/presentation/pages/room_setting_page.dart';
 import 'package:mescat/features/rooms/presentation/widgets/expanse_channel.dart';
 import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
 import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/features/voip/presentation/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 
 class RoomList extends StatelessWidget {
@@ -12,178 +14,182 @@ class RoomList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              children: [
-                BlocBuilder<SpaceBloc, SpaceState>(
-                  builder: (context, state) {
-                    String spaceName = 'Space Name';
-                    if (state is SpaceLoaded) {
-                      final selectedSpace =
-                          state.spaces.indexWhere(
-                                (space) =>
-                                    space.spaceId == state.selectedSpaceId,
-                              ) !=
-                              -1
-                          ? state.spaces.firstWhere(
-                              (space) => space.spaceId == state.selectedSpaceId,
-                            )
-                          : null;
-                      spaceName = selectedSpace?.name ?? 'Space Name';
-                    }
-                    return Text(
-                      spaceName,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    );
-                  },
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.chevron_right),
-                ),
-              ],
-            ),
-          ),
-
-          // Room list
-          Expanded(
-            child: BlocListener<SpaceBloc, SpaceState>(
-              listener: (context, state) {
-                if (state is SpaceLoaded) {
-                  context.read<RoomBloc>().add(
-                    LoadRooms(spaceId: state.selectedSpaceId),
-                  );
-                }
-              },
-              child: BlocBuilder<RoomBloc, RoomState>(
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: [
+              BlocBuilder<SpaceBloc, SpaceState>(
                 builder: (context, state) {
-                  if (state is RoomLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                  String spaceName = 'Space Name';
+                  if (state is SpaceLoaded) {
+                    final selectedSpace =
+                        state.spaces.indexWhere(
+                              (space) => space.spaceId == state.selectedSpaceId,
+                            ) !=
+                            -1
+                        ? state.spaces.firstWhere(
+                            (space) => space.spaceId == state.selectedSpaceId,
+                          )
+                        : null;
+                    spaceName = selectedSpace?.name ?? 'Space Name';
                   }
+                  return Text(
+                    spaceName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  );
+                },
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+        ),
 
-                  if (state is RoomLoaded) {
-                    if (state.rooms.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 64,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withAlpha(0x4D),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No channels yet',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withAlpha(0xAD),
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Create your first channel',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withAlpha(0x4F),
-                                  ),
-                            ),
-                          ],
-                        ),
+        // Room list
+        Expanded(
+          child: BlocListener<SpaceBloc, SpaceState>(
+            listener: (context, state) {
+              if (state is SpaceLoaded) {
+                context.read<RoomBloc>().add(
+                  LoadRooms(
+                    spaceId: state.selectedSpaceId,
+                    onComplete: (room) {
+                      context.read<ChatBloc>().add(
+                        LoadMessages(roomId: room.roomId),
                       );
-                    }
+                    },
+                  ),
+                );
+              }
+            },
+            child: BlocBuilder<RoomBloc, RoomState>(
+              builder: (context, state) {
+                if (state is RoomLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                    // Group rooms by type
-                    final textChannels = state.rooms
-                        .where((r) => r.type == RoomType.textChannel)
-                        .toList();
-                    final voiceChannels = state.rooms
-                        .where((r) => r.type == RoomType.voiceChannel)
-                        .toList();
-                    final directMessages = state.rooms
-                        .where((r) => r.type == RoomType.directMessage)
-                        .toList();
-
-                    return ListView(
-                      children: [
-                        // Text channels
-                        if (textChannels.isNotEmpty)
-                          _buildChannelExpansionTile(
-                            'Text Channels',
-                            textChannels,
-                            state.selectedRoomId,
-                            context,
-                          ),
-
-                        // Voice channels
-                        if (voiceChannels.isNotEmpty)
-                          _buildChannelExpansionTile(
-                            'Voice Channels',
-                            voiceChannels,
-                            state.selectedRoomId,
-                            context,
-                          ),
-
-                        // Direct messages
-                        if (directMessages.isNotEmpty)
-                          _buildChannelExpansionTile(
-                            'Direct Messages',
-                            directMessages,
-                            state.selectedRoomId,
-                            context,
-                          ),
-                      ],
-                    );
-                  }
-
-                  if (state is RoomError) {
+                if (state is RoomLoaded) {
+                  if (state.rooms.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Theme.of(context).colorScheme.error,
+                            Icons.chat_bubble_outline,
+                            size: 64,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withAlpha(0x4D),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No channels yet',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withAlpha(0xAD),
+                                ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Error loading channels',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              context.read<RoomBloc>().add(const LoadRooms());
-                            },
-                            child: const Text('Retry'),
+                            'Create your first channel',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withAlpha(0x4F),
+                                ),
                           ),
                         ],
                       ),
                     );
                   }
 
-                  return const SizedBox.shrink();
-                },
-              ),
+                  // Group rooms by type
+                  final textChannels = state.rooms
+                      .where((r) => r.type == RoomType.textChannel)
+                      .toList();
+                  final voiceChannels = state.rooms
+                      .where((r) => r.type == RoomType.voiceChannel)
+                      .toList();
+                  final directMessages = state.rooms
+                      .where((r) => r.type == RoomType.directMessage)
+                      .toList();
+
+                  return ListView(
+                    children: [
+                      // Text channels
+                      if (textChannels.isNotEmpty)
+                        _buildChannelExpansionTile(
+                          'Text Channels',
+                          textChannels,
+                          state.selectedRoomId,
+                          context,
+                        ),
+
+                      // Voice channels
+                      if (voiceChannels.isNotEmpty)
+                        _buildChannelExpansionTile(
+                          'Voice Channels',
+                          voiceChannels,
+                          state.selectedRoomId,
+                          context,
+                        ),
+
+                      // Direct messages
+                      if (directMessages.isNotEmpty)
+                        _buildChannelExpansionTile(
+                          'Direct Messages',
+                          directMessages,
+                          state.selectedRoomId,
+                          context,
+                        ),
+                    ],
+                  );
+                }
+
+                if (state is RoomError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Error loading channels',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<RoomBloc>().add(const LoadRooms());
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return const SizedBox.shrink();
+              },
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -226,9 +232,21 @@ class RoomList extends StatelessWidget {
     final isSelected = room.roomId == selectedRoomId;
 
     return GestureDetector(
-      onTap: () => context.read<RoomBloc>().add(
-        SelectRoom(room.roomId, roomType: room.type),
-      ),
+      onTap: () {
+        context.read<RoomBloc>().add(
+          SelectRoom(
+            room.roomId,
+            roomType: room.type,
+            onComplete: ({required roomId}) {
+              if (room.canHaveCall) {
+                context.read<CallBloc>().add(JoinCall(roomId: roomId));
+              } else {
+                context.read<ChatBloc>().add(LoadMessages(roomId: roomId));
+              }
+            },
+          ),
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(

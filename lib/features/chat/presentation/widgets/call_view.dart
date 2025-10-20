@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:mescat/features/voip/presentation/blocs/call_bloc.dart';
 
 class CallView extends StatefulWidget {
   const CallView({super.key});
@@ -20,6 +23,10 @@ class _CallViewState extends State<CallView> {
         setState(() => _isHovered = false);
       },
       child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Stack(
           children: [
             _buildVideoCallView(),
@@ -33,24 +40,31 @@ class _CallViewState extends State<CallView> {
   Widget _buildVideoCallView() {
     return Container(
       padding: const EdgeInsets.all(8.0),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.0,
-          mainAxisSpacing: 4.0,
-          crossAxisSpacing: 4.0,
-        ),
-        itemCount: 4, // Example: 4 participants
-        itemBuilder: (context, index) {
-          return Container(
-            color: Colors.black,
-            child: Center(
-              child: Text(
-                'Participant ${index + 1}',
-                style: const TextStyle(color: Colors.white),
+      child: BlocBuilder<CallBloc, MCCallState>(
+        builder: (context, state) {
+          if (state is CallInProgress) {
+            return GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.0,
+                mainAxisSpacing: 4.0,
+                crossAxisSpacing: 4.0,
+                mainAxisExtent: 300,
               ),
-            ),
-          );
+              itemCount: state.renders.length, // Example: 4 participants
+              itemBuilder: (context, index) {
+                return Container(
+                  color: Colors.black,
+                  child: RTCVideoView(
+                    state.renders.values.elementAt(index),
+                    objectFit:
+                        RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+                  ),
+                );
+              },
+            );
+          }
+          return const Center(child: Text('No active call'));
         },
       ),
     );
@@ -105,7 +119,10 @@ class _CallViewState extends State<CallView> {
                 IconButton(icon: const Icon(Icons.mic), onPressed: () {}),
                 IconButton(icon: const Icon(Icons.videocam), onPressed: () {}),
                 IconButton(icon: const Icon(Icons.call_end), onPressed: () {}),
-                IconButton(icon: const Icon(Icons.screen_share), onPressed: () {}),
+                IconButton(
+                  icon: const Icon(Icons.screen_share),
+                  onPressed: () {},
+                ),
               ],
             ),
           ),

@@ -20,7 +20,12 @@ final class EventPusher {
       final user = await clientManager.client.getUserProfile(event.senderId);
 
       if (event.type == EventTypes.Message) {
-        final messageType = event.content['msgtype'] as String;
+        final messageType = event.content['msgtype'] as String?;
+
+        if (messageType == null) {
+          _logger.log(Level.warning, "Unknown message type in event: $event");
+          return;
+        }
 
         RepliedEventContent? repliedEventContent;
         if (event.relationshipType == RelationshipTypes.reply) {

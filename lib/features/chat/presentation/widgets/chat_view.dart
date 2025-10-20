@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/constants/app_constants.dart';
-import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
 import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_input.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_list.dart';
@@ -13,11 +13,8 @@ class ChatView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<RoomBloc, RoomState>(
       builder: (context, state) {
-        if (state is RoomLoaded && state.selectedRoomId != null) {
-          final selectedRoom = state.rooms.firstWhere(
-            (room) => room.roomId == state.selectedRoomId,
-            orElse: () => const MatrixRoom(roomId: ''),
-          );
+        if (state is RoomLoaded && state.selectedRoom != null) {
+          final selectedRoom = state.selectedRoom!;
 
           if (selectedRoom.roomId.isEmpty) {
             return _buildEmptyState(context, 'Room not found');
@@ -26,9 +23,21 @@ class ChatView extends StatelessWidget {
           return Column(
             children: [
               Expanded(
-                child: MessageList(
-                  messages: state.messages,
-                  isLoading: state.isLoadingMessages,
+                child: BlocBuilder<ChatBloc, ChatState>(
+                  builder: (context, chatState) {
+                    if (chatState is ChatLoaded &&
+                        chatState.selectedRoomId == selectedRoom.roomId) {
+                      return MessageList(
+                        messages: chatState.messages,
+                        isLoading: chatState.isLoadingMessages,
+                      );
+                    }
+                    if (chatState is ChatLoading) {
+                      return const MessageList(messages: [], isLoading: true);
+                    }
+
+                    return const MessageList(messages: []);
+                  },
                 ),
               ),
               Padding(
@@ -41,7 +50,7 @@ class ChatView extends StatelessWidget {
                   roomId: selectedRoom.roomId,
                   channelName: selectedRoom.name,
                   onSendMessage: (content, type) {
-                    context.read<RoomBloc>().add(
+                    context.read<ChatBloc>().add(
                       SendMessage(
                         roomId: selectedRoom.roomId,
                         content: content,

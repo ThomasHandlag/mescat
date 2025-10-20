@@ -10,37 +10,38 @@ abstract class RoomEvent extends Equatable {
 
 class LoadRooms extends RoomEvent {
   final String? spaceId;
+  final Function(MatrixRoom room)? onComplete;
 
-  const LoadRooms({this.spaceId});
+  const LoadRooms({this.spaceId, this.onComplete});
 
   @override
   List<Object?> get props => [spaceId];
 }
 
-class LoadMessages extends RoomEvent {
-  final String roomId;
-  final int limit;
+// class LoadMessages extends RoomEvent {
+//   final String roomId;
+//   final int limit;
 
-  const LoadMessages({required this.roomId, this.limit = 50});
+//   const LoadMessages({required this.roomId, this.limit = 50});
 
-  @override
-  List<Object?> get props => [roomId, limit];
-}
+//   @override
+//   List<Object?> get props => [roomId, limit];
+// }
 
-class SendMessage extends RoomEvent {
-  final String roomId;
-  final String content;
-  final String type;
+// class SendMessage extends RoomEvent {
+//   final String roomId;
+//   final String content;
+//   final String type;
 
-  const SendMessage({
-    required this.roomId,
-    required this.content,
-    this.type = MessageTypes.Text,
-  });
+//   const SendMessage({
+//     required this.roomId,
+//     required this.content,
+//     this.type = MessageTypes.Text,
+//   });
 
-  @override
-  List<Object?> get props => [roomId, content, type];
-}
+//   @override
+//   List<Object?> get props => [roomId, content, type];
+// }
 
 class CreateRoom extends RoomEvent {
   final String name;
@@ -82,116 +83,117 @@ class LeaveRoom extends RoomEvent {
 class SelectRoom extends RoomEvent {
   final String? roomId;
   final RoomType? roomType;
+  final Function({required String roomId})? onComplete;
 
-  const SelectRoom(this.roomId, {this.roomType});
+  const SelectRoom(this.roomId, {this.roomType, this.onComplete});
 
   @override
   List<Object?> get props => [roomId, roomType];
 }
 
-class AddReaction extends RoomEvent {
-  final String roomId;
-  final String eventId;
-  final String emoji;
+// class AddReaction extends RoomEvent {
+//   final String roomId;
+//   final String eventId;
+//   final String emoji;
 
-  const AddReaction({
-    required this.roomId,
-    required this.eventId,
-    required this.emoji,
-  });
+//   const AddReaction({
+//     required this.roomId,
+//     required this.eventId,
+//     required this.emoji,
+//   });
 
-  @override
-  List<Object?> get props => [roomId, eventId, emoji];
-}
+//   @override
+//   List<Object?> get props => [roomId, eventId, emoji];
+// }
 
-class RemoveReaction extends RoomEvent {
-  final String roomId;
-  final String eventId;
-  final String emoji;
+// class RemoveReaction extends RoomEvent {
+//   final String roomId;
+//   final String eventId;
+//   final String emoji;
 
-  const RemoveReaction({
-    required this.roomId,
-    required this.eventId,
-    required this.emoji,
-  });
+//   const RemoveReaction({
+//     required this.roomId,
+//     required this.eventId,
+//     required this.emoji,
+//   });
 
-  @override
-  List<Object?> get props => [roomId, eventId, emoji];
-}
+//   @override
+//   List<Object?> get props => [roomId, eventId, emoji];
+// }
 
-class DeleteMessage extends RoomEvent {
-  final String roomId;
-  final String eventId;
+// class DeleteMessage extends RoomEvent {
+//   final String roomId;
+//   final String eventId;
 
-  const DeleteMessage({required this.roomId, required this.eventId});
+//   const DeleteMessage({required this.roomId, required this.eventId});
 
-  @override
-  List<Object?> get props => [roomId, eventId];
-}
+//   @override
+//   List<Object?> get props => [roomId, eventId];
+// }
 
-class EditMessage extends RoomEvent {
-  final String roomId;
-  final String eventId;
-  final String newContent;
+// class EditMessage extends RoomEvent {
+//   final String roomId;
+//   final String eventId;
+//   final String newContent;
 
-  const EditMessage({
-    required this.roomId,
-    required this.eventId,
-    required this.newContent,
-  });
+//   const EditMessage({
+//     required this.roomId,
+//     required this.eventId,
+//     required this.newContent,
+//   });
 
-  @override
-  List<Object?> get props => [roomId, eventId, newContent];
-}
+//   @override
+//   List<Object?> get props => [roomId, eventId, newContent];
+// }
 
-class ReplyMessage extends RoomEvent {
-  final String roomId;
-  final String content;
-  final String replyToEventId;
-  final String type;
+// class ReplyMessage extends RoomEvent {
+//   final String roomId;
+//   final String content;
+//   final String replyToEventId;
+//   final String type;
 
-  const ReplyMessage({
-    required this.roomId,
-    required this.content,
-    required this.replyToEventId,
-    this.type = MessageTypes.Text,
-  });
+//   const ReplyMessage({
+//     required this.roomId,
+//     required this.content,
+//     required this.replyToEventId,
+//     this.type = MessageTypes.Text,
+//   });
 
-  @override
-  List<Object?> get props => [roomId, content, replyToEventId, type];
-}
+//   @override
+//   List<Object?> get props => [roomId, content, replyToEventId, type];
+// }
 
-class SetInputAction extends RoomEvent {
-  final InputAction action;
-  final String? targetEventId;
-  final String? initialContent;
+// class SetInputAction extends RoomEvent {
+//   final InputAction action;
+//   final String? targetEventId;
+//   final String? initialContent;
 
-  const SetInputAction({
-    required this.action,
-    this.targetEventId,
-    this.initialContent,
-  });
+//   const SetInputAction({
+//     required this.action,
+//     this.targetEventId,
+//     this.initialContent,
+//   });
 
-  @override
-  List<Object?> get props => [action];
-}
+//   @override
+//   List<Object?> get props => [action];
+// }
 
-class LoadMoreMessages extends RoomEvent {
-  final int limit;
-  const LoadMoreMessages({this.limit = 50});
+// class LoadMoreMessages extends RoomEvent {
+//   final int limit;
+//   const LoadMoreMessages({this.limit = 50});
 
-  @override
-  List<Object?> get props => [limit];
-}
+//   @override
+//   List<Object?> get props => [limit];
+// }
 
-class ReceiveMessage extends RoomEvent {
-  final MCMessageEvent message;
+// class ReceiveMessage extends RoomEvent {
+//   final MCMessageEvent message;
 
-  const ReceiveMessage(this.message);
+//   const ReceiveMessage(this.message);
 
-  @override
-  List<Object?> get props => [message];
-}
+//   @override
+//   List<Object?> get props => [message];
+// }
 
 class UpdateRoom extends RoomEvent {
   final MatrixRoom room;
@@ -202,20 +204,20 @@ class UpdateRoom extends RoomEvent {
   List<Object?> get props => [room];
 }
 
-final class MessageReacted extends RoomEvent {
-  final MCReactionEvent event;
+// final class MessageReacted extends RoomEvent {
+//   final MCReactionEvent event;
 
-  const MessageReacted({required this.event});
+//   const MessageReacted({required this.event});
 
-  @override
-  List<Object?> get props => [event];
-}
+//   @override
+//   List<Object?> get props => [event];
+// }
 
-final class JoinCall extends RoomEvent {
-  final String roomId;
+// final class JoinCall extends RoomEvent {
+//   final String roomId;
 
-  const JoinCall(this.roomId);
+//   const JoinCall(this.roomId);
 
-  @override
-  List<Object?> get props => [roomId];
-}
+//   @override
+//   List<Object?> get props => [roomId];
+// }

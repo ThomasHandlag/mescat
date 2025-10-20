@@ -5,12 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:matrix/matrix.dart';
-import 'package:mescat/core/mescat/matrix_client.dart';
-import 'package:mescat/features/authentication/presentation/pages/auth_page.dart';
-import 'package:mescat/shared/pages/home_page.dart';
-import 'package:mescat/shared/pages/loading_page.dart';
 import 'package:rive/rive.dart';
 
+import 'package:mescat/core/mescat/matrix_client.dart';
+import 'package:mescat/features/authentication/presentation/pages/auth_page.dart';
+import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
+import 'package:mescat/features/voip/presentation/blocs/call_bloc.dart';
+import 'package:mescat/shared/pages/home_page.dart';
+import 'package:mescat/shared/pages/loading_page.dart';
 import 'package:mescat/features/members/presentation/blocs/member_bloc.dart';
 import 'package:mescat/core/themes/app_themes.dart';
 import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
@@ -44,17 +46,33 @@ final class MescatBlocProvider extends StatelessWidget {
           )..add(CheckAuthStatus()),
         ),
         BlocProvider(
-          create: (context) => RoomBloc(
-            getRoomsUseCase: getIt(),
+          create: (context) => ChatBloc(
             getMessagesUseCase: getIt(),
             sendMessageUseCase: getIt(),
-            createRoomUseCase: getIt(),
-            joinRoomUseCase: getIt(),
             addReactionUseCase: getIt(),
             removeReactionUseCase: getIt(),
             deleteMessageUseCase: getIt(),
             editMessageUseCase: getIt(),
             replyMessageUseCase: getIt(),
+            eventPusher: getIt(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) =>
+              CallBloc(eventPusher: getIt(), callHandler: getIt()),
+        ),
+        BlocProvider(
+          create: (context) => RoomBloc(
+            getRoomsUseCase: getIt(),
+            // getMessagesUseCase: getIt(),
+            // sendMessageUseCase: getIt(),
+            createRoomUseCase: getIt(),
+            joinRoomUseCase: getIt(),
+            // addReactionUseCase: getIt(),
+            // removeReactionUseCase: getIt(),
+            // deleteMessageUseCase: getIt(),
+            // editMessageUseCase: getIt(),
+            // replyMessageUseCase: getIt(),
             eventPusher: getIt(),
           ),
         ),
@@ -68,9 +86,21 @@ final class MescatBlocProvider extends StatelessWidget {
         BlocProvider(
           create: (context) => MemberBloc(getRoomMembersUseCase: getIt()),
         ),
+        BlocProvider(
+          create: (context) => ChatBloc(
+            getMessagesUseCase: getIt(),
+            sendMessageUseCase: getIt(),
+            addReactionUseCase: getIt(),
+            removeReactionUseCase: getIt(),
+            deleteMessageUseCase: getIt(),
+            editMessageUseCase: getIt(),
+            replyMessageUseCase: getIt(),
+            eventPusher: getIt(),
+          ),
+        ),
       ],
       child: MaterialApp(
-        title: 'Mescat - Matrix Chat',
+        title: 'Mescat',
         debugShowCheckedModeBanner: false,
         theme: AppThemes.lightTheme,
         darkTheme: AppThemes.darkTheme,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_bubble.dart';
-import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
 
 class MessageList extends StatefulWidget {
   final List<MCMessageEvent> messages;
@@ -72,7 +72,7 @@ class _MessageListState extends State<MessageList> {
   }
 
   void _loadMoreMessages() {
-    context.read<RoomBloc>().add(const LoadMoreMessages());
+    context.read<ChatBloc>().add(const LoadMoreMessages());
   }
 
   @override
@@ -140,9 +140,9 @@ class _MessageListState extends State<MessageList> {
             left: 0,
             right: 0,
             child: Center(
-              child: BlocBuilder<RoomBloc, RoomState>(
+              child: BlocBuilder<ChatBloc, ChatState>(
                 builder: (context, state) {
-                  if (state is RoomLoaded) {
+                  if (state is ChatLoaded) {
                     if (state.isLoadingMessages) {
                       return const CircularProgressIndicator();
                     }

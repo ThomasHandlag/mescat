@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/notifications/event_pusher.dart';
+import 'package:mescat/features/chat/data/datasources/call_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/data/repositories/mescat_repository_impl.dart';
@@ -53,6 +54,9 @@ Future<void> setupDependencyInjection() async {
 
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),
+  );
+  getIt.registerLazySingleton<CallHandler>(
+    () => CallHandler(matrixClient),
   );
   getIt.registerLazySingleton<MCRepository>(
     () => MCRepositoryImpl(getIt<MatrixClientManager>()),

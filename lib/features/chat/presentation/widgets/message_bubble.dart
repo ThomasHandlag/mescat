@@ -5,10 +5,9 @@ import 'package:matrix/matrix.dart';
 
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
+import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/presentation/widgets/message_item.dart';
 import 'package:mescat/features/chat/presentation/widgets/reaction_picker.dart';
-import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
-// import 'package:mescat/shared/util/string_util.dart';
 
 class MessageBubble extends StatelessWidget {
   final MCMessageEvent message;
@@ -157,20 +156,20 @@ class MessageBubble extends StatelessWidget {
               MessageItem(
                 message: message,
                 isCurrentUser: message.isCurrentUser,
-                onDelete: () => context.read<RoomBloc>().add(
+                onDelete: () => context.read<ChatBloc>().add(
                   DeleteMessage(
                     roomId: message.roomId,
                     eventId: message.eventId,
                   ),
                 ),
-                onEdit: () => context.read<RoomBloc>().add(
+                onEdit: () => context.read<ChatBloc>().add(
                   SetInputAction(
                     action: InputAction.edit,
                     targetEventId: message.eventId,
                     initialContent: message.body,
                   ),
                 ),
-                onReply: () => context.read<RoomBloc>().add(
+                onReply: () => context.read<ChatBloc>().add(
                   SetInputAction(
                     action: InputAction.reply,
                     targetEventId: message.eventId,
@@ -194,7 +193,7 @@ class MessageBubble extends StatelessWidget {
                           child: ReactionPicker(
                             onReactionSelected: (reaction) {
                               Navigator.of(context).pop();
-                              context.read<RoomBloc>().add(
+                              context.read<ChatBloc>().add(
                                 AddReaction(
                                   roomId: message.roomId,
                                   eventId: message.eventId,
@@ -466,7 +465,7 @@ class MessageBubble extends StatelessWidget {
                     orElse: () => const MapEntry('', ''),
                   );
                   if (existingReaction.key.isNotEmpty) {
-                    context.read<RoomBloc>().add(
+                    context.read<ChatBloc>().add(
                       RemoveReaction(
                         roomId: reaction.roomId,
                         eventId: existingReaction.key,
@@ -476,7 +475,7 @@ class MessageBubble extends StatelessWidget {
                   }
                 }
               } else {
-                context.read<RoomBloc>().add(
+                context.read<ChatBloc>().add(
                   AddReaction(
                     roomId: reaction.roomId,
                     eventId: message.eventId,
