@@ -1,23 +1,20 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
-import 'package:matrix/matrix.dart';
+import 'package:mescat/features/authentication/pages/auth_page.dart';
+import 'package:mescat/features/home_server/cubits/server_cubit.dart';
 import 'package:rive/rive.dart';
 
-import 'package:mescat/core/mescat/matrix_client.dart';
-import 'package:mescat/features/authentication/presentation/pages/auth_page.dart';
-import 'package:mescat/features/chat/presentation/blocs/chat_bloc.dart';
-import 'package:mescat/features/voip/presentation/blocs/call_bloc.dart';
+import 'package:mescat/features/chat/blocs/chat_bloc.dart';
+import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/pages/home_page.dart';
 import 'package:mescat/shared/pages/loading_page.dart';
-import 'package:mescat/features/members/presentation/blocs/member_bloc.dart';
+import 'package:mescat/features/members/blocs/member_bloc.dart';
 import 'package:mescat/core/themes/app_themes.dart';
-import 'package:mescat/features/authentication/presentation/blocs/auth_bloc.dart';
-import 'package:mescat/features/rooms/presentation/blocs/room_bloc.dart';
-import 'package:mescat/features/spaces/presentation/blocs/space_bloc.dart';
+import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
+import 'package:mescat/features/rooms/blocs/room_bloc.dart';
+import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/dependency_injection.dart';
 
 void main() async {
@@ -37,13 +34,13 @@ final class MescatBlocProvider extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => AuthBloc(
+          create: (context) => MescatBloc(
             loginUseCase: getIt(),
             registerUseCase: getIt(),
             logoutUseCase: getIt(),
             getCurrentUserUseCase: getIt(),
             setServerUseCase: getIt(),
-          )..add(CheckAuthStatus()),
+          )..add(InitialEvent()),
         ),
         BlocProvider(
           create: (context) => ChatBloc(
@@ -61,18 +58,12 @@ final class MescatBlocProvider extends StatelessWidget {
           create: (context) =>
               CallBloc(eventPusher: getIt(), callHandler: getIt()),
         ),
+        BlocProvider(create: (context) => ServerCubit()..loadServersList()),
         BlocProvider(
           create: (context) => RoomBloc(
             getRoomsUseCase: getIt(),
-            // getMessagesUseCase: getIt(),
-            // sendMessageUseCase: getIt(),
             createRoomUseCase: getIt(),
             joinRoomUseCase: getIt(),
-            // addReactionUseCase: getIt(),
-            // removeReactionUseCase: getIt(),
-            // deleteMessageUseCase: getIt(),
-            // editMessageUseCase: getIt(),
-            // replyMessageUseCase: getIt(),
             eventPusher: getIt(),
           ),
         ),
@@ -99,34 +90,34 @@ final class MescatBlocProvider extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
-        title: 'Mescat',
-        debugShowCheckedModeBanner: false,
-        theme: AppThemes.lightTheme,
-        darkTheme: AppThemes.darkTheme,
-        themeMode: ThemeMode.system,
-        home: MescatApp(client: getIt<MatrixClientManager>().client),
+      child: SafeArea(
+        child: MaterialApp(
+          title: 'Mescat',
+          debugShowCheckedModeBanner: false,
+          theme: AppThemes.lightTheme,
+          darkTheme: AppThemes.darkTheme,
+          themeMode: ThemeMode.system,
+          home: const MescatApp(),
+        ),
       ),
     );
   }
 }
 
-class MescatApp extends StatelessWidget {
-  const MescatApp({super.key, required this.client});
-
-  final Client client;
+final class MescatApp extends StatelessWidget {
+  const MescatApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocBuilder<MescatBloc, MescatStatus>(
       builder: (context, state) {
         if (state is Authenticated) {
           return const HomePage();
-        } else if (state is AuthLoading || state is AuthInitial) {
+        } else if (state is Loading || state is Inititial) {
           return const LoadingPage();
+        } else if (state is NetworkError) {
+          return Scaffold(body: Center(child: Text(state.message)));
         } else {
-          final navigator = Navigator.of(context);
-          log('Can pop: ${navigator.canPop()}');
           return const AuthPage();
         }
       },

@@ -1,5 +1,5 @@
-import 'package:matrix/matrix.dart';
 import 'package:logger/logger.dart';
+import 'package:matrix/matrix.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Core Matrix client singleton for handling Matrix protocol communication
@@ -25,6 +25,9 @@ class MatrixClientManager {
   }
 
   /// Get user avatar URL
-  Future<Uri?>? get currentUserAvatarUrl =>
-      client.getAvatarUrl(currentUserId ?? '');
+  Future<Uri?>? get currentUserAvatarUrl async {
+    if (currentUserId == null) return null;
+    final profile = await client.getUserProfile(currentUserId!);
+    return profile.avatarUrl;
+  }
 }

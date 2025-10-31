@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/constants/app_constants.dart';
-import 'package:mescat/features/settings/presentation/pages/setting_page.dart';
-import 'package:mescat/features/voip/presentation/blocs/call_bloc.dart';
+import 'package:mescat/features/settings/pages/setting_page.dart';
+import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/shared/widgets/user_banner.dart';
@@ -42,13 +42,34 @@ class UserBox extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             if (joinedVoice)
-              const Expanded(
+              Expanded(
                 child: Row(
                   spacing: 4,
                   children: [
-                    Text(
+                    const Text(
                       'Voice Connected',
                       style: TextStyle(color: Colors.white70),
+                    ),
+                    McButton(
+                      onPressed: () {
+                        context.read<CallBloc>().add(const LeaveCall());
+                      },
+                      child: Icon(Icons.call_end, color: Colors.red[400]),
+                    ),
+                    McButton(
+                      onPressed: () {
+                        context.read<CallBloc>().add(const ToggleCamera());
+                      },
+                      child: BlocBuilder<CallBloc, MCCallState>(
+                        builder: (context, state) {
+                          final cameraOn = state is CallInProgress
+                              ? state.cameraOn
+                              : true;
+                          return Icon(
+                            cameraOn ? Icons.videocam : Icons.videocam_off,
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -59,13 +80,17 @@ class UserBox extends StatelessWidget {
               actions: [
                 McButton(
                   onPressed: () {
-                    context.read<CallBloc>().add(ToggleVoice(isVoiceOn: !voiceEnabled));
+                    context.read<CallBloc>().add(
+                      ToggleVoice(isVoiceOn: !voiceEnabled),
+                    );
                   },
                   child: Icon(voiceEnabled ? Icons.mic : Icons.mic_off),
                 ),
                 McButton(
                   onPressed: () {
-                    context.read<CallBloc>().add(ToggleMute(isMuted: !headphonesEnabled));
+                    context.read<CallBloc>().add(
+                      ToggleMute(isMuted: !headphonesEnabled),
+                    );
                   },
                   child: Icon(
                     headphonesEnabled ? Icons.headset : Icons.headset_off,

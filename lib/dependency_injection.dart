@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:app_links/app_links.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
-import 'package:matrix/matrix.dart';
+import 'package:matrix/matrix.dart' hide Level;
 import 'package:mescat/core/notifications/event_pusher.dart';
-import 'package:mescat/features/chat/data/datasources/call_handler.dart';
+import 'package:mescat/features/voip/data/call_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/data/repositories/mescat_repository_impl.dart';
@@ -21,13 +25,17 @@ Future<Client> createMatrixClient(
 ) async {
   try {
     final directory = await getApplicationDocumentsDirectory();
-    sqfliteFfiInit();
+
+    if (Platform.isWindows) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
 
     final client = Client(
       clientName,
       database: await MatrixSdkDatabase.init(
         clientName,
-        database: await databaseFactoryFfi.openDatabase(
+        database: await databaseFactory.openDatabase(
           '${directory.path}/database.sqlite',
         ),
       ),
@@ -39,7 +47,8 @@ Future<Client> createMatrixClient(
     await client.init(newHomeserver: Uri.parse(homeserverUrl));
     return client;
   } catch (e, stackTrace) {
-    _logger.e(
+    _logger.log(
+      Level.error,
       'Failed to initialize Matrix client',
       error: e,
       stackTrace: stackTrace,
@@ -51,12 +60,15 @@ Future<Client> createMatrixClient(
 Future<void> setupDependencyInjection() async {
   final matrixClient = await createMatrixClient("Mescat", "https://matrix.org");
   final sharedPref = await SharedPreferences.getInstance();
+  final appLinks = AppLinks(); 
 
+  getIt.registerSingleton<Client>(matrixClient);
+  getIt.registerSingleton<AppLinks>(appLinks);
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),
   );
   getIt.registerLazySingleton<CallHandler>(
-    () => CallHandler(matrixClient),
+    () => CallHandler(matrixClient, sharedPref),
   );
   getIt.registerLazySingleton<MCRepository>(
     () => MCRepositoryImpl(getIt<MatrixClientManager>()),

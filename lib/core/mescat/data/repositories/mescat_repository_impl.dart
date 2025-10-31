@@ -177,6 +177,12 @@ final class MCRepositoryImpl implements MCRepository {
     if (parentSpaceId != null && parentSpaceId.isNotEmpty) {
       await addRoomToSpace(parentSpaceId, roomId);
     }
+
+    final room = _matrixClientManager.client.getRoomById(roomId);
+
+    if (room == null) {
+      return const Left(UnknownFailure(message: 'Failed to create room'));
+    }
     return Right(
       MatrixRoom(
         roomId: roomId,
@@ -185,6 +191,7 @@ final class MCRepositoryImpl implements MCRepository {
         type: type,
         isPublic: isPublic,
         parentSpaceId: parentSpaceId,
+        room: room,
       ),
     );
   }
@@ -546,6 +553,7 @@ final class MCRepositoryImpl implements MCRepository {
           topic: room.topic,
           type: RoomType.directMessage,
           isPublic: room.isFederated,
+          room: room,
         ),
       );
     } else {
@@ -567,6 +575,7 @@ final class MCRepositoryImpl implements MCRepository {
               topic: room.topic,
               type: RoomType.directMessage,
               isPublic: room.isFederated,
+              room: room,
             );
           } else {
             return null;
@@ -635,6 +644,7 @@ final class MCRepositoryImpl implements MCRepository {
                 lastActivity: room.latestEventReceivedTime,
                 lastMessage: room.lastEvent?.content['body'] as String?,
                 memberCount: room.summary.mJoinedMemberCount ?? 0,
+                room: room,
               );
             }
           })
@@ -649,24 +659,27 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Future<Either<MCFailure, List<MatrixSpace>>> getSpaces() async {
-    final rooms = _matrixClientManager.client.rooms;
-    _matrixClientManager.logger.log(Level.debug, 'All rooms: $rooms');
-    final spaces = rooms
-        .map((r) {
-          if (r.isSpace) {
-            return MatrixSpace(
-              spaceId: r.id,
-              name: r.name,
-              description: r.topic,
-              isPublic: r.isFederated,
-              createdAt: DateTime.now(),
-            );
-          }
-        })
-        .whereType<MatrixSpace>()
-        .toList();
-
-    return Right(spaces);
+    try {
+      final rooms = _matrixClientManager.client.rooms;
+      _matrixClientManager.logger.log(Level.debug, 'All rooms: $rooms');
+      final spaces = rooms
+          .map((r) {
+            if (r.isSpace) {
+              return MatrixSpace(
+                spaceId: r.id,
+                name: r.name,
+                description: r.topic,
+                isPublic: r.isFederated,
+                createdAt: DateTime.now(),
+              );
+            }
+          })
+          .whereType<MatrixSpace>()
+          .toList();
+      return Right(spaces);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to fetch spaces: $e'));
+    }
   }
 
   @override
@@ -748,6 +761,34 @@ final class MCRepositoryImpl implements MCRepository {
       );
     } catch (e) {
       return Left(AuthenticationFailure(message: 'Login failed: $e'));
+    }
+  }
+
+  Future<Either<MCFailure, MCUser>> thirdPartyLogin({
+    required String type,
+  }) async {
+    try {
+      final loginResponse = await _matrixClientManager.client.login(
+        LoginType.mLoginToken,
+      );
+
+      final user = await _matrixClientManager.client.getUserProfile(
+        loginResponse.userId,
+      );
+
+      return Right(
+        MCUser(
+          displayName: user.displayname,
+          userId: loginResponse.userId,
+          avatarUrl: user.avatarUrl?.toFilePath(),
+          accessToken: loginResponse.accessToken,
+          refreshToken: loginResponse.refreshToken,
+        ),
+      );
+    } catch (e) {
+      return Left(
+        AuthenticationFailure(message: 'Third-party login failed: $e'),
+      );
     }
   }
 
@@ -849,6 +890,7 @@ final class MCRepositoryImpl implements MCRepository {
           topic: result.topic,
           type: RoomType.directMessage,
           isPublic: result.isFederated,
+          room: result,
         ),
       ]);
     }
@@ -989,6 +1031,7 @@ final class MCRepositoryImpl implements MCRepository {
         type: room.type,
         isPublic: room.isPublic,
         parentSpaceId: room.parentSpaceId,
+        room: existingRoom,
       );
 
       return Right(updatedRoom);

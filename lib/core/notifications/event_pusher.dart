@@ -2,28 +2,23 @@ import 'dart:async';
 
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 
 final class EventPusher {
   final MatrixClientManager clientManager;
 
-  final Logger _logger = Logger();
+  final Logger logger = Logger();
 
   EventPusher({required this.clientManager}) {
-    _logger.log(Level.info, "EventPusher initializing...");
     clientManager.client.onTimelineEvent.stream.listen((event) async {
-      _logger.log(
-        Level.debug,
-        "New timeline event: ${event.type} ${event.content}",
-      );
       final user = await clientManager.client.getUserProfile(event.senderId);
 
       if (event.type == EventTypes.Message) {
         final messageType = event.content['msgtype'] as String?;
 
         if (messageType == null) {
-          _logger.log(Level.warning, "Unknown message type in event: $event");
           return;
         }
 
@@ -38,11 +33,18 @@ final class EventPusher {
             event.room,
           );
           if (repliedEvent.messageType == MessageTypes.Text) {
+            final repliedUser = await event.fetchSenderUser();
+            if (repliedUser == null) {
+              logger.log(
+                Level.warning,
+                "Failed to fetch replied user for event: $repliedEvent",
+              );
+              return;
+            }
             repliedEventContent = RepliedEventContent(
               content: repliedEvent.body,
               eventId: repliedEvent.eventId,
-              senderName:
-                  repliedEvent.asUser.displayName ?? repliedEvent.senderId,
+              senderName: repliedUser.displayName ?? repliedEvent.senderId,
             );
           }
         }
@@ -77,7 +79,6 @@ final class EventPusher {
           ),
         );
       } else if (event.type == EventTypes.Reaction) {
-        _logger.log(Level.debug, "Reaction event: $event");
         final reactionContent =
             event.content['m.relates_to'] as Map<String, dynamic>?;
         if (reactionContent != null) {
@@ -100,19 +101,54 @@ final class EventPusher {
               ),
             );
           } else {
-            _logger.log(
+            logger.log(
               Level.warning,
               "Invalid reaction event content: $reactionContent",
             );
           }
         } else {
-          _logger.log(
+          logger.log(
             Level.warning,
             "Missing reaction content in event: $event",
           );
         }
+      } else if (event.type == MatrixEventTypes.msc3401) {
+        logger.log(
+          Level.debug,
+          'Received MSC3401 event: ${event.content.toString()}',
+        );
+      } else if (event.type == EventTypes.GroupCallMember) {
+        logger.log(
+          Level.debug,
+          'Received GroupCallMemberCandidates event: ${event.content.toString()}',
+        );
+      } else if (event.type == EventTypes.GroupCallMemberInvite) {
+        logger.log(
+          Level.debug,
+          'Received GroupCallMemberCandidates event: ${event.content.toString()}',
+        );
+      } else if (event.type == EventTypes.GroupCallMemberAnswer) {
+        logger.log(
+          Level.debug,
+          'Received GroupCallMemberCandidates event: ${event.content.toString()}',
+        );
+      } else if (event.type == EventTypes.GroupCallMemberHangup) {
+        logger.log(
+          Level.debug,
+          'Received GroupCallMemberCandidates event: ${event.content.toString()}',
+        );
+      } else if (event.type == EventTypes.GroupCallMemberNegotiate) {
+        logger.log(
+          Level.debug,
+          'Received GroupCallMemberCandidates event: ${event.content.toString()}',
+        );
+      } else if (event.type == EventTypes.GroupCallMemberCandidates) {
+        logger.log(
+          Level.debug,
+          'Received GroupCallMemberCandidates event: ${event.content.toString()}',
+        );
       } else {
-        _logger.log(Level.debug, "Unhandled event type: ${event.type}");
+        logger.log(Level.debug, "Unhandled event type: ${event.type}");
       }
     });
   }
