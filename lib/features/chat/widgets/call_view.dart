@@ -205,7 +205,9 @@ class _CallViewState extends State<CallView> {
                     );
                   },
                 ),
-                IconButton(icon: const Icon(Icons.call_end), onPressed: () {}),
+                IconButton(icon: const Icon(Icons.call_end), onPressed: () {
+                  context.read<CallBloc>().add(const LeaveCall());
+                }),
                 IconButton(
                   icon: const Icon(Icons.screen_share),
                   onPressed: () {},

@@ -87,6 +87,9 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<LogoutUseCase>(
     () => LogoutUseCase(getIt<MCRepository>()),
   );
+  getIt.registerLazySingleton<OAuthLoginUseCase>(
+    () => OAuthLoginUseCase(getIt<MCRepository>()),
+  );
   getIt.registerLazySingleton<GetCurrentUserUseCase>(
     () => GetCurrentUserUseCase(getIt<MCRepository>()),
   );

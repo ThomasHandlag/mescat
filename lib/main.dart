@@ -40,6 +40,7 @@ final class MescatBlocProvider extends StatelessWidget {
             logoutUseCase: getIt(),
             getCurrentUserUseCase: getIt(),
             setServerUseCase: getIt(),
+            oauthLoginUseCase: getIt(),
           )..add(InitialEvent()),
         ),
         BlocProvider(

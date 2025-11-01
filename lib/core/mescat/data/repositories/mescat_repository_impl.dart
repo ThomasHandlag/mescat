@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:dartz/dartz.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
@@ -764,12 +765,15 @@ final class MCRepositoryImpl implements MCRepository {
     }
   }
 
-  Future<Either<MCFailure, MCUser>> thirdPartyLogin({
-    required String type,
+  @override
+  Future<Either<MCFailure, MCUser>> oauthLogin({
+    required String token,
   }) async {
     try {
       final loginResponse = await _matrixClientManager.client.login(
         LoginType.mLoginToken,
+        token: token,
+        initialDeviceDisplayName: MatrixConfig.defaultClientName
       );
 
       final user = await _matrixClientManager.client.getUserProfile(

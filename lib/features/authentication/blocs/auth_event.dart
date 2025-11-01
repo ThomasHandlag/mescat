@@ -39,6 +39,17 @@ class RegisterRequested extends MescatEvent {
   List<Object?> get props => [username, password, email];
 }
 
+class OAuthLoginRequested extends MescatEvent {
+  final String loginToken;
+
+  const OAuthLoginRequested({
+    required this.loginToken,
+  });
+
+  @override
+  List<Object?> get props => [loginToken];
+}
+
 class LogoutRequested extends MescatEvent {}
 
 class CheckAuthStatus extends MescatEvent {}

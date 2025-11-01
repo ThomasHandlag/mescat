@@ -1,11 +1,10 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:matrix/matrix.dart';
-import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 
@@ -49,24 +48,38 @@ class _LoginFormState extends State<LoginForm> {
     super.initState();
   }
 
-  Future<void> launchOAuth() async {
-    final result = await FlutterWebAuth2.authenticate(
-      url: "https://account.matrix.org",
-      callbackUrlScheme: "my-custom-app",
-    );
+  Future<void> launchSSO() async {
+    try {
+      final redirectUrl = Platform.isWindows || Platform.isLinux
+          ? 'http://localhost:3001'
+          : 'mescat://login';
+      final result = await FlutterWebAuth2.authenticate(
+        url:
+            'https://account.matrix.org/_matrix/client/v3/login/sso/redirect?redirectUrl=$redirectUrl',
+        callbackUrlScheme: Platform.isWindows || Platform.isLinux
+            ? 'http://localhost:3001'
+            : 'mescat',
+        options: FlutterWebAuth2Options(
+          useWebview: Platform.isWindows || Platform.isLinux ? false : true,
+        ),
+      );
+      final token = Uri.parse(result).queryParameters['loginToken'];
+      if (token?.isEmpty ?? false) return;
+      _loginWithToken(token!);
+    } catch (e) {
+      log('error during oauth login: $e');
+      _snackBar('Cancel authentication');
+    }
+  }
 
-    final client = getIt<Client>();
+  void _loginWithToken(String token) {
+    context.read<MescatBloc>().add(OAuthLoginRequested(loginToken: token));
+  }
 
-    final redirectUrl = 'matrix://';
-
-    final url = client.homeserver!.replace(
-      path: '/_matrix/client/v3/login/sso/redirect',
-      queryParameters: {'redirectUrl': redirectUrl},
-    );
-
-    // Extract token from resulting url
-    // final token = Uri.parse(result).queryParameters['token'];
-    log("OAuth Result: ${result.toString()}");
+  void _snackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -171,7 +184,7 @@ class _LoginFormState extends State<LoginForm> {
                 children: [
                   McButton(
                     onPressed: () {
-                      launchOAuth();
+                      launchSSO();
                     },
                     child: const Icon(FontAwesomeIcons.google),
                   ),

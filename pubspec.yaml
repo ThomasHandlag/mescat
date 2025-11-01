@@ -1,5 +1,5 @@
 name: mescat
-description: "A new Flutter project."
+description: "A Matrix client focused on privacy and security."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
@@ -108,12 +108,13 @@ flutter:
     - assets/icons/
     - assets/rive/
     - assets/audios/
+    - assets/files/
 
 msix_config:
   display_name: mescat
   msix_version: 1.0.0.0
-  protocol_activation: https, matrix # Add the protocols to activate the app
-  app_uri_handler_hosts: matrix.bustify.dev, matrix.org # Add the app uri handler hosts. You can't use patterns here.
+  protocol_activation: https, mescat # Add the protocols to activate the app
+  app_uri_handler_hosts: mescat.dev # Add the app uri handler hosts. You can't use patterns here.
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

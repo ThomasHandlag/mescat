@@ -14,6 +14,7 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
   final SetServerUseCase setServerUseCase;
+  final OAuthLoginUseCase oauthLoginUseCase;
 
   bool haveConnection = false;
 
@@ -23,12 +24,14 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
     required this.setServerUseCase,
+    required this.oauthLoginUseCase,
   }) : super(Inititial()) {
     on<InitialEvent>(_onInit);
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckAuthStatus>(_onCheckAuthStatus);
+    on<OAuthLoginRequested>(_onOAuthLoginRequested);
     Connectivity().onConnectivityChanged.listen((
       List<ConnectivityResult> result,
     ) {
@@ -82,6 +85,39 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
       username: event.username,
       password: event.password,
       serverUrl: event.serverUrl,
+    );
+
+    await result.fold((failure) async => emit(AuthError(failure.message)), (
+      success,
+    ) async {
+      final userResult = await getCurrentUserUseCase();
+      userResult.fold(
+        (failure) => emit(AuthError(failure.message)),
+        (user) => emit(
+          Authenticated(
+            user.copyWith(
+              accessToken: success.accessToken,
+              refreshToken: success.refreshToken,
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Future<void> _onOAuthLoginRequested(
+    OAuthLoginRequested event,
+    Emitter<MescatStatus> emit,
+  ) async {
+    emit(Loading());
+
+    if (!haveConnection) {
+      emit(const NetworkError('No internet connection'));
+      return;
+    }
+
+    final result = await oauthLoginUseCase(
+      loginToken: event.loginToken,
     );
 
     await result.fold((failure) async => emit(AuthError(failure.message)), (

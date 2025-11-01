@@ -17,7 +17,7 @@ abstract class MCRepository {
     String? email,
   });
 
-  Future<Either<MCFailure, MCUser>> thirdPartyLogin({required String type});
+  Future<Either<MCFailure, MCUser>> oauthLogin({required String token});
 
   Future<Either<MCFailure, bool>> logout();
 

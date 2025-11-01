@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logger/logger.dart';
-import 'package:mescat/core/http/servers_list_api.dart';
 
 part 'server_state.dart';
 
@@ -18,6 +17,14 @@ final class ServerCubit extends Cubit<ServerState> {
 
   void setServerUrl(ServerInfo server) async {
     final box = await Hive.openBox(_selected);
+    final listBox = await Hive.openBox(_serversBox);
+    final existingServers = listBox.get(listKey) as List<dynamic>? ?? [];
+    if (!existingServers
+        .any((element) => ServerInfo.fromJson(jsonDecode(element)).domain ==
+            server.domain)) {
+      existingServers.add(jsonEncode(server.toJson()));
+      await listBox.put(listKey, existingServers);
+    }
     await box.put('server_info', server.toJson());
     if (state is ServerListLoaded) {
       final currentState = state as ServerListLoaded;
@@ -39,6 +46,7 @@ final class ServerCubit extends Cubit<ServerState> {
         captcha: true,
       ),
     ];
+    ServerInfo selectedServer = servers.first;
     try {
       final serverBox = await Hive.openBox(_serversBox);
       final cachedServers = serverBox.get(listKey) as List<dynamic>?;
@@ -47,43 +55,16 @@ final class ServerCubit extends Cubit<ServerState> {
           final serverInfo = ServerInfo.fromJson(jsonDecode(serverMap));
           servers.add(serverInfo);
         }
-        servers.add(
-          const ServerInfo(
-            domain: 'matrix.org',
-            online: 1,
-            rulesUrl: null,
-            privacyUrl: null,
-            location: null,
-            slidingSync: true,
-            email: true,
-            captcha: true,
-          ),
-        );
 
         final selectedServerDomainBox = await Hive.openBox(_selected);
-        final selectedServer = selectedServerDomainBox.get('server_info');
-        emit(
-          ServerListLoaded(
-            servers,
-            selectedServer: ServerInfo.fromJson(jsonDecode(selectedServer)),
-          ),
-        );
-        return;
-      } else {
-        final fetchedServers = await ServersListApi.fetchServersList();
-        if (fetchedServers.contains(null) || fetchedServers.isEmpty) {
-          emit(const ServerListLoaded([]));
-          return;
+        final selectedServerJson = selectedServerDomainBox.get('server_info');
+        if (selectedServerJson != null) {
+          selectedServer = ServerInfo.fromJson(jsonDecode(selectedServerJson));
+          emit(ServerListLoaded(servers, selectedServer: selectedServer));
+        } else {
+          selectedServerDomainBox.put('server_info', servers.first.toJson());
+          emit(ServerListLoaded(servers, selectedServer: servers.first));
         }
-        for (final server in fetchedServers) {
-          if (server == null) {
-            continue;
-          }
-          final serverInfo = ServerInfo.fromJson(server);
-          servers.add(serverInfo);
-        }
-        await serverBox.put(listKey, servers.map((e) => e.toJson()).toList());
-        emit(ServerListLoaded(servers));
       }
     } catch (e, stackTrace) {
       _logger.log(
@@ -92,6 +73,8 @@ final class ServerCubit extends Cubit<ServerState> {
         error: e,
         stackTrace: stackTrace,
       );
+    } finally {
+      emit(ServerListLoaded(servers, selectedServer: servers.first));
     }
   }
 }
