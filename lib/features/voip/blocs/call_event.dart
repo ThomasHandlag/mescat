@@ -33,19 +33,21 @@ class ToggleMute extends CallEvent {
 }
 
 class ToggleVoice extends CallEvent {
-  final bool isVoiceOn;
+  final bool muted;
 
-  const ToggleVoice({required this.isVoiceOn});
+  const ToggleVoice({required this.muted});
 
   @override
-  List<Object?> get props => [isVoiceOn];
+  List<Object?> get props => [muted];
 }
 
 class ToggleCamera extends CallEvent {
-  const ToggleCamera();
+  const ToggleCamera({required this.muted});
+
+  final bool muted;
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [muted];
 }
 
 class SwitchCamera extends CallEvent {
@@ -53,4 +55,13 @@ class SwitchCamera extends CallEvent {
 
   @override
   List<Object?> get props => [];
+}
+
+class CallMembershipChanged extends CallEvent {
+  final List<CallMembership> memberships;
+
+  const CallMembershipChanged({required this.memberships});
+
+  @override
+  List<Object?> get props => [memberships];
 }

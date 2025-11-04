@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
+import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/rooms/pages/room_setting_page.dart';
 import 'package:mescat/features/rooms/widgets/expanse_channel.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
@@ -12,6 +12,7 @@ import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/util/widget_overlay_service.dart';
 
 class RoomList extends StatelessWidget {
   const RoomList({super.key});
@@ -187,7 +188,6 @@ class RoomList extends StatelessWidget {
                     ),
                   );
                 }
-
                 return const SizedBox.shrink();
               },
             ),
@@ -231,16 +231,30 @@ class RoomList extends StatelessWidget {
   void _onSelectRoom(MatrixRoom room, BuildContext context) {
     context.read<RoomBloc>().add(
       SelectRoom(
-        room.roomId,
+        room,
+        canRejoin: context.read<CallBloc>().state is! CallInProgress,
         roomType: room.type,
+        showFloatWidget: () {
+          if (context.read<CallBloc>().state is CallInProgress) {
+            WidgetOverlayService.show(
+              context,
+              onExpand: () {
+                showFullscreenDialog(context, ChatPage(parentContext: context));
+              },
+              child: const CollapseCallView(),
+            );
+          }
+        },
         onComplete: ({required roomId}) {
           if (room.canHaveCall) {
-            context.read<CallBloc>().add(JoinCall(room: room.room));
+            if (context.read<CallBloc>().state is! CallInProgress) {
+              context.read<CallBloc>().add(JoinCall(room: room.room));
+            }
           } else {
             context.read<ChatBloc>().add(LoadMessages(roomId: roomId));
           }
           if (Platform.isAndroid || Platform.isIOS) {
-            showFullscreenDialog(context, const ChatPage());
+            showFullscreenDialog(context, ChatPage(parentContext: context));
           }
         },
       ),

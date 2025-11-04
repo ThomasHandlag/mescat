@@ -23,20 +23,17 @@ class CallInitial extends MCCallState {
 
 class CallInProgress extends MCCallState {
   final String callId;
-
   final String? roomId;
-  final bool cameraOn;
   final List<CallParticipant> participants;
-  final Map<String, RTCVideoRenderer> renders;
+  final GroupCallSession? groupSession;
 
   const CallInProgress({
     required this.callId,
     super.voiceOn = false,
     this.roomId,
     super.muted = false,
-    this.cameraOn = true,
     this.participants = const [],
-    this.renders = const {},
+    this.groupSession,
   });
 
   @override
@@ -45,9 +42,8 @@ class CallInProgress extends MCCallState {
     voiceOn,
     roomId,
     muted,
-    cameraOn,
     participants,
-    renders,
+    groupSession,
   ];
 
   @override
@@ -59,16 +55,16 @@ class CallInProgress extends MCCallState {
     bool? muted,
     bool? cameraOn,
     List<CallParticipant>? participants,
-    Map<String, RTCVideoRenderer>? renders,
+    Room? room,
+    GroupCallSession? groupSession,
   }) {
     return CallInProgress(
       callId: callId ?? this.callId,
       voiceOn: voiceOn ?? this.voiceOn,
       roomId: roomId ?? this.roomId,
       muted: muted ?? this.muted,
-      cameraOn: cameraOn ?? this.cameraOn,
       participants: participants ?? this.participants,
-      renders: renders ?? this.renders,
+      groupSession: groupSession ?? this.groupSession,
     );
   }
 }

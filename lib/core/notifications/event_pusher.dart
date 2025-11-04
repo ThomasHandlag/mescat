@@ -5,13 +5,14 @@ import 'package:matrix/matrix.dart' hide Level;
 import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
+import 'package:mescat/features/voip/data/call_handler.dart';
 
 final class EventPusher {
   final MatrixClientManager clientManager;
-
+  final CallHandler callHandler;
   final Logger logger = Logger();
 
-  EventPusher({required this.clientManager}) {
+  EventPusher({required this.clientManager, required this.callHandler}) {
     clientManager.client.onTimelineEvent.stream.listen((event) async {
       final user = await clientManager.client.getUserProfile(event.senderId);
 
@@ -120,7 +121,21 @@ final class EventPusher {
       } else if (event.type == EventTypes.GroupCallMember) {
         logger.log(
           Level.debug,
-          'Received GroupCallMemberCandidates event: ${event.content.toString()}',
+          'Received GroupCallMember event: ${event.content.toString()}',
+        );
+        final membership = event.room.getCallMembershipsFromEvent(
+          event,
+          callHandler.voIP,
+        );
+        _controller.add(
+          GroupCallMemberCandidatesEvent(
+            memberships: membership,
+            eventId: event.eventId,
+            eventTypes: event.type,
+            roomId: event.room.id,
+            senderId: event.senderId,
+            timestamp: event.originServerTs,
+          ),
         );
       } else if (event.type == EventTypes.GroupCallMemberInvite) {
         logger.log(

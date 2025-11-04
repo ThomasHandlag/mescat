@@ -24,7 +24,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     required this.getRoomsUseCase,
     required this.createRoomUseCase,
     required this.joinRoomUseCase,
-    
+
     required this.eventPusher,
   }) : super(RoomInitial()) {
     on<LoadRooms>(_onLoadRooms);
@@ -44,13 +44,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     final result = await getRoomsUseCase(event.spaceId);
 
     result.fold((failure) => emit(RoomError(failure.toString())), (rooms) {
-      emit(
-        RoomLoaded(
-          rooms: rooms,
-          selectedRoomId: rooms.isNotEmpty ? rooms.first.roomId : null,
-          selectedRoom: rooms.isNotEmpty ? rooms.first : null,
-        ),
-      );
+      emit(RoomLoaded(rooms: rooms));
 
       if (state is RoomLoaded) {
         final currentState = state as RoomLoaded;
@@ -93,24 +87,28 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
   Future<void> _onSelectRoom(SelectRoom event, Emitter<RoomState> emit) async {
     if (state is RoomLoaded) {
       final currentState = state as RoomLoaded;
-      MatrixRoom? selectedRoom;
-      final index = currentState.rooms.indexWhere(
-        (room) => room.roomId == event.roomId,
-      );
-      if (index != -1) {
-        selectedRoom = currentState.rooms[index];
+      final selectedRoom = event.room;
+      if (selectedRoom.roomId == currentState.selectedRoomId) {
+        if (selectedRoom.canHaveCall && event.canRejoin) {
+          logger.i('Rejoining call for room ${selectedRoom.roomId}');
+        } else {
+          return;
+        }
       }
+      if (currentState.selectedRoom?.canHaveCall == true &&
+          selectedRoom.canHaveCall == false) {
+        /// show float widget
+        event.showFloatWidget?.call();
+      }
+
       emit(
         currentState.copyWith(
-          selectedRoomId: event.roomId,
+          selectedRoomId: event.room.roomId,
           selectedRoom: selectedRoom,
-          // messages: [], 
         ),
       );
       // Load messages for the selected room
-      if (event.roomId != null) {
-        event.onComplete?.call(roomId: event.roomId!);
-      }
+      event.onComplete?.call(roomId: event.room.roomId);
     }
   }
 }

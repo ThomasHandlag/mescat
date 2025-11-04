@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:mescat/features/authentication/pages/auth_page.dart';
 import 'package:mescat/features/home_server/cubits/server_cubit.dart';
+import 'package:mescat/shared/util/widget_overlay_service.dart';
 import 'package:rive/rive.dart';
 
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
@@ -110,18 +111,25 @@ final class MescatApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MescatBloc, MescatStatus>(
-      builder: (context, state) {
-        if (state is Authenticated) {
-          return const HomePage();
-        } else if (state is Loading || state is Inititial) {
-          return const LoadingPage();
-        } else if (state is NetworkError) {
-          return Scaffold(body: Center(child: Text(state.message)));
-        } else {
-          return const AuthPage();
+    return BlocListener<CallBloc, MCCallState>(
+      listener: (context, state) {
+        if (state is! CallInProgress) {
+          WidgetOverlayService.hide();
         }
       },
+      child: BlocBuilder<MescatBloc, MescatStatus>(
+        builder: (context, state) {
+          if (state is Authenticated) {
+            return const HomePage();
+          } else if (state is Loading || state is Inititial) {
+            return const LoadingPage();
+          } else if (state is NetworkError) {
+            return Scaffold(body: Center(child: Text(state.message)));
+          } else {
+            return const AuthPage();
+          }
+        },
+      ),
     );
   }
 }

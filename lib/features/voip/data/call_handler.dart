@@ -19,18 +19,7 @@ class CallHandler implements WebRTCDelegate {
 
   late VoIP voIP;
 
-  final Map<String, MediaStream> _remoteStreams = {};
-
-  final Map<String, MediaStream> _localStreams = {};
-
-  Map<String, MediaStream> get remoteStreams => _remoteStreams;
-  Map<String, MediaStream> get localStreams => _localStreams;
-
-  bool _isInCall = false;
-
   String? _activeRoomId;
-
-  MescatCallType? callState = MescatCallType.none;
 
   CallSession? _directSession;
   GroupCallSession? _groupSession;
@@ -38,11 +27,9 @@ class CallHandler implements WebRTCDelegate {
   GroupCallSession? get groupSession => _groupSession;
   CallSession? get callSession => _directSession;
 
-  static bool _voiceOpen = false;
-  static bool _headphoneOpen = false;
-
-  static bool get voiceOpen => _voiceOpen;
-  static bool get headphoneOpen => _headphoneOpen;
+  bool voiceOpen = false;
+  //
+  bool headphoneOpen = true;
 
   CallHandler(this.client, this._store) {
     voIP = VoIP(client, this);
@@ -50,20 +37,17 @@ class CallHandler implements WebRTCDelegate {
   }
 
   void init() {
-    _voiceOpen = _store.getBool('audio_call') ?? true;
-    _headphoneOpen = _store.getBool('headphone_call') ?? true;
+    voiceOpen = _store.getBool('audio_call') ?? voiceOpen;
+    headphoneOpen = _store.getBool('headphone_call') ?? headphoneOpen;
   }
 
-  Future<bool> joinGroupCall(String roomId) async {
+  Future<GroupCallSession?> joinGroupCall(String roomId) async {
+    await leaveCall();
     init();
-    _isInCall = true;
-    callState = MescatCallType.group;
-    _activeRoomId = roomId;
-
     final room = client.getRoomById(roomId);
 
     if (room == null) {
-      return false;
+      return null;
     }
 
     final session = await voIP.fetchOrCreateGroupCall(
@@ -73,6 +57,20 @@ class CallHandler implements WebRTCDelegate {
       'm.call',
       'm.room',
     );
+    // final session = await voIP.fetchOrCreateGroupCall(
+    //   roomId,
+    //   room,
+    //   CallBackend.fromJson({
+    //     'type': 'livekit',
+    //     'livekit_service_url': 'wss://mescat-u1q7e4nx.livekit.cloud',
+    //     'livekit_alias': 'mescat',
+    //   }),
+    //   'm.call',
+    //   'm.room',
+    // );
+
+    session.backend.localUserMediaStream?.setAudioMuted(voiceOpen);
+    session.backend.localUserMediaStream?.setVideoMuted(true);
 
     _groupSession = session;
 
@@ -84,35 +82,34 @@ class CallHandler implements WebRTCDelegate {
     } catch (e, stackTrace) {
       logger.log(Level.error, 'Failed to join call: $e');
       logger.log(Level.trace, 'Stack trace: $stackTrace');
-      return false;
     }
 
-    return _isInCall;
+    return _groupSession;
   }
 
-  Future<void> inviteCall() async {
-    callState = MescatCallType.direct;
-  }
+  Future<void> inviteCall() async {}
 
   Future<void> shareScreen() async {
     logger.log(Level.info, 'Sharing screen in room $_activeRoomId');
   }
 
   Future<void> leaveCall() async {
-    if (_isInCall && callState != MescatCallType.none) {
-      for (var stream in _remoteStreams.values) {
-        await stream.dispose();
-      }
-      _groupSession?.leave();
-      callState = MescatCallType.none;
-      _isInCall = false;
-      _remoteStreams.clear();
+    _groupSession?.leave();
+    _directSession?.hangup(reason: CallErrorCode.userHangup);
+    if (groupSession != null) {
+      await audioAssetPlayer.play(
+        AssetSource('${Assets.audioAsset}/discord-leave.mp3'),
+      );
     }
   }
 
-  void toggleVideo() {}
+  void setVideoMuted(bool muted) {
+    _groupSession?.backend.localUserMediaStream?.setVideoMuted(muted);
+  }
 
-  void toggleAudio() {}
+  void setAudioMuted(bool muted) {
+    _groupSession?.backend.localUserMediaStream?.setAudioMuted(muted);
+  }
 
   @override
   MediaDevices get mediaDevices => webrtc_impl.navigator.mediaDevices;
@@ -132,20 +129,12 @@ class CallHandler implements WebRTCDelegate {
     await audioAssetPlayer.play(
       AssetSource('${Assets.audioAsset}/discord-leave.mp3'),
     );
-
-    _remoteStreams.clear();
-    _isInCall = false;
   }
 
   @override
   Future<void> handleGroupCallEnded(GroupCallSession session) async {
-    await audioAssetPlayer.play(
-      AssetSource('${Assets.audioAsset}/discord-leave.mp3'),
-    );
-
-    _remoteStreams.clear();
-    _isInCall = false;
-    callState = MescatCallType.none;
+    _activeRoomId = null;
+    _groupSession = null;
   }
 
   @override
@@ -155,30 +144,12 @@ class CallHandler implements WebRTCDelegate {
 
   @override
   Future<void> handleNewCall(CallSession session) async {
-    final wLocalStreams = session.getLocalStreams;
-    final wRemoteStreams = session.getRemoteStreams;
-
-    for (final stream in wRemoteStreams) {
-      if (stream.stream != null) {
-        _remoteStreams[stream.id] = stream.stream!;
-      }
-    }
-
-    for (final stream in wLocalStreams) {
-      if (stream.stream != null) {
-        _remoteStreams[stream.id] = stream.stream!;
-      }
-    }
+    _activeRoomId = session.room.id;
   }
 
   @override
   Future<void> handleNewGroupCall(GroupCallSession session) async {
-    // Handle group calls if supported
-    for (var stream in session.backend.userMediaStreams) {
-      if (stream.stream != null) {
-        _remoteStreams[stream.id] = stream.stream!;
-      }
-    }
+    _activeRoomId = session.room.id;
   }
 
   @override

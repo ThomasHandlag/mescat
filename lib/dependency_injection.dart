@@ -75,7 +75,7 @@ Future<void> setupDependencyInjection() async {
   );
 
   getIt.registerLazySingleton<EventPusher>(
-    () => EventPusher(clientManager: getIt<MatrixClientManager>()),
+    () => EventPusher(clientManager: getIt<MatrixClientManager>(), callHandler: getIt<CallHandler>()),
   );
 
   getIt.registerLazySingleton<LoginUseCase>(

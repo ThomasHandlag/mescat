@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/features/settings/pages/setting_page.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
@@ -10,18 +11,19 @@ import 'package:mescat/shared/widgets/user_banner.dart';
 class UserBox extends StatelessWidget {
   const UserBox({
     super.key,
-    required this.username,
-    required this.avatarUrl,
-    this.joinedVoice = false,
-    this.voiceEnabled = true,
-    this.headphonesEnabled = true,
+    this.mutedAll = true,
+    this.stream,
+    this.username,
+    this.avatarUrl,
   });
 
+  final bool mutedAll;
+  final WrappedMediaStream? stream;
   final String? username;
   final String? avatarUrl;
-  final bool joinedVoice;
-  final bool voiceEnabled;
-  final bool headphonesEnabled;
+
+  bool get voiceMuted => stream?.audioMuted ?? true;
+  bool get videoMuted => stream?.videoMuted ?? true;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,7 @@ class UserBox extends StatelessWidget {
         right: UIConstraints.smallPadding,
       ),
       child: Container(
-        height: joinedVoice ? 150 : UIConstraints.mMessageInputHeight,
+        height: stream != null ? 150 : UIConstraints.mMessageInputHeight,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8.0),
@@ -41,7 +43,7 @@ class UserBox extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (joinedVoice)
+            if (stream != null)
               Expanded(
                 child: Row(
                   spacing: 4,
@@ -58,17 +60,12 @@ class UserBox extends StatelessWidget {
                     ),
                     McButton(
                       onPressed: () {
-                        context.read<CallBloc>().add(const ToggleCamera());
+                        context.read<CallBloc>().add(
+                          ToggleCamera(muted: !videoMuted),
+                        );
                       },
-                      child: BlocBuilder<CallBloc, MCCallState>(
-                        builder: (context, state) {
-                          final cameraOn = state is CallInProgress
-                              ? state.cameraOn
-                              : true;
-                          return Icon(
-                            cameraOn ? Icons.videocam : Icons.videocam_off,
-                          );
-                        },
+                      child: Icon(
+                        videoMuted ? Icons.videocam_off : Icons.videocam,
                       ),
                     ),
                   ],
@@ -81,20 +78,18 @@ class UserBox extends StatelessWidget {
                 McButton(
                   onPressed: () {
                     context.read<CallBloc>().add(
-                      ToggleVoice(isVoiceOn: !voiceEnabled),
+                      ToggleVoice(muted: !voiceMuted),
                     );
                   },
-                  child: Icon(voiceEnabled ? Icons.mic : Icons.mic_off),
+                  child: Icon(voiceMuted ? Icons.mic_off : Icons.mic),
                 ),
                 McButton(
                   onPressed: () {
                     context.read<CallBloc>().add(
-                      ToggleMute(isMuted: !headphonesEnabled),
+                      ToggleMute(isMuted: !mutedAll),
                     );
                   },
-                  child: Icon(
-                    headphonesEnabled ? Icons.headset : Icons.headset_off,
-                  ),
+                  child: Icon(mutedAll ? Icons.headset_off : Icons.headset),
                 ),
                 McButton(
                   onPressed: () {

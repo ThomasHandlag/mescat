@@ -64,11 +64,10 @@ class _HomePageState extends State<HomePage> {
                   return UserBox(
                     username: state.user.displayName,
                     avatarUrl: state.user.avatarUrl,
-                    joinedVoice: roomState is CallInProgress,
-                    voiceEnabled:
-                        roomState is CallInProgress && roomState.voiceOn,
-                    headphonesEnabled:
-                        roomState is CallInProgress && roomState.muted,
+                    mutedAll: roomState is CallInProgress && roomState.muted,
+                    stream: roomState is CallInProgress
+                        ? roomState.groupSession?.backend.localUserMediaStream
+                        : null,
                   );
                 },
               );
@@ -108,10 +107,7 @@ class _HomePageState extends State<HomePage> {
                       return UserBox(
                         username: state.user.displayName,
                         avatarUrl: state.user.avatarUrl,
-                        joinedVoice: roomState is CallInProgress,
-                        voiceEnabled:
-                            roomState is CallInProgress && roomState.voiceOn,
-                        headphonesEnabled:
+                        mutedAll:
                             roomState is CallInProgress && roomState.muted,
                       );
                     },
@@ -121,7 +117,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        const Expanded(child: ChatPage()),
+        Expanded(child: ChatPage(parentContext: context)),
       ],
     );
   }

@@ -192,3 +192,22 @@ class MCReactionEvent extends MCEvent {
     ...super.props,
   ];
 }
+
+class GroupCallMemberCandidatesEvent extends MCEvent {
+  final List<CallMembership> memberships;
+
+  const GroupCallMemberCandidatesEvent({
+    required this.memberships,
+    required super.eventId,
+    required super.roomId,
+    required super.senderId,
+    required super.timestamp,
+    required super.eventTypes,
+  });
+
+  @override
+  List<Object?> get props => [
+    memberships,
+    ...super.props,
+  ];
+}

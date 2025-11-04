@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/chat/widgets/call_view.dart';
 import 'package:mescat/features/chat/widgets/chat_view.dart';
+import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/members/widgets/space_members.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/util/widget_overlay_service.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  const ChatPage({super.key, required this.parentContext});
+
+  final BuildContext parentContext;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -32,7 +36,10 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return BlocBuilder<RoomBloc, RoomState>(
       builder: (context, state) {
-        return Scaffold(appBar: _buildAppBar(state), body: _buildView(state));
+        return Scaffold(
+          appBar: _buildAppBar(state),
+          body: _buildView(state, context),
+        );
       },
     );
   }
@@ -101,11 +108,25 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Widget _buildView(RoomState state) {
+  Widget _buildView(RoomState state, context) {
     if (state is RoomLoaded) {
       final selectedRoom = state.selectedRoom;
       if (selectedRoom != null && selectedRoom.canHaveCall) {
-        return const CallView();
+        return CallView(
+          onClose: () {
+            WidgetOverlayService.show(
+              context,
+              onExpand: () {
+                WidgetOverlayService.hide();
+                showFullscreenDialog(
+                  widget.parentContext,
+                  ChatPage(parentContext: widget.parentContext),
+                );
+              },
+              child: const CollapseCallView(),
+            );
+          },
+        );
       } else {
         return Platform.isAndroid || Platform.isIOS
             ? _buildMobile()

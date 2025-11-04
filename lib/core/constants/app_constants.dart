@@ -4,6 +4,7 @@ final class UIConstraints {
   static const double smallPadding = 8.0;
   static const double largePadding = 24.0;
   static const double mMessageInputHeight = 60;
+  static const double mFloatWidgetSize = 80.0;
 }
 
 final class Assets {
