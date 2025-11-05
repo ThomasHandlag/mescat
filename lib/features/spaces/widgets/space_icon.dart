@@ -25,7 +25,7 @@ class SpaceIcon extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: 40,
-          height: 35,
+          height: 40,
           decoration: BoxDecoration(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary

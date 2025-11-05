@@ -28,7 +28,7 @@ class CallController extends StatelessWidget {
           IconButton(
             icon: Icon(voiceMuted ? Icons.mic_off : Icons.mic),
             onPressed: () {
-              context.read<CallBloc>().add(ToggleMute(isMuted: !voiceMuted));
+              context.read<CallBloc>().add(ToggleVoice(muted: !voiceMuted));
             },
           ),
           IconButton(

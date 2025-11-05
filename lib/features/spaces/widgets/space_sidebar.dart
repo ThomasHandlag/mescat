@@ -10,6 +10,7 @@ class SpaceSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 60,
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border(
           right: BorderSide(
@@ -27,48 +28,38 @@ class SpaceSidebar extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (state is SpaceLoaded) {
-                  return ListView.builder(
+                  return ListView.separated(
                     itemCount: state.spaces.length + 1,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       if (index == 0) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          child: SpaceIcon(
-                            icon: Icons.home,
-                            label: 'Home',
-                            isSelected:
-                                state.selectedSpaceId == null ||
-                                state.selectedSpaceId == '',
-                            onTap: () {
-                              context.read<SpaceBloc>().add(
-                                const SelectSpace(''),
-                              );
-                            },
-                          ),
+                        return SpaceIcon(
+                          icon: Icons.home,
+                          label: 'Home',
+                          isSelected:
+                              state.selectedSpaceId == null ||
+                              state.selectedSpaceId == '',
+                          onTap: () {
+                            context.read<SpaceBloc>().add(
+                              const SelectSpace(''),
+                            );
+                          },
                         );
                       }
 
                       final space = state.spaces[index - 1];
                       final isSelected = space.spaceId == state.selectedSpaceId;
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        child: SpaceIcon(
-                          avatarUrl: space.avatarUrl,
-                          label: space.name,
-                          isSelected: isSelected,
-                          onTap: () {
-                            context.read<SpaceBloc>().add(
-                              SelectSpace(space.spaceId),
-                            );
-                          },
-                        ),
+                      return SpaceIcon(
+                        avatarUrl: space.avatarUrl,
+                        label: space.name,
+                        isSelected: isSelected,
+                        onTap: () {
+                          context.read<SpaceBloc>().add(
+                            SelectSpace(space.spaceId),
+                          );
+                        },
                       );
                     },
                   );
@@ -87,25 +78,20 @@ class SpaceSidebar extends StatelessWidget {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: SpaceIcon(
-              icon: Icons.explore,
-              label: 'Explore Spaces',
-              isSelected: false,
-              onTap: () {},
-            ),
+          SpaceIcon(
+            icon: Icons.explore,
+            label: 'Explore Spaces',
+            isSelected: false,
+            onTap: () {},
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-            child: SpaceIcon(
-              icon: Icons.add,
-              label: 'Create Space',
-              isSelected: false,
-              onTap: () {
-                _showCreateSpaceDialog(context);
-              },
-            ),
+          const SizedBox(height: 8),
+          SpaceIcon(
+            icon: Icons.add,
+            label: 'Create Space',
+            isSelected: false,
+            onTap: () {
+              _showCreateSpaceDialog(context);
+            },
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:mescat/features/authentication/pages/auth_page.dart';
+import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/home_server/cubits/server_cubit.dart';
 import 'package:mescat/shared/util/widget_overlay_service.dart';
 import 'package:rive/rive.dart';
@@ -111,12 +112,36 @@ final class MescatApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CallBloc, MCCallState>(
-      listener: (context, state) {
-        if (state is! CallInProgress) {
-          WidgetOverlayService.hide();
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<CallBloc, MCCallState>(
+          listener: (context, state) {
+            if (state is CallInProgress) {
+              final roomState = context.read<RoomBloc>().state;
+              if (roomState is RoomLoaded) {
+                if (state.roomId != roomState.selectedRoomId) {
+                  WidgetOverlayService.show(
+                    context,
+                    child: const CollapseCallView(),
+                  );
+                }
+              }
+            } else {
+              if (state.runtimeType != CallInProgress) {
+                WidgetOverlayService.hide();
+              }
+            }
+          },
+        ),
+        BlocListener<MescatBloc, MescatStatus>(
+          listener: (context, state) {
+            if (state is NetworkError || state is Unauthenticated) {
+              context.read<CallBloc>().add(const LeaveCall());
+              WidgetOverlayService.hide();
+            }
+          },
+        ),
+      ],
       child: BlocBuilder<MescatBloc, MescatStatus>(
         builder: (context, state) {
           if (state is Authenticated) {

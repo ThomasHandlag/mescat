@@ -89,11 +89,10 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
       final currentState = state as RoomLoaded;
       final selectedRoom = event.room;
       if (selectedRoom.roomId == currentState.selectedRoomId) {
-        if (selectedRoom.canHaveCall && event.canRejoin) {
-          logger.i('Rejoining call for room ${selectedRoom.roomId}');
-        } else {
+        if (!selectedRoom.canHaveCall && !event.canRejoin) {
           return;
         }
+        logger.i('Rejoining call for room ${selectedRoom.roomId}');
       }
       if (currentState.selectedRoom?.canHaveCall == true &&
           selectedRoom.canHaveCall == false) {

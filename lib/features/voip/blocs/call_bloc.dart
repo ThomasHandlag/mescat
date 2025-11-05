@@ -34,20 +34,19 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   Future<void> _onJoinCall(JoinCall event, Emitter<MCCallState> emit) async {
     await callHandler.leaveCall();
 
-    final joined = await callHandler.joinGroupCall(event.room.id);
+    final session = await callHandler.joinGroupCall(event.room.id);
 
-    if (joined == null) {
+    if (session == null) {
       emit(const CallInitial());
       return;
     }
 
     final renders = <String, RTCVideoRenderer>{};
 
-    if (callHandler.groupSession?.backend.localUserMediaStream?.stream !=
-        null) {
+    if (session.backend.localUserMediaStream?.stream != null) {
       final renderer = RTCVideoRenderer();
       await renderer.initialize();
-      final stream = callHandler.groupSession?.backend.localUserMediaStream;
+      final stream = session.backend.localUserMediaStream;
       renderer.srcObject = stream?.stream;
       renders[stream!.id] = renderer;
     }
@@ -56,7 +55,8 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
       CallInProgress(
         callId: event.room.id,
         roomId: event.room.id,
-        groupSession: joined,
+        groupSession: session,
+        participants: session.participants,
       ),
     );
   }
@@ -78,6 +78,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
     Emitter<MCCallState> emit,
   ) async {
     callHandler.setAudioMuted(event.muted);
+    emit(state.copyWith(voiceOn: event.muted));
   }
 
   Future<void> _onToggleCamera(
@@ -85,6 +86,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
     Emitter<MCCallState> emit,
   ) async {
     callHandler.setVideoMuted(event.muted);
+    emit(state.copyWith(muted: event.muted));
   }
 
   Future<void> _onSwitchCamera(
@@ -105,8 +107,8 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
       final currentState = state as CallInProgress;
       emit(
         currentState.copyWith(
-          participants: callHandler.groupSession?.participants,
-          groupSession: callHandler.groupSession,
+          participants: currentState.groupSession.participants,
+          groupSession: currentState.groupSession,
         ),
       );
     }

@@ -106,11 +106,9 @@ class _CallViewState extends State<CallView> {
                   BlocBuilder<CallBloc, MCCallState>(
                     builder: (context, state) {
                       if (state is CallInProgress) {
-                        if (state.groupSession != null) {
-                          final localStream =
-                              state.groupSession!.backend.localUserMediaStream!;
-                          return CallController(stream: localStream);
-                        }
+                        final localStream =
+                            state.groupSession.backend.localUserMediaStream!;
+                        return CallController(stream: localStream);
                       }
                       return const SizedBox(height: 40);
                     },

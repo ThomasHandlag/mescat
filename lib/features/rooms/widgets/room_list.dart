@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
@@ -235,7 +234,8 @@ class RoomList extends StatelessWidget {
         canRejoin: context.read<CallBloc>().state is! CallInProgress,
         roomType: room.type,
         showFloatWidget: () {
-          if (context.read<CallBloc>().state is CallInProgress) {
+          final callState = context.read<CallBloc>().state;
+          if (callState is CallInProgress) {
             WidgetOverlayService.show(
               context,
               onExpand: () {
@@ -254,6 +254,7 @@ class RoomList extends StatelessWidget {
             context.read<ChatBloc>().add(LoadMessages(roomId: roomId));
           }
           if (Platform.isAndroid || Platform.isIOS) {
+            WidgetOverlayService.hide();
             showFullscreenDialog(context, ChatPage(parentContext: context));
           }
         },

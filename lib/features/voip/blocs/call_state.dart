@@ -23,17 +23,17 @@ class CallInitial extends MCCallState {
 
 class CallInProgress extends MCCallState {
   final String callId;
-  final String? roomId;
+  final String roomId;
   final List<CallParticipant> participants;
-  final GroupCallSession? groupSession;
+  final GroupCallSession groupSession;
 
   const CallInProgress({
     required this.callId,
     super.voiceOn = false,
-    this.roomId,
+    required this.roomId,
     super.muted = false,
     this.participants = const [],
-    this.groupSession,
+    required this.groupSession,
   });
 
   @override
