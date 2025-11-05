@@ -119,10 +119,6 @@ final class EventPusher {
           'Received MSC3401 event: ${event.content.toString()}',
         );
       } else if (event.type == EventTypes.GroupCallMember) {
-        logger.log(
-          Level.debug,
-          'Received GroupCallMember event: ${event.content.toString()}',
-        );
         final membership = event.room.getCallMembershipsFromEvent(
           event,
           callHandler.voIP,

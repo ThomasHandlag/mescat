@@ -83,20 +83,16 @@ class LeaveRoom extends RoomEvent {
 class SelectRoom extends RoomEvent {
   final MatrixRoom room;
   final RoomType? roomType;
-  final bool canRejoin;
-  final void Function({required String roomId})? onComplete;
-  final void Function()? showFloatWidget;
+  final bool flag;
 
   const SelectRoom(
     this.room, {
-    required this.canRejoin,
+    required this.flag,
     this.roomType,
-    this.onComplete,
-    this.showFloatWidget,
   });
 
   @override
-  List<Object?> get props => [room, roomType];
+  List<Object?> get props => [room, roomType, flag];
 }
 
 class UpdateRoom extends RoomEvent {

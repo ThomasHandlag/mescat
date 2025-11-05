@@ -16,24 +16,33 @@ class RoomLoaded extends RoomState {
   final List<MatrixRoom> rooms;
   final String? selectedRoomId;
   final MatrixRoom? selectedRoom;
+  final bool flag;
   const RoomLoaded({
     required this.rooms,
     this.selectedRoomId,
     this.selectedRoom,
+    this.flag = false,
   });
 
   @override
-  List<Object?> get props => [rooms, selectedRoomId, selectedRoom];
+  List<Object?> get props => [
+    rooms,
+    selectedRoomId,
+    selectedRoom,
+    flag,
+  ];
 
   RoomLoaded copyWith({
     List<MatrixRoom>? rooms,
     String? selectedRoomId,
     MatrixRoom? selectedRoom,
+    bool? flag,
   }) {
     return RoomLoaded(
       rooms: rooms ?? this.rooms,
       selectedRoomId: selectedRoomId ?? this.selectedRoomId,
       selectedRoom: selectedRoom ?? this.selectedRoom,
+      flag: flag ?? this.flag,
     );
   }
 }

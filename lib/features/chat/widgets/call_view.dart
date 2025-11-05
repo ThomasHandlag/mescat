@@ -128,8 +128,11 @@ class _CallViewState extends State<CallView> {
         builder: (context, state) {
           if (state is CallInProgress) {
             return MemberGridView(participants: state.participants);
+          } else if (state is CallLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else {
+            return const Center(child: Text('No active call'));
           }
-          return const Center(child: Text('No active call'));
         },
       ),
     );

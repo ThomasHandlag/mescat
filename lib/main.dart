@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:mescat/features/authentication/pages/auth_page.dart';
+import 'package:mescat/features/chat/pages/chat_page.dart';
 import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/home_server/cubits/server_cubit.dart';
+import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/util/widget_overlay_service.dart';
 import 'package:rive/rive.dart';
 
@@ -122,6 +126,11 @@ final class MescatApp extends StatelessWidget {
                 if (state.roomId != roomState.selectedRoomId) {
                   WidgetOverlayService.show(
                     context,
+                    onExpand: () {
+                      context.read<RoomBloc>().add(
+                        SelectRoom(state.mRoom, flag: true),
+                      );
+                    },
                     child: const CollapseCallView(),
                   );
                 }
@@ -138,6 +147,52 @@ final class MescatApp extends StatelessWidget {
             if (state is NetworkError || state is Unauthenticated) {
               context.read<CallBloc>().add(const LeaveCall());
               WidgetOverlayService.hide();
+            }
+          },
+        ),
+        BlocListener<RoomBloc, RoomState>(
+          listener: (context, state) {
+            final callState = context.read<CallBloc>().state;
+            if (state is RoomLoaded) {
+              if (callState is CallInProgress) {
+                if (state.selectedRoomId != callState.roomId) {
+                  WidgetOverlayService.show(
+                    context,
+                    onExpand: () {
+                      context.read<RoomBloc>().add(
+                        SelectRoom(callState.mRoom, flag: true),
+                      );
+                    },
+                    child: const CollapseCallView(),
+                  );
+                } else {
+                  WidgetOverlayService.hide();
+                }
+              } else {
+                if (callState is CallLoading) {
+                  return;
+                }
+
+                if (state.selectedRoom == null) {
+                  return;
+                }
+
+                final room = state.selectedRoom!;
+
+                if (state.selectedRoom!.canHaveCall == true) {
+                  context.read<CallBloc>().add(JoinCall(mRoom: room));
+                } else {
+                  context.read<ChatBloc>().add(
+                    LoadMessages(roomId: room.roomId),
+                  );
+                }
+                if (Platform.isAndroid || Platform.isIOS) {
+                  showFullscreenDialog(
+                    context,
+                    ChatPage(parentContext: context),
+                  );
+                }
+              }
             }
           },
         ),

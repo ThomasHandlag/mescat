@@ -12,7 +12,7 @@ class UserBox extends StatelessWidget {
   const UserBox({
     super.key,
     this.mutedAll = true,
-    this.stream,
+    required this.stream,
     this.username,
     this.avatarUrl,
   });

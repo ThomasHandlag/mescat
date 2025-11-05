@@ -16,7 +16,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   final Logger logger = Logger();
 
   CallBloc({required this.eventPusher, required this.callHandler})
-    : super(const CallInitial(voiceOn: false, muted: false)) {
+    : super(const CallIdle(voiceOn: false, muted: false)) {
     on<JoinCall>(_onJoinCall);
     on<LeaveCall>(_onLeaveCall);
     on<ToggleMute>(_onToggleMute);
@@ -32,12 +32,18 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   }
 
   Future<void> _onJoinCall(JoinCall event, Emitter<MCCallState> emit) async {
-    await callHandler.leaveCall();
-
-    final session = await callHandler.joinGroupCall(event.room.id);
+    add(const LeaveCall());
+    emit(
+      CallLoading(
+        callId: event.mRoom.room.id,
+        voiceOn: state.voiceOn,
+        muted: state.muted,
+      ),
+    );
+    final session = await callHandler.joinGroupCall(event.mRoom.room.id);
 
     if (session == null) {
-      emit(const CallInitial());
+      emit(CallIdle(voiceOn: state.voiceOn, muted: state.muted));
       return;
     }
 
@@ -53,24 +59,27 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
 
     emit(
       CallInProgress(
-        callId: event.room.id,
-        roomId: event.room.id,
+        callId: event.mRoom.room.id,
+        roomId: event.mRoom.room.id,
         groupSession: session,
         participants: session.participants,
+        voiceOn: state.voiceOn,
+        muted: state.muted,
+        mRoom: event.mRoom,
       ),
     );
   }
 
   Future<void> _onLeaveCall(LeaveCall event, Emitter<MCCallState> emit) async {
     await callHandler.leaveCall();
-    emit(const CallInitial());
+    emit(CallIdle(muted: state.muted, voiceOn: state.voiceOn));
   }
 
   Future<void> _onToggleMute(
     ToggleMute event,
     Emitter<MCCallState> emit,
   ) async {
-    // callHandler.setAudioMuted(event.isMuted);
+    emit(state.copyWith(muted: event.isMuted));
   }
 
   Future<void> _onToggleVoice(
@@ -85,8 +94,17 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
     ToggleCamera event,
     Emitter<MCCallState> emit,
   ) async {
-    callHandler.setVideoMuted(event.muted);
-    emit(state.copyWith(muted: event.muted));
+    if (state is CallInProgress) {
+      final currentState = state as CallInProgress;
+      callHandler.setVideoMuted(event.muted);
+      emit(
+        currentState.copyWith(
+          groupSession: currentState.groupSession,
+          participants: currentState.participants,
+          videoOn: event.muted,
+        ),
+      );
+    }
   }
 
   Future<void> _onSwitchCamera(

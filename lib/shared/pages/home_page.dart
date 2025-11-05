@@ -30,6 +30,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    context.read<CallBloc>().add(const LeaveCall());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Platform.isAndroid || Platform.isIOS
@@ -64,9 +70,9 @@ class _HomePageState extends State<HomePage> {
                   return UserBox(
                     username: state.user.displayName,
                     avatarUrl: state.user.avatarUrl,
-                    mutedAll: roomState is CallInProgress && roomState.muted,
-                    stream: roomState is CallInProgress
-                        ? roomState.groupSession?.backend.localUserMediaStream
+                    mutedAll: (roomState.muted),
+                    stream: (roomState is CallInProgress)
+                        ? roomState.groupSession.backend.localUserMediaStream
                         : null,
                   );
                 },
@@ -107,8 +113,13 @@ class _HomePageState extends State<HomePage> {
                       return UserBox(
                         username: state.user.displayName,
                         avatarUrl: state.user.avatarUrl,
-                        mutedAll:
-                            roomState is CallInProgress && roomState.muted,
+                        mutedAll: roomState.muted,
+                        stream: (roomState is CallInProgress)
+                            ? roomState
+                                  .groupSession
+                                  .backend
+                                  .localUserMediaStream
+                            : null,
                       );
                     },
                   );

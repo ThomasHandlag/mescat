@@ -12,12 +12,12 @@ abstract class MCCallState extends Equatable {
   MCCallState copyWith({bool? voiceOn, bool? muted});
 }
 
-class CallInitial extends MCCallState {
-  const CallInitial({super.voiceOn = false, super.muted = false});
+class CallIdle extends MCCallState {
+  const CallIdle({super.voiceOn = false, super.muted = false});
 
   @override
   MCCallState copyWith({bool? voiceOn, bool? muted}) {
-    return const CallInitial(voiceOn: false, muted: false);
+    return const CallIdle(voiceOn: false, muted: false);
   }
 }
 
@@ -26,6 +26,8 @@ class CallInProgress extends MCCallState {
   final String roomId;
   final List<CallParticipant> participants;
   final GroupCallSession groupSession;
+  final bool videoOn;
+  final MatrixRoom mRoom;
 
   const CallInProgress({
     required this.callId,
@@ -34,6 +36,8 @@ class CallInProgress extends MCCallState {
     super.muted = false,
     this.participants = const [],
     required this.groupSession,
+    this.videoOn = false,
+    required this.mRoom,
   });
 
   @override
@@ -44,6 +48,8 @@ class CallInProgress extends MCCallState {
     muted,
     participants,
     groupSession,
+    videoOn,
+    mRoom,
   ];
 
   @override
@@ -55,8 +61,9 @@ class CallInProgress extends MCCallState {
     bool? muted,
     bool? cameraOn,
     List<CallParticipant>? participants,
-    Room? room,
+    MatrixRoom? mRoom,
     GroupCallSession? groupSession,
+    bool? videoOn,
   }) {
     return CallInProgress(
       callId: callId ?? this.callId,
@@ -65,14 +72,16 @@ class CallInProgress extends MCCallState {
       muted: muted ?? this.muted,
       participants: participants ?? this.participants,
       groupSession: groupSession ?? this.groupSession,
+      videoOn: videoOn ?? this.videoOn,
+      mRoom: mRoom ?? this.mRoom,
     );
   }
 }
 
-class CallEnded extends MCCallState {
+class CallLoading extends MCCallState {
   final String callId;
 
-  const CallEnded({
+  const CallLoading({
     required this.callId,
     super.voiceOn = false,
     super.muted = false,
@@ -83,7 +92,7 @@ class CallEnded extends MCCallState {
 
   @override
   MCCallState copyWith({bool? voiceOn, bool? muted}) {
-    return CallEnded(callId: callId);
+    return CallLoading(callId: callId);
   }
 }
 
