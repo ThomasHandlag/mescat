@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+// import 'package:mescat/core/utils/app_bloc_observer.dart';
 import 'package:mescat/features/authentication/pages/auth_page.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
 import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
@@ -29,6 +30,7 @@ void main() async {
   await vod.init();
   await setupDependencyInjection();
   await RiveNative.init();
+  // Bloc.observer = AppBlocObserver();
   runApp(const MescatBlocProvider());
 }
 
@@ -120,25 +122,8 @@ final class MescatApp extends StatelessWidget {
       listeners: [
         BlocListener<CallBloc, MCCallState>(
           listener: (context, state) {
-            if (state is CallInProgress) {
-              final roomState = context.read<RoomBloc>().state;
-              if (roomState is RoomLoaded) {
-                if (state.roomId != roomState.selectedRoomId) {
-                  WidgetOverlayService.show(
-                    context,
-                    onExpand: () {
-                      context.read<RoomBloc>().add(
-                        SelectRoom(state.mRoom, flag: true),
-                      );
-                    },
-                    child: const CollapseCallView(),
-                  );
-                }
-              }
-            } else {
-              if (state.runtimeType != CallInProgress) {
-                WidgetOverlayService.hide();
-              }
+            if (state is! CallInProgress) {
+              WidgetOverlayService.hide();
             }
           },
         ),
@@ -154,8 +139,46 @@ final class MescatApp extends StatelessWidget {
           listener: (context, state) {
             final callState = context.read<CallBloc>().state;
             if (state is RoomLoaded) {
-              if (callState is CallInProgress) {
-                if (state.selectedRoomId != callState.roomId) {
+              if (state.selectedRoom?.canHaveCall == true) {
+                if (callState is CallInProgress) {
+                  if (state.selectedRoomId == callState.roomId) {
+                    WidgetOverlayService.hide();
+                    if (Platform.isAndroid || Platform.isIOS) {
+                      showFullscreenDialog(
+                        context,
+                        ChatPage(parentContext: context),
+                      );
+                    }
+                  } else {
+                    context.read<CallBloc>().add(
+                      JoinCall(mRoom: state.selectedRoom!),
+                    );
+                    if (Platform.isAndroid || Platform.isIOS) {
+                      showFullscreenDialog(
+                        context,
+                        ChatPage(parentContext: context),
+                      );
+                    }
+                  }
+                } else {
+                  context.read<CallBloc>().add(
+                    JoinCall(mRoom: state.selectedRoom!),
+                  );
+                  if (Platform.isAndroid || Platform.isIOS) {
+                    showFullscreenDialog(
+                      context,
+                      ChatPage(parentContext: context),
+                    );
+                  }
+                }
+              } else {
+                if (state.selectedRoom == null) {
+                  return;
+                }
+                final room = state.selectedRoom!;
+                context.read<ChatBloc>().add(LoadMessages(roomId: room.roomId));
+
+                if (callState is CallInProgress) {
                   WidgetOverlayService.show(
                     context,
                     onExpand: () {
@@ -165,27 +188,8 @@ final class MescatApp extends StatelessWidget {
                     },
                     child: const CollapseCallView(),
                   );
-                } else {
-                  WidgetOverlayService.hide();
-                }
-              } else {
-                if (callState is CallLoading) {
-                  return;
                 }
 
-                if (state.selectedRoom == null) {
-                  return;
-                }
-
-                final room = state.selectedRoom!;
-
-                if (state.selectedRoom!.canHaveCall == true) {
-                  context.read<CallBloc>().add(JoinCall(mRoom: room));
-                } else {
-                  context.read<ChatBloc>().add(
-                    LoadMessages(roomId: room.roomId),
-                  );
-                }
                 if (Platform.isAndroid || Platform.isIOS) {
                   showFullscreenDialog(
                     context,

@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as webrtc_impl;
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:webrtc_interface/webrtc_interface.dart' hide Navigator;
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,9 +29,9 @@ class CallHandler implements WebRTCDelegate {
   GroupCallSession? get groupSession => _groupSession;
   CallSession? get callSession => _directSession;
 
-  bool voiceOpen = false;
+  bool voiceMuted = true;
   //
-  bool headphoneOpen = true;
+  bool muteAll = false;
 
   CallHandler(this.client, this._store) {
     voIP = VoIP(client, this);
@@ -37,17 +39,19 @@ class CallHandler implements WebRTCDelegate {
   }
 
   void init() {
-    voiceOpen = _store.getBool('audio_call') ?? voiceOpen;
-    headphoneOpen = _store.getBool('headphone_call') ?? headphoneOpen;
+    voiceMuted = _store.getBool('audio_call') ?? voiceMuted;
+    muteAll = _store.getBool('headphone_call') ?? muteAll;
   }
 
-  Future<GroupCallSession?> joinGroupCall(String roomId) async {
+  Future<Either<CallFailure, GroupCallSession>> joinGroupCall(
+    String roomId,
+  ) async {
     await leaveCall();
     init();
     final room = client.getRoomById(roomId);
 
     if (room == null) {
-      return null;
+      return left(const CallFailure(message: 'Room not found'));
     }
 
     final session = await voIP.fetchOrCreateGroupCall(
@@ -69,12 +73,13 @@ class CallHandler implements WebRTCDelegate {
     //   'm.room',
     // );
 
-    session.backend.localUserMediaStream?.setAudioMuted(voiceOpen);
+    session.backend.localUserMediaStream?.setAudioMuted(voiceMuted);
     session.backend.localUserMediaStream?.setVideoMuted(true);
 
-    _groupSession = session;
-
     try {
+      if (session.state == GroupCallState.entered) {
+        await session.leave();
+      }
       await session.enter();
       await audioAssetPlayer.play(
         AssetSource('${Assets.audioAsset}/discord-join.mp3'),
@@ -83,8 +88,9 @@ class CallHandler implements WebRTCDelegate {
       logger.log(Level.error, 'Failed to join call: $e');
       logger.log(Level.trace, 'Stack trace: $stackTrace');
     }
+    _groupSession = session;
 
-    return _groupSession;
+    return right(session);
   }
 
   Future<void> inviteCall() async {}

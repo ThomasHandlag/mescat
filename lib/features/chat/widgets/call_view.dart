@@ -17,21 +17,22 @@ class CallView extends StatefulWidget {
 }
 
 class _CallViewState extends State<CallView> {
-  bool _focusView = Platform.isAndroid || Platform.isIOS ? true : false;
+  final bool _focusView =
+      false; //Platform.isAndroid || Platform.isIOS ? true : false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
         onTap: () {
-          setState(() => _focusView = !_focusView);
+          // setState(() => _focusView = !_focusView);
         },
         child: MouseRegion(
           onEnter: (event) {
-            setState(() => _focusView = false);
+            // setState(() => _focusView = false);
           },
           onExit: (event) {
-            setState(() => _focusView = true);
+            // setState(() => _focusView = true);
           },
           child: Container(
             decoration: BoxDecoration(
@@ -46,10 +47,10 @@ class _CallViewState extends State<CallView> {
                   BlocBuilder<CallBloc, MCCallState>(
                     builder: (context, state) {
                       if (state is! CallInProgress) {
-                        return const SizedBox(height: 40);
+                        return const SizedBox(height: 60);
                       }
                       return SizedBox(
-                        height: 40,
+                        height: 60,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -107,8 +108,10 @@ class _CallViewState extends State<CallView> {
                     builder: (context, state) {
                       if (state is CallInProgress) {
                         final localStream =
-                            state.groupSession.backend.localUserMediaStream!;
-                        return CallController(stream: localStream);
+                            state.groupSession.backend.localUserMediaStream;
+                        if (localStream != null) {
+                          return CallController(stream: localStream);
+                        }
                       }
                       return const SizedBox(height: 40);
                     },
@@ -127,7 +130,12 @@ class _CallViewState extends State<CallView> {
       child: BlocBuilder<CallBloc, MCCallState>(
         builder: (context, state) {
           if (state is CallInProgress) {
-            return MemberGridView(participants: state.participants);
+            return StreamBuilder(
+              stream: state.groupSession.matrixRTCEventStream.stream,
+              builder: (context, snapshot) {
+                return MemberGridView(participants: state.groupSession.participants);
+              },
+            );
           } else if (state is CallLoading) {
             return const Center(child: CircularProgressIndicator());
           } else {

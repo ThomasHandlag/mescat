@@ -1,23 +1,23 @@
 part of 'call_bloc.dart';
 
 abstract class MCCallState extends Equatable {
-  final bool voiceOn;
+  final bool voiceMuted;
   final bool muted;
 
-  const MCCallState({this.voiceOn = false, this.muted = false});
+  const MCCallState({this.voiceMuted = false, this.muted = false});
 
   @override
-  List<Object?> get props => [voiceOn, muted];
+  List<Object?> get props => [voiceMuted, muted];
 
-  MCCallState copyWith({bool? voiceOn, bool? muted});
+  MCCallState copyWith({bool? voiceMuted, bool? muted});
 }
 
 class CallIdle extends MCCallState {
-  const CallIdle({super.voiceOn = false, super.muted = false});
+  const CallIdle({super.voiceMuted = false, super.muted = false});
 
   @override
-  MCCallState copyWith({bool? voiceOn, bool? muted}) {
-    return const CallIdle(voiceOn: false, muted: false);
+  MCCallState copyWith({bool? voiceMuted, bool? muted}) {
+    return const CallIdle(voiceMuted: false, muted: false);
   }
 }
 
@@ -31,7 +31,7 @@ class CallInProgress extends MCCallState {
 
   const CallInProgress({
     required this.callId,
-    super.voiceOn = false,
+    super.voiceMuted = false,
     required this.roomId,
     super.muted = false,
     this.participants = const [],
@@ -43,7 +43,7 @@ class CallInProgress extends MCCallState {
   @override
   List<Object?> get props => [
     callId,
-    voiceOn,
+    voiceMuted,
     roomId,
     muted,
     participants,
@@ -55,7 +55,7 @@ class CallInProgress extends MCCallState {
   @override
   CallInProgress copyWith({
     String? callId,
-    bool? voiceOn,
+    bool? voiceMuted,
     String? roomId,
     bool? isVideoCall,
     bool? muted,
@@ -67,7 +67,7 @@ class CallInProgress extends MCCallState {
   }) {
     return CallInProgress(
       callId: callId ?? this.callId,
-      voiceOn: voiceOn ?? this.voiceOn,
+      voiceMuted: voiceMuted ?? this.voiceMuted,
       roomId: roomId ?? this.roomId,
       muted: muted ?? this.muted,
       participants: participants ?? this.participants,
@@ -83,7 +83,7 @@ class CallLoading extends MCCallState {
 
   const CallLoading({
     required this.callId,
-    super.voiceOn = false,
+    super.voiceMuted = false,
     super.muted = false,
   });
 
@@ -91,7 +91,7 @@ class CallLoading extends MCCallState {
   List<Object?> get props => [callId];
 
   @override
-  MCCallState copyWith({bool? voiceOn, bool? muted}) {
+  MCCallState copyWith({bool? voiceMuted, bool? muted}) {
     return CallLoading(callId: callId);
   }
 }
@@ -101,7 +101,7 @@ class CallFailed extends MCCallState {
 
   const CallFailed({
     required this.error,
-    super.voiceOn = false,
+    super.voiceMuted = false,
     super.muted = false,
   });
 
@@ -109,10 +109,10 @@ class CallFailed extends MCCallState {
   List<Object?> get props => [error];
 
   @override
-  MCCallState copyWith({bool? voiceOn, bool? muted}) {
+  MCCallState copyWith({bool? voiceMuted, bool? muted}) {
     return CallFailed(
       error: error,
-      voiceOn: voiceOn ?? this.voiceOn,
+      voiceMuted: voiceMuted ?? this.voiceMuted,
       muted: muted ?? this.muted,
     );
   }

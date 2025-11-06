@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:logger/logger.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/notifications/event_pusher.dart';
@@ -16,7 +17,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   final Logger logger = Logger();
 
   CallBloc({required this.eventPusher, required this.callHandler})
-    : super(const CallIdle(voiceOn: false, muted: false)) {
+    : super(const CallIdle(voiceMuted: true, muted: false)) {
     on<JoinCall>(_onJoinCall);
     on<LeaveCall>(_onLeaveCall);
     on<ToggleMute>(_onToggleMute);
@@ -24,55 +25,49 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
     on<SwitchCamera>(_onSwitchCamera);
     on<ToggleVoice>(_onToggleVoice);
     on<CallMembershipChanged>(_onCallMembershipChanged);
-    eventPusher.eventStream.listen((event) {
-      if (event is GroupCallMemberCandidatesEvent) {
-        add(CallMembershipChanged(memberships: event.memberships));
-      }
-    });
+    on<CallStreamSubscription>(_onCallStreamSubscription);
   }
 
   Future<void> _onJoinCall(JoinCall event, Emitter<MCCallState> emit) async {
-    add(const LeaveCall());
     emit(
       CallLoading(
         callId: event.mRoom.room.id,
-        voiceOn: state.voiceOn,
+        voiceMuted: state.voiceMuted,
         muted: state.muted,
       ),
     );
-    final session = await callHandler.joinGroupCall(event.mRoom.room.id);
+    final result = await callHandler.joinGroupCall(event.mRoom.room.id);
 
-    if (session == null) {
-      emit(CallIdle(voiceOn: state.voiceOn, muted: state.muted));
-      return;
-    }
-
-    final renders = <String, RTCVideoRenderer>{};
-
-    if (session.backend.localUserMediaStream?.stream != null) {
-      final renderer = RTCVideoRenderer();
-      await renderer.initialize();
-      final stream = session.backend.localUserMediaStream;
-      renderer.srcObject = stream?.stream;
-      renders[stream!.id] = renderer;
-    }
-
-    emit(
-      CallInProgress(
-        callId: event.mRoom.room.id,
-        roomId: event.mRoom.room.id,
-        groupSession: session,
-        participants: session.participants,
-        voiceOn: state.voiceOn,
-        muted: state.muted,
-        mRoom: event.mRoom,
-      ),
+    result.fold(
+      (failed) {
+        emit(
+          CallFailed(
+            error: failed.message,
+            muted: state.muted,
+            voiceMuted: state.voiceMuted,
+          ),
+        );
+      },
+      (session) {
+        emit(
+          CallInProgress(
+            callId: event.mRoom.room.id,
+            roomId: event.mRoom.room.id,
+            groupSession: session,
+            participants: session.participants,
+            voiceMuted: state.voiceMuted,
+            muted: state.muted,
+            mRoom: event.mRoom,
+          ),
+        );
+        add(const CallStreamSubscription());
+      },
     );
   }
 
   Future<void> _onLeaveCall(LeaveCall event, Emitter<MCCallState> emit) async {
     await callHandler.leaveCall();
-    emit(CallIdle(muted: state.muted, voiceOn: state.voiceOn));
+    emit(CallIdle(muted: state.muted, voiceMuted: state.voiceMuted));
   }
 
   Future<void> _onToggleMute(
@@ -87,7 +82,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
     Emitter<MCCallState> emit,
   ) async {
     callHandler.setAudioMuted(event.muted);
-    emit(state.copyWith(voiceOn: event.muted));
+    emit(state.copyWith(voiceMuted: event.muted));
   }
 
   Future<void> _onToggleCamera(
@@ -100,7 +95,6 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
       emit(
         currentState.copyWith(
           groupSession: currentState.groupSession,
-          participants: currentState.participants,
           videoOn: event.muted,
         ),
       );
@@ -120,15 +114,10 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   Future<void> _onCallMembershipChanged(
     CallMembershipChanged event,
     Emitter<MCCallState> emit,
-  ) async {
-    if (state is CallInProgress) {
-      final currentState = state as CallInProgress;
-      emit(
-        currentState.copyWith(
-          participants: currentState.groupSession.participants,
-          groupSession: currentState.groupSession,
-        ),
-      );
-    }
-  }
+  ) async {}
+
+  Future<void> _onCallStreamSubscription(
+    CallStreamSubscription event,
+    Emitter<MCCallState> emit,
+  ) async {}
 }
