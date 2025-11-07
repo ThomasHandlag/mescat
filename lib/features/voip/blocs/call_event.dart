@@ -56,23 +56,6 @@ class SwitchCamera extends CallEvent {
   @override
   List<Object?> get props => [];
 }
-
-class CallMembershipChanged extends CallEvent {
-  final List<CallMembership> memberships;
-
-  const CallMembershipChanged({required this.memberships});
-
-  @override
-  List<Object?> get props => [memberships];
-}
-
-final class CallStreamSubscription extends CallEvent {
-  const CallStreamSubscription();
-
-  @override
-  List<Object?> get props => [];
-}
-
 final class SwitchCall extends CallEvent {
   const SwitchCall({required this.mRoom});
 

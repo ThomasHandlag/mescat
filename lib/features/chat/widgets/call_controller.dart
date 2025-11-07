@@ -2,16 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 
 class CallController extends StatelessWidget {
-  const CallController({super.key, required this.stream});
+  const CallController({
+    super.key,
+    required this.voiceMuted,
+    required this.videoMuted,
+  });
 
-  final WrappedMediaStream stream;
-
-  bool get voiceMuted => stream.audioMuted;
-  bool get videoMuted => stream.videoMuted;
+  final bool voiceMuted;
+  final bool videoMuted;
 
   @override
   Widget build(BuildContext context) {

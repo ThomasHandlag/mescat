@@ -68,6 +68,10 @@ class _HomePageState extends State<HomePage> {
               return BlocBuilder<CallBloc, MCCallState>(
                 builder: (context, roomState) {
                   return UserBox(
+                    voiceMuted: roomState.voiceMuted,
+                    videoMuted: roomState is CallInProgress
+                        ? roomState.videoMuted
+                        : false,
                     username: state.user.displayName,
                     avatarUrl: state.user.avatarUrl,
                     mutedAll: (roomState.muted),
@@ -111,6 +115,10 @@ class _HomePageState extends State<HomePage> {
                   return BlocBuilder<CallBloc, MCCallState>(
                     builder: (context, roomState) {
                       return UserBox(
+                        voiceMuted: roomState.voiceMuted,
+                        videoMuted: roomState is CallInProgress
+                            ? roomState.videoMuted
+                            : false,
                         username: state.user.displayName,
                         avatarUrl: state.user.avatarUrl,
                         mutedAll: roomState.muted,

@@ -54,22 +54,32 @@ class _MemberGrid extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            if (videoMuted)
-              CircleAvatar(
-                radius: 40,
-                backgroundImage: avatarUri != null
-                    ? NetworkImage(avatarUri!.toFilePath())
-                    : null,
-                child: avatarUri == null
-                    ? Text(displayName != null ? getInitials(displayName!) : '')
-                    : null,
-              )
-            else
-              CallVideo(
-                stream: stream,
-                isMirror: mirrored,
-                fit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-              ),
+            StreamBuilder(
+              stream: stream.onMuteStateChanged.stream,
+              builder: (context, _) {
+                if (videoMuted) {
+                  return CircleAvatar(
+                    radius: 40,
+                    backgroundImage: avatarUri != null
+                        ? NetworkImage(avatarUri!.toFilePath())
+                        : null,
+                    child: avatarUri == null
+                        ? Text(
+                            displayName != null
+                                ? getInitials(displayName!)
+                                : '',
+                          )
+                        : null,
+                  );
+                } else {
+                  return CallVideo(
+                    stream: stream,
+                    isMirror: mirrored,
+                    fit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  );
+                }
+              },
+            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Align(
@@ -89,14 +99,21 @@ class _MemberGrid extends StatelessWidget {
                         child: const Text('You'),
                       ),
                     const Spacer(),
-                    CircleAvatar(
-                      radius: 10,
-                      backgroundColor: audioMuted ? Colors.red : Colors.green,
-                      child: Icon(
-                        audioMuted ? Icons.mic_off : Icons.mic,
-                        size: 12,
-                        color: Colors.white,
-                      ),
+                    StreamBuilder(
+                      stream: stream.onMuteStateChanged.stream,
+                      builder: (context, snapshot) {
+                        return CircleAvatar(
+                          radius: 10,
+                          backgroundColor: audioMuted
+                              ? Colors.red
+                              : Colors.green,
+                          child: Icon(
+                            audioMuted ? Icons.mic_off : Icons.mic,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

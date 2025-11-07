@@ -13,17 +13,18 @@ class UserBox extends StatelessWidget {
     super.key,
     this.mutedAll = true,
     required this.stream,
+    required this.voiceMuted,
+    required this.videoMuted,
     this.username,
     this.avatarUrl,
   });
+  final bool voiceMuted;
+  final bool videoMuted;
 
   final bool mutedAll;
   final WrappedMediaStream? stream;
   final String? username;
   final String? avatarUrl;
-
-  bool get voiceMuted => stream?.audioMuted ?? true;
-  bool get videoMuted => stream?.videoMuted ?? true;
 
   @override
   Widget build(BuildContext context) {

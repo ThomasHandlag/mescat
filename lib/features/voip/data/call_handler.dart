@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as webrtc_impl;
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+// import 'package:mescat/core/encryption/mc_encryption_provider.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:webrtc_interface/webrtc_interface.dart' hide Navigator;
 import 'package:mescat/core/constants/app_constants.dart';
@@ -18,6 +19,7 @@ class CallHandler implements WebRTCDelegate {
   final SharedPreferences _store;
   final Logger logger = Logger();
   final audioAssetPlayer = AudioPlayer();
+  // final McEncryptionProvider encryptionProvider = McEncryptionProvider(); livekit backend does not implement yet
 
   late VoIP voIP;
 
@@ -65,9 +67,9 @@ class CallHandler implements WebRTCDelegate {
     //   roomId,
     //   room,
     //   CallBackend.fromJson({
-    //     'type': 'livekit',
-    //     'livekit_service_url': 'wss://mescat-u1q7e4nx.livekit.cloud',
-    //     'livekit_alias': 'mescat',
+    //     "livekit_alias": "!qoQQTYnzXOHSdEgqQp:im.staging.famedly.de",
+    //     "livekit_service_url": "https://famedly-livekit-server.teedee.dev/jwt",
+    //     "type": "livekit",
     //   }),
     //   'm.call',
     //   'm.room',
@@ -110,11 +112,11 @@ class CallHandler implements WebRTCDelegate {
   }
 
   void setVideoMuted(bool muted) {
-    _groupSession?.backend.localUserMediaStream?.setVideoMuted(muted);
+    _groupSession?.backend.setDeviceMuted(_groupSession!, muted, MediaInputKind.videoinput);
   }
 
   void setAudioMuted(bool muted) {
-    _groupSession?.backend.localUserMediaStream?.setAudioMuted(muted);
+    _groupSession?.backend.setDeviceMuted(_groupSession!, muted, MediaInputKind.audioinput);
   }
 
   @override
@@ -163,6 +165,7 @@ class CallHandler implements WebRTCDelegate {
 
   @override
   EncryptionKeyProvider? get keyProvider => throw UnimplementedError();
+  // EncryptionKeyProvider? get keyProvider => encryptionProvider; livekit backend does not implement yet
 
   @override
   Future<void> playRingtone() async {

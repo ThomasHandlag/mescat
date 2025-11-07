@@ -205,7 +205,7 @@ final class MCRepositoryImpl implements MCRepository {
       return const Right([]);
     }
 
-    final members = room.getParticipants();
+    final members = await room.requestParticipants();
 
     final matrixUsers = members.map((member) async {
       final user = await _matrixClientManager.client.getUserProfile(

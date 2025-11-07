@@ -24,8 +24,6 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
     on<ToggleCamera>(_onToggleCamera);
     on<SwitchCamera>(_onSwitchCamera);
     on<ToggleVoice>(_onToggleVoice);
-    on<CallMembershipChanged>(_onCallMembershipChanged);
-    on<CallStreamSubscription>(_onCallStreamSubscription);
   }
 
   Future<void> _onJoinCall(JoinCall event, Emitter<MCCallState> emit) async {
@@ -60,7 +58,6 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
             mRoom: event.mRoom,
           ),
         );
-        add(const CallStreamSubscription());
       },
     );
   }
@@ -95,7 +92,9 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
       emit(
         currentState.copyWith(
           groupSession: currentState.groupSession,
-          videoOn: event.muted,
+          videoMuted: event.muted,
+          muted: currentState.muted,
+          voiceMuted: currentState.voiceMuted,
         ),
       );
     }
@@ -110,14 +109,4 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   // Future<void> close() {
   //   return super.close();
   // }
-
-  Future<void> _onCallMembershipChanged(
-    CallMembershipChanged event,
-    Emitter<MCCallState> emit,
-  ) async {}
-
-  Future<void> _onCallStreamSubscription(
-    CallStreamSubscription event,
-    Emitter<MCCallState> emit,
-  ) async {}
 }

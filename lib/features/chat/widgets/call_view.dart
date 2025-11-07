@@ -110,7 +110,10 @@ class _CallViewState extends State<CallView> {
                         final localStream =
                             state.groupSession.backend.localUserMediaStream;
                         if (localStream != null) {
-                          return CallController(stream: localStream);
+                          return CallController(
+                            videoMuted: state.videoMuted,
+                            voiceMuted: state.voiceMuted,
+                          );
                         }
                       }
                       return const SizedBox(height: 40);
@@ -133,7 +136,9 @@ class _CallViewState extends State<CallView> {
             return StreamBuilder(
               stream: state.groupSession.matrixRTCEventStream.stream,
               builder: (context, snapshot) {
-                return MemberGridView(participants: state.groupSession.participants);
+                return MemberGridView(
+                  participants: state.groupSession.participants,
+                );
               },
             );
           } else if (state is CallLoading) {

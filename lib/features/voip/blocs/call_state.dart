@@ -26,7 +26,7 @@ class CallInProgress extends MCCallState {
   final String roomId;
   final List<CallParticipant> participants;
   final GroupCallSession groupSession;
-  final bool videoOn;
+  final bool videoMuted;
   final MatrixRoom mRoom;
 
   const CallInProgress({
@@ -36,7 +36,7 @@ class CallInProgress extends MCCallState {
     super.muted = false,
     this.participants = const [],
     required this.groupSession,
-    this.videoOn = false,
+    this.videoMuted = false,
     required this.mRoom,
   });
 
@@ -48,7 +48,7 @@ class CallInProgress extends MCCallState {
     muted,
     participants,
     groupSession,
-    videoOn,
+    videoMuted,
     mRoom,
   ];
 
@@ -59,11 +59,10 @@ class CallInProgress extends MCCallState {
     String? roomId,
     bool? isVideoCall,
     bool? muted,
-    bool? cameraOn,
+    bool? videoMuted,
     List<CallParticipant>? participants,
     MatrixRoom? mRoom,
     GroupCallSession? groupSession,
-    bool? videoOn,
   }) {
     return CallInProgress(
       callId: callId ?? this.callId,
@@ -72,7 +71,7 @@ class CallInProgress extends MCCallState {
       muted: muted ?? this.muted,
       participants: participants ?? this.participants,
       groupSession: groupSession ?? this.groupSession,
-      videoOn: videoOn ?? this.videoOn,
+      videoMuted: videoMuted ?? this.videoMuted,
       mRoom: mRoom ?? this.mRoom,
     );
   }
