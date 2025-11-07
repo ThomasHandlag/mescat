@@ -199,11 +199,13 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Future<Either<MCFailure, List<MCUser>>> getRoomMembers(String roomId) async {
-    final members = await _matrixClientManager.client.getMembersByRoom(roomId);
+    final room =  _matrixClientManager.client.getRoomById(roomId);
 
-    if (members == null) {
+    if (room == null) {
       return const Right([]);
     }
+
+    final members = room.getParticipants();
 
     final matrixUsers = members.map((member) async {
       final user = await _matrixClientManager.client.getUserProfile(
