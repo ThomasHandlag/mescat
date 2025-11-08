@@ -30,9 +30,9 @@ class UserBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(
-        bottom: UIConstraints.smallPadding,
-        left: UIConstraints.smallPadding,
-        right: UIConstraints.smallPadding,
+        bottom: UIConstraints.mSmallPadding,
+        left: UIConstraints.mSmallPadding,
+        right: UIConstraints.mSmallPadding,
       ),
       child: Container(
         height: stream != null ? 150 : UIConstraints.mMessageInputHeight,

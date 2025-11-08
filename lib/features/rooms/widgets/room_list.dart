@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
-import 'package:mescat/features/rooms/pages/room_setting_page.dart';
+import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/rooms/widgets/expanse_channel.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';

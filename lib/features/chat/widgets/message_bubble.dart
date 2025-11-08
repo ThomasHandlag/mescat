@@ -8,6 +8,9 @@ import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/message_item.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
+import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:mescat/shared/widgets/youtube_webview.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MessageBubble extends StatelessWidget {
   final MCMessageEvent message;
@@ -221,6 +224,13 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  void _onClickLink(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
   Widget? _buildMessageContent(BuildContext context, MCMessageEvent message) {
     switch (message.msgtype) {
       case MessageTypes.Text:
@@ -271,11 +281,30 @@ class MessageBubble extends StatelessWidget {
                     ),
                   ),
                 ),
-              Text.rich(
-                TextSpan(text: message.body, children: textSpanLists),
-                style: Theme.of(context).textTheme.bodyMedium,
+              GestureDetector(
+                onTap: () {
+                  if (message.body.isValidUrl) {
+                    // Open the link
+                    _onClickLink(message.body);
+                  }
+                },
+                child: Text.rich(
+                  TextSpan(text: message.body, children: textSpanLists),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    decoration:
+                        Uri.tryParse(message.body)?.hasAbsolutePath == true
+                        ? TextDecoration.underline
+                        : TextDecoration.none,
+                  ),
+                ),
               ),
-              // if (isValidYoutubeUrl(message.body))
+              if (message.body.isValidYoutubeUrl)
+                YoutubeWebview(
+                  videoUrl: message.body,
+                  message: message.body,
+                  displayName: message.senderDisplayName,
+                  avatarUrl: message.senderAvatarUrl,
+                ),
             ],
           );
         }

@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   desktop_webview_window
   file_selector_windows
+  flutter_inappwebview_windows
   flutter_webrtc
   permission_handler_windows
   rive_native

@@ -100,3 +100,26 @@ class _SettingPageState extends State<SettingPage> {
     );
   }
 }
+
+/* 
+ Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  shape: BoxShape.circle,
+                ),
+                child: GestureDetector(
+                  onTap: () {},
+                  child: CircleAvatar(
+                    radius: Platform.isAndroid ? 40 : 80,
+                    backgroundImage: widget.room.avatarUrl != null
+                        ? NetworkImage(widget.room.avatarUrl!)
+                        : null,
+                    child: widget.room.avatarUrl == null
+                        ? const Icon(Icons.camera_alt_outlined, size: 40)
+                        : null,
+                  ),
+                ),
+              ),
+
+*/

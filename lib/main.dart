@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
@@ -29,6 +30,9 @@ void main() async {
   await Hive.initFlutter();
   await vod.init();
   await setupDependencyInjection();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(statusBarColor: Colors.blueAccent),
+  );
   await RiveNative.init();
   // Bloc.observer = AppBlocObserver();
   runApp(const MescatBlocProvider());
