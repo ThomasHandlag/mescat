@@ -46,3 +46,13 @@ class LogoutUseCase {
     return await repository.logout();
   }
 }
+
+class OAuthLoginUseCase {
+  final MCRepository repository;
+
+  OAuthLoginUseCase(this.repository);
+
+  Future<Either<MCFailure, MCUser>> call({required String loginToken}) async {
+    return await repository.oauthLogin(token: loginToken);
+  }
+}

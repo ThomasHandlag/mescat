@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:dartz/dartz.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
@@ -177,6 +178,12 @@ final class MCRepositoryImpl implements MCRepository {
     if (parentSpaceId != null && parentSpaceId.isNotEmpty) {
       await addRoomToSpace(parentSpaceId, roomId);
     }
+
+    final room = _matrixClientManager.client.getRoomById(roomId);
+
+    if (room == null) {
+      return const Left(UnknownFailure(message: 'Failed to create room'));
+    }
     return Right(
       MatrixRoom(
         roomId: roomId,
@@ -185,17 +192,20 @@ final class MCRepositoryImpl implements MCRepository {
         type: type,
         isPublic: isPublic,
         parentSpaceId: parentSpaceId,
+        room: room,
       ),
     );
   }
 
   @override
   Future<Either<MCFailure, List<MCUser>>> getRoomMembers(String roomId) async {
-    final members = await _matrixClientManager.client.getMembersByRoom(roomId);
+    final room =  _matrixClientManager.client.getRoomById(roomId);
 
-    if (members == null) {
+    if (room == null) {
       return const Right([]);
     }
+
+    final members = await room.requestParticipants();
 
     final matrixUsers = members.map((member) async {
       final user = await _matrixClientManager.client.getUserProfile(
@@ -309,7 +319,7 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
     String roomId, {
-    int limit = 100,
+    int limit = 150,
     String? fromToken,
     String? filter,
     String? toToken,
@@ -546,6 +556,7 @@ final class MCRepositoryImpl implements MCRepository {
           topic: room.topic,
           type: RoomType.directMessage,
           isPublic: room.isFederated,
+          room: room,
         ),
       );
     } else {
@@ -567,6 +578,7 @@ final class MCRepositoryImpl implements MCRepository {
               topic: room.topic,
               type: RoomType.directMessage,
               isPublic: room.isFederated,
+              room: room,
             );
           } else {
             return null;
@@ -604,7 +616,7 @@ final class MCRepositoryImpl implements MCRepository {
     try {
       final rooms = _matrixClientManager.client.rooms
           .map((room) {
-            bool isVoiceRoom = room.canJoinGroupCall & false;
+            bool isVoiceRoom = false;
 
             final createEvent = room.getState(EventTypes.RoomCreate);
 
@@ -635,6 +647,7 @@ final class MCRepositoryImpl implements MCRepository {
                 lastActivity: room.latestEventReceivedTime,
                 lastMessage: room.lastEvent?.content['body'] as String?,
                 memberCount: room.summary.mJoinedMemberCount ?? 0,
+                room: room,
               );
             }
           })
@@ -649,24 +662,27 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Future<Either<MCFailure, List<MatrixSpace>>> getSpaces() async {
-    final rooms = _matrixClientManager.client.rooms;
-    _matrixClientManager.logger.log(Level.debug, 'All rooms: $rooms');
-    final spaces = rooms
-        .map((r) {
-          if (r.isSpace) {
-            return MatrixSpace(
-              spaceId: r.id,
-              name: r.name,
-              description: r.topic,
-              isPublic: r.isFederated,
-              createdAt: DateTime.now(),
-            );
-          }
-        })
-        .whereType<MatrixSpace>()
-        .toList();
-
-    return Right(spaces);
+    try {
+      final rooms = _matrixClientManager.client.rooms;
+      _matrixClientManager.logger.log(Level.debug, 'All rooms: $rooms');
+      final spaces = rooms
+          .map((r) {
+            if (r.isSpace) {
+              return MatrixSpace(
+                spaceId: r.id,
+                name: r.name,
+                description: r.topic,
+                isPublic: r.isFederated,
+                createdAt: DateTime.now(),
+              );
+            }
+          })
+          .whereType<MatrixSpace>()
+          .toList();
+      return Right(spaces);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to fetch spaces: $e'));
+    }
   }
 
   @override
@@ -748,6 +764,37 @@ final class MCRepositoryImpl implements MCRepository {
       );
     } catch (e) {
       return Left(AuthenticationFailure(message: 'Login failed: $e'));
+    }
+  }
+
+  @override
+  Future<Either<MCFailure, MCUser>> oauthLogin({
+    required String token,
+  }) async {
+    try {
+      final loginResponse = await _matrixClientManager.client.login(
+        LoginType.mLoginToken,
+        token: token,
+        initialDeviceDisplayName: MatrixConfig.defaultClientName
+      );
+
+      final user = await _matrixClientManager.client.getUserProfile(
+        loginResponse.userId,
+      );
+
+      return Right(
+        MCUser(
+          displayName: user.displayname,
+          userId: loginResponse.userId,
+          avatarUrl: user.avatarUrl?.toFilePath(),
+          accessToken: loginResponse.accessToken,
+          refreshToken: loginResponse.refreshToken,
+        ),
+      );
+    } catch (e) {
+      return Left(
+        AuthenticationFailure(message: 'Third-party login failed: $e'),
+      );
     }
   }
 
@@ -849,6 +896,7 @@ final class MCRepositoryImpl implements MCRepository {
           topic: result.topic,
           type: RoomType.directMessage,
           isPublic: result.isFederated,
+          room: result,
         ),
       ]);
     }
@@ -989,11 +1037,49 @@ final class MCRepositoryImpl implements MCRepository {
         type: room.type,
         isPublic: room.isPublic,
         parentSpaceId: room.parentSpaceId,
+        room: existingRoom,
       );
 
       return Right(updatedRoom);
     } catch (e) {
       return Left(UnknownFailure(message: 'Failed to update room: $e'));
     }
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> startCall({
+    required String roomId,
+    required bool isVideo,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> endCall({required String roomId}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> toggleAudio({required bool isMuted}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> toggleVideo({
+    required bool isCameraOn,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> switchCamera() async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<MCFailure, List<CallParticipant>>> getCallParticipants({
+    required String roomId,
+  }) async {
+    throw UnimplementedError();
   }
 }

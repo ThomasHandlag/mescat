@@ -17,6 +17,8 @@ abstract class MCRepository {
     String? email,
   });
 
+  Future<Either<MCFailure, MCUser>> oauthLogin({required String token});
+
   Future<Either<MCFailure, bool>> logout();
 
   // User management
@@ -39,10 +41,7 @@ abstract class MCRepository {
   });
   Future<Either<MCFailure, bool>> joinRoom(String roomId);
   Future<Either<MCFailure, bool>> leaveRoom(String roomId);
-  Future<Either<MCFailure, bool>> inviteToRoom(
-    String roomId,
-    String userId,
-  );
+  Future<Either<MCFailure, bool>> inviteToRoom(String roomId, String userId);
 
   // Space management
   Future<Either<MCFailure, List<MatrixSpace>>> getSpaces();
@@ -56,18 +55,13 @@ abstract class MCRepository {
   Future<Either<MCFailure, List<MatrixRoom>>> getSpaceRooms(String spaceId);
   Future<Either<MCFailure, bool>> joinSpace(String spaceId);
   Future<Either<MCFailure, bool>> leaveSpace(String spaceId);
-  Future<Either<MCFailure, bool>> addRoomToSpace(
-    String spaceId,
-    String roomId,
-  );
+  Future<Either<MCFailure, bool>> addRoomToSpace(String spaceId, String roomId);
   Future<Either<MCFailure, bool>> removeRoomFromSpace(
     String spaceId,
     String roomId,
   );
 
-  Future<Either<MCFailure, List<MCUser>>> getRoomMembers(
-    String roomId,
-  );
+  Future<Either<MCFailure, List<MCUser>>> getRoomMembers(String roomId);
 
   // Message management
   Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
@@ -137,10 +131,7 @@ abstract class MCRepository {
 
   // Encryption
   Future<Either<MCFailure, bool>> enableEncryption(String roomId);
-  Future<Either<MCFailure, bool>> verifyDevice(
-    String userId,
-    String deviceId,
-  );
+  Future<Either<MCFailure, bool>> verifyDevice(String userId, String deviceId);
 
   // Search
   Future<Either<MCFailure, List<MCMessageEvent>>> searchMessages({
@@ -177,4 +168,16 @@ abstract class MCRepository {
   Future<Either<MCFailure, bool>> setServer(String serverUrl);
 
   Future<Either<MCFailure, MatrixRoom>> updateRoom(MatrixRoom room);
+
+  Future<Either<MCFailure, bool>> startCall({
+    required String roomId,
+    required bool isVideo,
+  });
+  Future<Either<MCFailure, bool>> endCall({required String roomId});
+  Future<Either<MCFailure, bool>> toggleAudio({required bool isMuted});
+  Future<Either<MCFailure, bool>> toggleVideo({required bool isCameraOn});
+  Future<Either<MCFailure, bool>> switchCamera();
+  Future<Either<MCFailure, List<CallParticipant>>> getCallParticipants({
+    required String roomId,
+  });
 }

@@ -26,6 +26,7 @@ linter:
     always_use_package_imports: true
     prefer_const_constructors: true
     prefer_const_literals_to_create_immutables: true
+    avoid_shadowing_type_parameters: true
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
