@@ -574,7 +574,7 @@ final class MCRepositoryImpl implements MCRepository {
           if (room != null && !room.isSpace && room.spaceParents.isEmpty) {
             return MatrixRoom(
               roomId: roomId,
-              name: room.name,
+              name: room.getLocalizedDisplayname(),
               topic: room.topic,
               type: RoomType.directMessage,
               isPublic: room.isFederated,
