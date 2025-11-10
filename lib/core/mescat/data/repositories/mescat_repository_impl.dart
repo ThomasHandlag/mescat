@@ -199,7 +199,7 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Future<Either<MCFailure, List<MCUser>>> getRoomMembers(String roomId) async {
-    final room =  _matrixClientManager.client.getRoomById(roomId);
+    final room = _matrixClientManager.client.getRoomById(roomId);
 
     if (room == null) {
       return const Right([]);
@@ -239,6 +239,12 @@ final class MCRepositoryImpl implements MCRepository {
       visibility: isPublic ? Visibility.public : Visibility.private,
     );
 
+    final space =  _matrixClientManager.client.getRoomById(spaceId);
+
+    if (space == null) {
+      return const Left(UnknownFailure(message: 'Failed to create space'));
+    }
+
     return Right(
       MatrixSpace(
         spaceId: spaceId,
@@ -246,6 +252,7 @@ final class MCRepositoryImpl implements MCRepository {
         description: description,
         isPublic: isPublic,
         createdAt: DateTime.now(),
+        mRoom: space
       ),
     );
   }
@@ -597,13 +604,18 @@ final class MCRepositoryImpl implements MCRepository {
     );
     final spaceInfo = _matrixClientManager.client.getRoomById(spaceId);
 
+    if (spaceInfo == null) {
+      return const Left(RoomFailure(message: 'Space not found'));
+    }
+
     final space = MatrixSpace(
       spaceId: spaceId,
-      name: spaceInfo?.name ?? 'Unnamed Space',
-      description: spaceInfo?.topic ?? 'No description',
-      isPublic: spaceInfo?.guestAccess == GuestAccess.canJoin,
+      name: spaceInfo.name ,
+      description: spaceInfo.topic,
+      isPublic: spaceInfo.guestAccess == GuestAccess.canJoin,
       createdAt: DateTime.now(),
       childRoomIds: spaceHierachie.rooms.map((r) => r.roomId).toList(),
+      mRoom: spaceInfo,
     );
 
     return Right(space);
@@ -674,6 +686,7 @@ final class MCRepositoryImpl implements MCRepository {
                 description: r.topic,
                 isPublic: r.isFederated,
                 createdAt: DateTime.now(),
+                mRoom: r
               );
             }
           })
@@ -768,14 +781,12 @@ final class MCRepositoryImpl implements MCRepository {
   }
 
   @override
-  Future<Either<MCFailure, MCUser>> oauthLogin({
-    required String token,
-  }) async {
+  Future<Either<MCFailure, MCUser>> oauthLogin({required String token}) async {
     try {
       final loginResponse = await _matrixClientManager.client.login(
         LoginType.mLoginToken,
         token: token,
-        initialDeviceDisplayName: MatrixConfig.defaultClientName
+        initialDeviceDisplayName: MatrixConfig.defaultClientName,
       );
 
       final user = await _matrixClientManager.client.getUserProfile(

@@ -1,26 +1,26 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
-import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/features/settings/widgets/manage_member.dart';
 import 'package:mescat/features/settings/widgets/manage_notification.dart';
 import 'package:mescat/features/settings/widgets/manage_permission.dart';
 import 'package:mescat/features/settings/widgets/manage_general.dart';
 
-class RoomSettingPage extends StatefulWidget {
-  final MatrixRoom room;
+class SpaceSettingPage extends StatefulWidget {
+  final Room room;
 
-  const RoomSettingPage({super.key, required this.room});
+  const SpaceSettingPage({super.key, required this.room});
 
   @override
-  State<RoomSettingPage> createState() => _RoomSettingPageState();
+  State<SpaceSettingPage> createState() => _SpaceSettingPageState();
 }
 
 enum RoomSettingCategory { general, members, notifications, permissions }
 
-class _RoomSettingPageState extends State<RoomSettingPage> {
+class _SpaceSettingPageState extends State<SpaceSettingPage> {
   RoomSettingCategory _viewCategory = RoomSettingCategory.general;
 
   @override
@@ -47,12 +47,16 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
     );
   }
 
-  Widget _buildView(MatrixRoom room) {
+  Widget _buildView(Room room) {
     return switch (_viewCategory) {
-      RoomSettingCategory.general => ManageGeneral(room: room.room),
-      RoomSettingCategory.members => ManageMember(room: room.room),
-      RoomSettingCategory.notifications => ManageNotification(room: room.room),
-      RoomSettingCategory.permissions => ManagePermission(room: room.room),
+      RoomSettingCategory.general => ManageGeneral(room: room),
+      RoomSettingCategory.members => ManageMember(room: room),
+      RoomSettingCategory.notifications => ManageNotification(
+        room: room,
+      ),
+      RoomSettingCategory.permissions => ManagePermission(
+        room: room,
+      ),
     };
   }
 
@@ -186,3 +190,4 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
     );
   }
 }
+

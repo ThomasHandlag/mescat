@@ -65,7 +65,7 @@ class SpaceBloc extends Bloc<SpaceEvent, SpaceState> {
   ) async {
     if (state is SpaceLoaded) {
       final currentState = state as SpaceLoaded;
-      emit(currentState.copyWith(selectedSpaceId: event.spaceId));
+      emit(currentState.copyWith(selectedSpace: event.space));
     }
   }
 }

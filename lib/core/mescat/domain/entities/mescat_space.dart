@@ -12,6 +12,7 @@ class MatrixSpace extends Equatable {
   final Map<String, dynamic> permissions;
   final DateTime createdAt;
   final int memberCount;
+  final Room mRoom;
 
   const MatrixSpace({
     required this.spaceId,
@@ -25,6 +26,7 @@ class MatrixSpace extends Equatable {
     this.permissions = const {},
     required this.createdAt,
     this.memberCount = 0,
+    required this.mRoom,
   });
 
   @override
@@ -40,6 +42,7 @@ class MatrixSpace extends Equatable {
     permissions,
     createdAt,
     memberCount,
+    mRoom,
   ];
 
   MatrixSpace copyWith({
@@ -54,6 +57,7 @@ class MatrixSpace extends Equatable {
     Map<String, dynamic>? permissions,
     DateTime? createdAt,
     int? memberCount,
+  Room? mRoom,
   }) {
     return MatrixSpace(
       spaceId: spaceId ?? this.spaceId,
@@ -67,6 +71,7 @@ class MatrixSpace extends Equatable {
       permissions: permissions ?? this.permissions,
       createdAt: createdAt ?? this.createdAt,
       memberCount: memberCount ?? this.memberCount,
+      mRoom: mRoom ?? this.mRoom,
     );
   }
 }

@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/rooms/widgets/expanse_channel.dart';
+import 'package:mescat/features/settings/pages/space_setting_page.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
@@ -17,34 +20,66 @@ class RoomList extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(8),
           child: Row(
             children: [
               BlocBuilder<SpaceBloc, SpaceState>(
                 builder: (context, state) {
-                  String spaceName = 'Space Name';
                   if (state is SpaceLoaded) {
                     final selectedSpace =
                         state.spaces.indexWhere(
-                              (space) => space.spaceId == state.selectedSpaceId,
+                              (space) => space.spaceId == state.selectedSpace?.spaceId,
                             ) !=
                             -1
                         ? state.spaces.firstWhere(
-                            (space) => space.spaceId == state.selectedSpaceId,
+                            (space) => space.spaceId == state.selectedSpace?.spaceId,
                           )
                         : null;
-                    spaceName = selectedSpace?.name ?? 'Space Name';
+
+                    if (selectedSpace != null) {
+                      return Text(
+                        selectedSpace.name,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      );
+                    }
                   }
                   return Text(
-                    spaceName,
+                    'Mescat',
                     style: Theme.of(context).textTheme.titleMedium,
                   );
                 },
               ),
               const Spacer(),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.chevron_right),
+              BlocBuilder<SpaceBloc, SpaceState>(
+                builder: (context, state) {
+                  if (state is SpaceLoaded) {
+                    final selectedSpace =
+                        state.spaces.indexWhere(
+                              (space) => space.spaceId == state.selectedSpace?.spaceId,
+                            ) !=
+                            -1
+                        ? state.spaces.firstWhere(
+                            (space) => space.spaceId == state.selectedSpace?.spaceId,
+                          )
+                        : null;
+
+                    if (selectedSpace == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return IconButton(
+                      onPressed: () {
+                        showFullscreenDialog(
+                          context,
+                          SpaceSettingPage(
+                            room: selectedSpace.mRoom,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.chevron_right),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             ],
           ),
@@ -57,7 +92,7 @@ class RoomList extends StatelessWidget {
               if (state is SpaceLoaded) {
                 context.read<RoomBloc>().add(
                   LoadRooms(
-                    spaceId: state.selectedSpaceId,
+                    spaceId: state.selectedSpace?.spaceId,
                     onComplete: (room) {
                       context.read<ChatBloc>().add(
                         LoadMessages(roomId: room.roomId),
@@ -228,7 +263,9 @@ class RoomList extends StatelessWidget {
       context.read<RoomBloc>().add(
         SelectRoom(
           room,
-          flag: (!roomState.flag) && room.canHaveCall,
+          flag:
+              (!roomState.flag) &&
+              (Platform.isAndroid || Platform.isIOS ? true : room.canHaveCall),
           roomType: room.type,
         ),
       );
@@ -403,10 +440,10 @@ class RoomList extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 if (nameController.text.trim().isNotEmpty) {
-                  final selectedSpaceId =
+                  final selectedSpace =
                       context.read<SpaceBloc>().state is SpaceLoaded
                       ? (context.read<SpaceBloc>().state as SpaceLoaded)
-                            .selectedSpaceId
+                            .selectedSpace
                       : null;
                   context.read<RoomBloc>().add(
                     CreateRoom(
@@ -416,7 +453,7 @@ class RoomList extends StatelessWidget {
                           : topicController.text.trim(),
                       type: selectedType,
                       isPublic: isPublic,
-                      parentSpaceId: selectedSpaceId,
+                      parentSpaceId: selectedSpace?.spaceId,
                     ),
                   );
                   Navigator.of(dialogContext).pop();

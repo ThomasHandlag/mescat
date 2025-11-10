@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   audioplayers_windows
+  bitsdojo_window_windows
   connectivity_plus
   desktop_webview_window
   file_selector_windows

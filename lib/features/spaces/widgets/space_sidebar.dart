@@ -38,18 +38,17 @@ class SpaceSidebar extends StatelessWidget {
                           icon: Icons.home,
                           label: 'Home',
                           isSelected:
-                              state.selectedSpaceId == null ||
-                              state.selectedSpaceId == '',
+                              state.selectedSpace == null,
                           onTap: () {
                             context.read<SpaceBloc>().add(
-                              const SelectSpace(''),
+                              const SelectSpace(null),
                             );
                           },
                         );
                       }
 
                       final space = state.spaces[index - 1];
-                      final isSelected = space.spaceId == state.selectedSpaceId;
+                      final isSelected = space.spaceId == state.selectedSpace?.spaceId;
 
                       return SpaceIcon(
                         avatarUrl: space.avatarUrl,
@@ -57,7 +56,7 @@ class SpaceSidebar extends StatelessWidget {
                         isSelected: isSelected,
                         onTap: () {
                           context.read<SpaceBloc>().add(
-                            SelectSpace(space.spaceId),
+                            SelectSpace(space),
                           );
                         },
                       );
