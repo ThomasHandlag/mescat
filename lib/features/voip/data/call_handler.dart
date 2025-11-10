@@ -19,6 +19,8 @@ class CallHandler implements WebRTCDelegate {
   final SharedPreferences _store;
   final Logger logger = Logger();
   final audioAssetPlayer = AudioPlayer();
+  final String audioStoreKey = 'audio_call';
+  final String muteStoreKey = 'headphone_call';
   // final McEncryptionProvider encryptionProvider = McEncryptionProvider(); livekit backend does not implement yet
 
   late VoIP voIP;
@@ -31,25 +33,18 @@ class CallHandler implements WebRTCDelegate {
   GroupCallSession? get groupSession => _groupSession;
   CallSession? get callSession => _directSession;
 
-  bool voiceMuted = true;
-  //
-  bool muteAll = false;
+  bool get muteAll => _store.getBool(muteStoreKey) ?? false;
+
+  bool get voiceMuted => _store.getBool(audioStoreKey) ?? true;
 
   CallHandler(this.client, this._store) {
     voIP = VoIP(client, this);
-    init();
-  }
-
-  void init() {
-    voiceMuted = _store.getBool('audio_call') ?? voiceMuted;
-    muteAll = _store.getBool('headphone_call') ?? muteAll;
   }
 
   Future<Either<CallFailure, GroupCallSession>> joinGroupCall(
     String roomId,
   ) async {
     await leaveCall();
-    init();
     final room = client.getRoomById(roomId);
 
     if (room == null) {
@@ -111,12 +106,25 @@ class CallHandler implements WebRTCDelegate {
     }
   }
 
-  void setVideoMuted(bool muted) {
-    _groupSession?.backend.setDeviceMuted(_groupSession!, muted, MediaInputKind.videoinput);
+  Future<void> setVideoMuted(bool muted) async {
+    await _groupSession?.backend.setDeviceMuted(
+      _groupSession!,
+      muted,
+      MediaInputKind.videoinput,
+    );
   }
 
-  void setAudioMuted(bool muted) {
-    _groupSession?.backend.setDeviceMuted(_groupSession!, muted, MediaInputKind.audioinput);
+  Future<void> setAudioMuted(bool muted) async {
+    await _store.setBool(audioStoreKey, muted);
+    await _groupSession?.backend.setDeviceMuted(
+      _groupSession!,
+      muted,
+      MediaInputKind.audioinput,
+    );
+  }
+
+  Future<void> setMuteAll(bool muted) async {
+    await _store.setBool(muteStoreKey, muted);
   }
 
   @override

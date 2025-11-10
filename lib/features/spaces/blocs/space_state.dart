@@ -23,7 +23,7 @@ class SpaceLoaded extends SpaceState {
   SpaceLoaded copyWith({List<MatrixSpace>? spaces, MatrixSpace? selectedSpace}) {
     return SpaceLoaded(
       spaces: spaces ?? this.spaces,
-      selectedSpace: selectedSpace ?? this.selectedSpace,
+      selectedSpace: selectedSpace,
     );
   }
 }

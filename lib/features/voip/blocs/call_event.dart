@@ -13,14 +13,11 @@ class JoinCall extends CallEvent {
   const JoinCall({required this.mRoom});
 
   @override
-  List<Object?> get props => [mRoom];
+  List<Object> get props => [mRoom];
 }
 
 class LeaveCall extends CallEvent {
   const LeaveCall();
-
-  @override
-  List<Object?> get props => [];
 }
 
 class ToggleMute extends CallEvent {
@@ -29,7 +26,7 @@ class ToggleMute extends CallEvent {
   const ToggleMute({required this.isMuted});
 
   @override
-  List<Object?> get props => [isMuted];
+  List<Object> get props => [isMuted];
 }
 
 class ToggleVoice extends CallEvent {
@@ -38,7 +35,7 @@ class ToggleVoice extends CallEvent {
   const ToggleVoice({required this.muted});
 
   @override
-  List<Object?> get props => [muted];
+  List<Object> get props => [muted];
 }
 
 class ToggleCamera extends CallEvent {
@@ -47,14 +44,14 @@ class ToggleCamera extends CallEvent {
   final bool muted;
 
   @override
-  List<Object?> get props => [muted];
+  List<Object> get props => [muted];
 }
 
 class SwitchCamera extends CallEvent {
   const SwitchCamera();
 
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 final class SwitchCall extends CallEvent {
   const SwitchCall({required this.mRoom});
@@ -62,5 +59,5 @@ final class SwitchCall extends CallEvent {
   final MatrixRoom mRoom;
 
   @override
-  List<Object?> get props => [mRoom];
+  List<Object> get props => [mRoom];
 }
