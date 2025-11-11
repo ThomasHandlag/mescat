@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:rive/rive.dart';
+
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
 import 'package:mescat/features/authentication/pages/auth_page.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
@@ -12,8 +15,6 @@ import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/home_server/cubits/server_cubit.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/util/widget_overlay_service.dart';
-import 'package:rive/rive.dart';
-
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/pages/home_page.dart';
@@ -106,6 +107,15 @@ final class MescatBlocProvider extends StatelessWidget {
       child: SafeArea(
         child: MaterialApp(
           title: 'Mescat',
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'), // English
+            Locale('vi'), // Vietnamese
+          ],
           debugShowCheckedModeBanner: false,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
