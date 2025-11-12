@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 
@@ -43,69 +45,76 @@ class MessageActions extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Add reaction
+      child: Platform.isIOS || Platform.isAndroid
+          ? _buildMobile(context)
+          : _buildDesktop(context),
+    );
+  }
+
+  Widget _buildDesktop(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Add reaction
+        _buildActionButton(
+          context,
+          icon: Icons.add_reaction_outlined,
+          tooltip: 'Add Reaction',
+          onPressed: onReact,
+        ),
+
+        // Reply
+        _buildActionButton(
+          context,
+          icon: Icons.reply,
+          tooltip: 'Reply',
+          onPressed: onReply,
+        ),
+
+        // Copy message
+        _buildActionButton(
+          context,
+          icon: Icons.content_copy,
+          tooltip: 'Copy Text',
+          onPressed: onCopy,
+        ),
+
+        // Edit (only for current user)
+        if (isCurrentUser)
           _buildActionButton(
             context,
-            icon: Icons.add_reaction_outlined,
-            tooltip: 'Add Reaction',
-            onPressed: onReact,
+            icon: Icons.edit,
+            tooltip: 'Edit',
+            onPressed: onEdit,
           ),
 
-          // Reply
+        // Pin message
+        _buildActionButton(
+          context,
+          icon: Icons.push_pin,
+          tooltip: 'Pin Message',
+          onPressed: onPin,
+        ),
+
+        // Delete (only for current user)
+        if (isCurrentUser)
           _buildActionButton(
             context,
-            icon: Icons.reply,
-            tooltip: 'Reply',
-            onPressed: onReply,
+            icon: Icons.delete_outline,
+            tooltip: 'Delete',
+            onPressed: onDelete,
+            isDestructive: true,
           ),
 
-          // Copy message
-          _buildActionButton(
-            context,
-            icon: Icons.content_copy,
-            tooltip: 'Copy Text',
-            onPressed: onCopy,
-          ),
-
-          // Edit (only for current user)
-          if (isCurrentUser)
-            _buildActionButton(
-              context,
-              icon: Icons.edit,
-              tooltip: 'Edit',
-              onPressed: onEdit,
-            ),
-
-          // Pin message
-          _buildActionButton(
-            context,
-            icon: Icons.push_pin,
-            tooltip: 'Pin Message',
-            onPressed: onPin,
-          ),
-
-          // Delete (only for current user)
-          if (isCurrentUser)
-            _buildActionButton(
-              context,
-              icon: Icons.delete_outline,
-              tooltip: 'Delete',
-              onPressed: onDelete,
-              isDestructive: true,
-            ),
-
-          // More actions
-          _buildActionButton(
-            context,
-            icon: Icons.more_horiz,
-            tooltip: 'More',
-            onPressed: () => _showMoreActions(context, onCopy, onReport, onEdit, onDelete),
-          ),
-        ],
-      ),
+        // More actions
+        _buildActionButton(
+          context,
+          icon: Icons.more_horiz,
+          tooltip: 'More',
+          onPressed: () =>
+              _showMoreActions(context, onCopy, onReport, onEdit, onDelete),
+        ),
+      ],
     );
   }
 
@@ -267,6 +276,94 @@ class MessageActions extends StatelessWidget {
         ),
       ),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildMobile(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Divider(
+            thickness: 4,
+            indent: 120,
+            endIndent: 120,
+            radius: BorderRadius.all(Radius.circular(5)),
+          ),
+          Expanded(
+            child: ListView(
+              children: [
+                _buildMobileActionTile(
+                  context,
+                  icon: Icons.content_copy,
+                  title: 'Copy Message',
+                  onTap: () {
+                    onCopy?.call();
+                  },
+                ),
+                _buildMobileActionTile(
+                  context,
+                  icon: Icons.flag,
+                  title: 'Report Message',
+                  onTap: () {
+                    onReport?.call();
+                  },
+                  isDestructive: true,
+                ),
+                if (isCurrentUser)
+                  _buildMobileActionTile(
+                    context,
+                    icon: Icons.edit,
+                    title: 'Edit Message',
+                    onTap: () {
+                      onEdit?.call();
+                    },
+                  ),
+                if (isCurrentUser)
+                  _buildMobileActionTile(
+                    context,
+                    icon: Icons.delete,
+                    title: 'Delete Message',
+                    onTap: () {
+                      onDelete?.call();
+                    },
+                    isDestructive: true,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileActionTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDestructive ? colorScheme.error : colorScheme.onSurface,
+        size: 20,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDestructive ? colorScheme.error : colorScheme.onSurface,
+          fontSize: 16,
+        ),
+      ),
+      onTap: () {
+        onTap();
+        Navigator.of(context).pop();
+      },
     );
   }
 }

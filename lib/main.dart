@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:mescat/core/notifications/event_pusher.dart';
 import 'package:rive/rive.dart';
 
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
@@ -25,6 +25,8 @@ import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/l10n/mescat_localizations.dart';
+import 'package:workmanager/workmanager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +36,9 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.blueAccent),
   );
+  if (Platform.isAndroid || Platform.isIOS) {
+    await Workmanager().initialize(registerBackgroundTask);
+  }
   await RiveNative.init();
   // Bloc.observer = AppBlocObserver();
   runApp(const MescatBlocProvider());
@@ -107,15 +112,8 @@ final class MescatBlocProvider extends StatelessWidget {
       child: SafeArea(
         child: MaterialApp(
           title: 'Mescat',
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('en'), // English
-            Locale('vi'), // Vietnamese
-          ],
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           debugShowCheckedModeBanner: false,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
