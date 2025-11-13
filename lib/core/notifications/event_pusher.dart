@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+
 import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/features/notifications/data/notification_service.dart';
-import 'package:workmanager/workmanager.dart';
 
 final class EventPusher {
   final MatrixClientManager clientManager;
@@ -17,74 +17,8 @@ final class EventPusher {
     required this.clientManager,
     required this.notificationService,
   }) {
-    clientManager.client.onNotification.stream.listen((event) async {
-      final user = await clientManager.client.getUserProfile(event.senderId);
+    registNotificationListener();
 
-      if (event.type == EventTypes.Message) {
-        final messageType = event.content['msgtype'] as String?;
-
-        if (messageType == null) {
-          return;
-        }
-
-        RepliedEventContent? repliedEventContent;
-        if (event.relationshipType == RelationshipTypes.reply) {
-          final repliedMxEvent = await clientManager.client.getOneRoomEvent(
-            event.room.id,
-            event.eventId,
-          );
-          final repliedEvent = Event.fromMatrixEvent(
-            repliedMxEvent,
-            event.room,
-          );
-          if (repliedEvent.messageType == MessageTypes.Text) {
-            final repliedUser = await event.fetchSenderUser();
-            if (repliedUser == null) {
-              logger.log(
-                Level.warning,
-                "Failed to fetch replied user for event: $repliedEvent",
-              );
-              return;
-            }
-            repliedEventContent = RepliedEventContent(
-              content: repliedEvent.body,
-              eventId: repliedEvent.eventId,
-              senderName: repliedUser.displayName ?? repliedEvent.senderId,
-            );
-          }
-        }
-
-        final text = event.content['body'] as String;
-        final imageInfo = event.content['info'] as Map<String, dynamic>?;
-        final width = imageInfo != null ? imageInfo['w'] : null;
-        final height = imageInfo != null ? imageInfo['h'] : null;
-        MatrixFile? mtFile;
-
-        if (event.hasAttachment) {
-          mtFile = await event.downloadAndDecryptAttachment();
-        }
-
-        _controller.add(
-          MCMessageEvent(
-            roomId: event.room.id,
-            senderId: event.senderId,
-            senderDisplayName: user.displayname,
-            width: width,
-            height: height,
-            timestamp: event.originServerTs,
-            eventId: event.eventId,
-            file: mtFile,
-            body: text,
-            eventTypes: event.type,
-            isCurrentUser: clientManager.currentUserId == event.senderId,
-            msgtype: messageType,
-            mimeType: event.attachmentMimetype,
-            senderAvatarUrl: user.avatarUrl?.toFilePath(),
-            repliedEvent: repliedEventContent,
-          ),
-        );
-      }
-    });
     clientManager.client.onTimelineEvent.stream.listen((event) async {
       final user = await clientManager.client.getUserProfile(event.senderId);
 
@@ -225,18 +159,15 @@ final class EventPusher {
       StreamController<MCEvent>.broadcast();
 
   Stream<MCEvent> get eventStream => _controller.stream;
-}
 
-@pragma('vm:entry-point')
-void registerBackgroundTask(EventPusher eventPusher) {
-  Workmanager().executeTask((task, inputData) async {
-    eventPusher.clientManager.client.onNotification.stream.listen((event) {
+  void registNotificationListener() async {
+    clientManager.client.onNotification.stream.listen((event) async {
       final roomId = event.room.id;
       final roomName = event.room.name;
       if (event.type == EventTypes.CallInvite) {
         final inviterName = event.senderId;
 
-        eventPusher.notificationService.showInviteNotification(
+        notificationService.showInviteNotification(
           roomId: roomId,
           roomName: roomName,
           inviterName: inviterName,
@@ -245,7 +176,7 @@ void registerBackgroundTask(EventPusher eventPusher) {
         final roomId = event.room.id;
         final senderName = event.senderId;
         final messageContent = event.content['body'] as String? ?? '';
-        eventPusher.notificationService.showMessageNotification(
+        notificationService.showMessageNotification(
           roomId: roomId,
           roomName: roomName,
           senderName: senderName,
@@ -255,13 +186,12 @@ void registerBackgroundTask(EventPusher eventPusher) {
       } else if (event.type == EventTypes.GroupCallMemberInvite) {
         final roomId = event.room.id;
         final inviterName = event.senderId;
-        eventPusher.notificationService.showInviteNotification(
+        notificationService.showInviteNotification(
           roomId: roomId,
           roomName: roomName,
           inviterName: inviterName,
         );
       }
     });
-    return Future.value(true);
-  });
+  }
 }

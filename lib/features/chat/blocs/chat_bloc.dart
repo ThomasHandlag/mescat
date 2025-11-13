@@ -211,15 +211,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       replyToEventId: event.replyToEventId,
     );
 
-    result.fold((failure) => emit(ChatError(message: failure.toString())), (
-      message,
-    ) {
-      if (state is ChatLoaded) {
-        final currentState = state as ChatLoaded;
-        final updatedMessages = [...currentState.messages, message];
-        emit(currentState.copyWith(messages: updatedMessages));
-      }
-    });
+    result.fold(
+      (failure) => emit(ChatError(message: failure.toString())),
+      (message) {},
+    );
   }
 
   Future<void> _onSetInputAction(
@@ -268,4 +263,3 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
 }
-

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
@@ -112,7 +114,7 @@ class _MessageInputState extends State<MessageInput> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
-      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
+      decoration: const BoxDecoration(color: Color.fromARGB(255, 70, 70, 70)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

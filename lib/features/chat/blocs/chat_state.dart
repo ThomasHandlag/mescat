@@ -38,7 +38,14 @@ class ChatLoaded extends ChatState {
   });
 
   @override
-  List<Object?> get props => [messages];
+  List<Object?> get props => [
+    messages,
+    isLoadingMessages,
+    inputAction,
+    isLoadingMore,
+    selectedRoomId,
+    selectedRoom,
+  ];
 
   ChatLoaded copyWith({
     String? selectedRoomId,
@@ -75,4 +82,3 @@ class InputActionData extends Equatable {
   @override
   List<Object?> get props => [action, targetEventId, initialContent];
 }
-

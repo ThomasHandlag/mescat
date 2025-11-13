@@ -28,11 +28,13 @@ class RoomList extends StatelessWidget {
                   if (state is SpaceLoaded) {
                     final selectedSpace =
                         state.spaces.indexWhere(
-                              (space) => space.spaceId == state.selectedSpace?.spaceId,
+                              (space) =>
+                                  space.spaceId == state.selectedSpace?.spaceId,
                             ) !=
                             -1
                         ? state.spaces.firstWhere(
-                            (space) => space.spaceId == state.selectedSpace?.spaceId,
+                            (space) =>
+                                space.spaceId == state.selectedSpace?.spaceId,
                           )
                         : null;
 
@@ -55,11 +57,13 @@ class RoomList extends StatelessWidget {
                   if (state is SpaceLoaded) {
                     final selectedSpace =
                         state.spaces.indexWhere(
-                              (space) => space.spaceId == state.selectedSpace?.spaceId,
+                              (space) =>
+                                  space.spaceId == state.selectedSpace?.spaceId,
                             ) !=
                             -1
                         ? state.spaces.firstWhere(
-                            (space) => space.spaceId == state.selectedSpace?.spaceId,
+                            (space) =>
+                                space.spaceId == state.selectedSpace?.spaceId,
                           )
                         : null;
 
@@ -70,9 +74,7 @@ class RoomList extends StatelessWidget {
                       onPressed: () {
                         showFullscreenDialog(
                           context,
-                          SpaceSettingPage(
-                            room: selectedSpace.mRoom,
-                          ),
+                          SpaceSettingPage(room: selectedSpace.mRoom),
                         );
                       },
                       icon: const Icon(Icons.chevron_right),
@@ -318,7 +320,9 @@ class RoomList extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             IconButton(
-              onPressed: () {},
+              onPressed: () {
+                
+              },
               icon: Icon(
                 Icons.group_add,
                 size: 16,

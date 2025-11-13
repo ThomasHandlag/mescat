@@ -62,13 +62,15 @@ Future<void> setupDependencyInjection() async {
   final matrixClient = await createMatrixClient("Mescat", "https://matrix.org");
   final sharedPref = await SharedPreferences.getInstance();
   final appLinks = AppLinks();
+  final notificationService = NotificationService();
+  await notificationService.initialize();
 
   getIt.registerSingleton<Client>(matrixClient);
   getIt.registerSingleton<AppLinks>(appLinks);
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),
   );
-  getIt.registerLazySingleton(() => NotificationService()..initialize());
+  getIt.registerSingleton<NotificationService>(notificationService);
   getIt.registerLazySingleton<CallHandler>(
     () => CallHandler(matrixClient, sharedPref),
   );

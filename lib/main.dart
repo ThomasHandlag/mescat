@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
-import 'package:mescat/core/notifications/event_pusher.dart';
 import 'package:rive/rive.dart';
 
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
@@ -26,19 +25,17 @@ import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/l10n/mescat_localizations.dart';
-import 'package:workmanager/workmanager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await vod.init();
   await setupDependencyInjection();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.blueAccent),
   );
-  if (Platform.isAndroid || Platform.isIOS) {
-    await Workmanager().initialize(registerBackgroundTask);
-  }
+
   await RiveNative.init();
   // Bloc.observer = AppBlocObserver();
   runApp(const MescatBlocProvider());
@@ -96,18 +93,6 @@ final class MescatBlocProvider extends StatelessWidget {
         BlocProvider(
           create: (context) => MemberBloc(getRoomMembersUseCase: getIt()),
         ),
-        BlocProvider(
-          create: (context) => ChatBloc(
-            getMessagesUseCase: getIt(),
-            sendMessageUseCase: getIt(),
-            addReactionUseCase: getIt(),
-            removeReactionUseCase: getIt(),
-            deleteMessageUseCase: getIt(),
-            editMessageUseCase: getIt(),
-            replyMessageUseCase: getIt(),
-            eventPusher: getIt(),
-          ),
-        ),
       ],
       child: SafeArea(
         child: MaterialApp(
@@ -132,17 +117,17 @@ final class MescatApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
-        BlocListener<CallBloc, MCCallState>(
-          listener: (context, state) {
-            if (state is! CallInProgress) {
-              WidgetOverlayService.hide();
-            }
-          },
-        ),
         BlocListener<MescatBloc, MescatStatus>(
           listener: (context, state) {
             if (state is NetworkError || state is Unauthenticated) {
               context.read<CallBloc>().add(const LeaveCall());
+              WidgetOverlayService.hide();
+            }
+          },
+        ),
+        BlocListener<CallBloc, MCCallState>(
+          listener: (context, state) {
+            if (state is! CallInProgress) {
               WidgetOverlayService.hide();
             }
           },

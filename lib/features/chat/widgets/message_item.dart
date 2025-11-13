@@ -73,45 +73,47 @@ class _MessageItemState extends State<MessageItem>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: Platform.isAndroid || Platform.isIOS
-          ? _showActionModal
-          : null,
-      child: MouseRegion(
-        onEnter: (_) {
-          setState(() => _isHovered = true);
-        },
-        onExit: (_) {
-          setState(() => _isHovered = false);
-        },
-        child: Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: _isHovered ? const Color.fromARGB(255, 79, 79, 79) : null,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              widget.child,
-
-              if (_isHovered)
-                Positioned(
-                  top: -24,
-                  right: 0,
-                  child: MessageActions(
-                    message: widget.message,
-                    isCurrentUser: widget.isCurrentUser,
-                    onReply: _handleReplyMessage,
-                    onReact: _handleReactToMessage,
-                    onEdit: widget.onEdit,
-                    onDelete: _handleDeleteMessage,
-                    onPin: _handlePinMessage,
-                    onReport: widget.onReport,
-                    onCopy: _handleCopyMessage,
+    return Material(
+      child: InkWell(
+        onLongPress: Platform.isAndroid || Platform.isIOS
+            ? _showActionModal
+            : null,
+        child: MouseRegion(
+          onEnter: (_) {
+            setState(() => _isHovered = true);
+          },
+          onExit: (_) {
+            setState(() => _isHovered = false);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: _isHovered ? const Color.fromARGB(255, 79, 79, 79) : null,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                widget.child,
+      
+                if (_isHovered)
+                  Positioned(
+                    top: -24,
+                    right: 0,
+                    child: MessageActions(
+                      message: widget.message,
+                      isCurrentUser: widget.isCurrentUser,
+                      onReply: _handleReplyMessage,
+                      onReact: _handleReactToMessage,
+                      onEdit: widget.onEdit,
+                      onDelete: _handleDeleteMessage,
+                      onPin: _handlePinMessage,
+                      onReport: widget.onReport,
+                      onCopy: _handleCopyMessage,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

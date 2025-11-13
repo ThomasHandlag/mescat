@@ -180,4 +180,18 @@ abstract class MCRepository {
   Future<Either<MCFailure, List<CallParticipant>>> getCallParticipants({
     required String roomId,
   });
+
+  // Push notifications
+  Future<Either<MCFailure, bool>> registerPusher({
+    required String pushkey,
+    required String appId,
+    String? pushGatewayUrl,
+    String? deviceDisplayName,
+    String? lang,
+  });
+
+  Future<Either<MCFailure, bool>> unregisterPusher({
+    required String pushkey,
+    required String appId,
+  });
 }

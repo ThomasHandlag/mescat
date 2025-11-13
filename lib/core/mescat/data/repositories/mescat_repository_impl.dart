@@ -1093,4 +1093,84 @@ final class MCRepositoryImpl implements MCRepository {
   }) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<Either<MCFailure, bool>> registerPusher({
+    required String pushkey,
+    required String appId,
+    String? pushGatewayUrl,
+    String? deviceDisplayName,
+    String? lang,
+  }) async {
+    try {
+      // Default to Matrix.org push gateway if not provided
+      final gatewayUrl = pushGatewayUrl ?? 'https://matrix.org/_matrix/push/v1/notify';
+      
+      await _matrixClientManager.client.postPusher(
+        Pusher(
+          pushkey: pushkey,
+          kind: 'http',
+          appId: appId,
+          appDisplayName: 'Mescat',
+          deviceDisplayName: deviceDisplayName ?? 'Mobile Device',
+          lang: lang ?? 'en',
+          data: PusherData(
+            url: Uri.parse(gatewayUrl),
+            format: 'event_id_only',
+          ),
+          profileTag: '',
+        ),
+      );
+
+      _matrixClientManager.logger.log(
+        Level.info,
+        'Push notification registered successfully',
+      );
+      
+      return const Right(true);
+    } catch (e, stackTrace) {
+      _matrixClientManager.logger.log(
+        Level.error,
+        'Failed to register pusher',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return Left(
+        UnknownFailure(message: 'Failed to register push notifications: $e'),
+      );
+    }
+  }
+
+  @override
+  Future<Either<MCFailure, bool>> unregisterPusher({
+    required String pushkey,
+    required String appId,
+  }) async {
+    try {
+      // To unregister, use deletePusher with PusherId
+      await _matrixClientManager.client.deletePusher(
+        PusherId(
+          appId: appId,
+          pushkey: pushkey,
+        ),
+      );
+
+      _matrixClientManager.logger.log(
+        Level.info,
+        'Push notification unregistered successfully',
+      );
+
+      return const Right(true);
+    } catch (e, stackTrace) {
+      _matrixClientManager.logger.log(
+        Level.error,
+        'Failed to unregister pusher',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return Left(
+        UnknownFailure(message: 'Failed to unregister push notifications: $e'),
+      );
+    }
+  }
 }

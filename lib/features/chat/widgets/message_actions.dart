@@ -296,40 +296,67 @@ class MessageActions extends StatelessWidget {
               children: [
                 _buildMobileActionTile(
                   context,
-                  icon: Icons.content_copy,
-                  title: 'Copy Message',
-                  onTap: () {
-                    onCopy?.call();
-                  },
+                  icon: Icons.add_reaction_outlined,
+                  label: 'Add Reaction',
+                  onTap: onReact,
                 ),
+
+                // Reply
                 _buildMobileActionTile(
                   context,
-                  icon: Icons.flag,
-                  title: 'Report Message',
-                  onTap: () {
-                    onReport?.call();
-                  },
-                  isDestructive: true,
+                  icon: Icons.reply,
+                  label: 'Reply',
+                  onTap: onReply,
                 ),
+
+                // Copy message
+                _buildMobileActionTile(
+                  context,
+                  icon: Icons.content_copy,
+                  label: 'Copy Text',
+                  onTap: onCopy,
+                ),
+
+                // Edit (only for current user)
                 if (isCurrentUser)
                   _buildMobileActionTile(
                     context,
                     icon: Icons.edit,
-                    title: 'Edit Message',
-                    onTap: () {
-                      onEdit?.call();
-                    },
+                    label: 'Edit',
+                    onTap: onEdit,
                   ),
+
+                // Pin message
+                _buildMobileActionTile(
+                  context,
+                  icon: Icons.push_pin,
+                  label: 'Pin Message',
+                  onTap: onPin,
+                ),
+
+                // Delete (only for current user)
                 if (isCurrentUser)
                   _buildMobileActionTile(
                     context,
-                    icon: Icons.delete,
-                    title: 'Delete Message',
-                    onTap: () {
-                      onDelete?.call();
-                    },
+                    icon: Icons.delete_outline,
+                    label: 'Delete',
+                    onTap: onDelete,
                     isDestructive: true,
                   ),
+
+                // More actions
+                _buildMobileActionTile(
+                  context,
+                  icon: Icons.more_horiz,
+                  label: 'More',
+                  onTap: () => _showMoreActions(
+                    context,
+                    onCopy,
+                    onReport,
+                    onEdit,
+                    onDelete,
+                  ),
+                ),
               ],
             ),
           ),
@@ -341,8 +368,8 @@ class MessageActions extends StatelessWidget {
   Widget _buildMobileActionTile(
     BuildContext context, {
     required IconData icon,
-    required String title,
-    required VoidCallback onTap,
+    required String label,
+    required VoidCallback? onTap,
     bool isDestructive = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -354,14 +381,14 @@ class MessageActions extends StatelessWidget {
         size: 20,
       ),
       title: Text(
-        title,
+        label,
         style: TextStyle(
           color: isDestructive ? colorScheme.error : colorScheme.onSurface,
           fontSize: 16,
         ),
       ),
       onTap: () {
-        onTap();
+        onTap?.call();
         Navigator.of(context).pop();
       },
     );
