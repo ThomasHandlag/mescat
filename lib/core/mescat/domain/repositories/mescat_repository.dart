@@ -64,7 +64,7 @@ abstract class MCRepository {
   Future<Either<MCFailure, List<MCUser>>> getRoomMembers(String roomId);
 
   // Message management
-  Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
+  Future<Either<MCFailure, Map<String, dynamic>>> getMessages(
     String roomId, {
     int limit = 100,
     String? fromToken,

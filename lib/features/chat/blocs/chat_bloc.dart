@@ -44,45 +44,49 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   void _eventSubscription() {
     eventPusher.eventStream.listen((event) {
-      if (state is ChatLoaded) {
-        final currentState = state as ChatLoaded;
-        if (event.roomId == currentState.selectedRoomId) {
-          if (event is MCMessageEvent) {
-            add(ReceiveMessage(event));
-          }
-        } else if (event is MCReactionEvent) {
-          add(MessageReacted(event: event));
-        }
+      if (state is! ChatLoaded) return;
+
+      final currentState = state as ChatLoaded;
+      if (event.roomId != currentState.selectedRoomId) return;
+
+      if (event is MCMessageEvent) {
+        add(ReceiveMessage(event));
+      } else if (event is MCReactionEvent) {
+        add(MessageReacted(event: event));
       }
     });
   }
 
   void _onReceiveMessage(ReceiveMessage event, Emitter<ChatState> emit) {
-    if (state is ChatLoaded) {
-      final currentState = state as ChatLoaded;
-      if (event.message.roomId == currentState.selectedRoomId) {
-        final updatedMessages = [...currentState.messages, event.message];
-        emit(currentState.copyWith(messages: updatedMessages));
-      }
-    }
+    if (state is! ChatLoaded) return;
+
+    final currentState = state as ChatLoaded;
+    if (event.message.roomId != currentState.selectedRoomId) return;
+
+    emit(
+      currentState.copyWith(
+        messages: [...currentState.messages, event.message],
+      ),
+    );
   }
 
   void _onMessageReacted(MessageReacted event, Emitter<ChatState> emit) {
-    if (state is ChatLoaded) {
-      final currentState = state as ChatLoaded;
-      final updatedMessages = List<MCMessageEvent>.from(currentState.messages);
-      final messageIndex = updatedMessages.indexWhere(
-        (msg) => msg.eventId == event.event.relatedEventId,
-      );
-      if (messageIndex != -1) {
-        final message = updatedMessages[messageIndex];
-        updatedMessages[messageIndex] = message.copyWith(
-          reactions: [...message.reactions, event.event],
-        );
+    if (state is! ChatLoaded) return;
 
-        emit(currentState.copyWith(messages: List.from(updatedMessages)));
-      }
-    }
+    final currentState = state as ChatLoaded;
+    final messageIndex = currentState.messages.indexWhere(
+      (msg) => msg.eventId == event.event.relatedEventId,
+    );
+
+    if (messageIndex == -1) return;
+
+    final updatedMessages = List<MCMessageEvent>.from(currentState.messages);
+    final message = updatedMessages[messageIndex];
+    updatedMessages[messageIndex] = message.copyWith(
+      reactions: [...message.reactions, event.event],
+    );
+
+    emit(currentState.copyWith(messages: updatedMessages));
   }
 
   Future<void> _onLoadMessages(
@@ -98,13 +102,19 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     result.fold(
       (failure) => emit(ChatError(message: failure.toString())),
-      (messages) => emit(
-        ChatLoaded(
-          selectedRoomId: event.roomId,
-          messages: messages,
-          inputAction: const InputActionData(action: InputAction.none),
-        ),
-      ),
+      (data) {
+        final messages = data['messages'] as List<MCMessageEvent>;
+        final nextToken = data['nextToken'] as String?;
+        
+        emit(
+          ChatLoaded(
+            selectedRoomId: event.roomId,
+            messages: messages,
+            inputAction: const InputActionData(action: InputAction.none),
+            nextToken: nextToken,
+          ),
+        );
+      },
     );
   }
 
@@ -120,7 +130,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     result.fold(
       (failure) => emit(ChatError(message: failure.toString())),
-      (message) {},
+      (_) {}, // Message will be received via event stream
     );
   }
 
@@ -168,13 +178,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     result.fold((failure) => emit(ChatError(message: failure.toString())), (
       success,
     ) {
-      if (success && state is ChatLoaded) {
-        final currentState = state as ChatLoaded;
-        final updatedMessages = currentState.messages
-            .where((msg) => msg.eventId != event.eventId)
-            .toList();
-        emit(currentState.copyWith(messages: updatedMessages));
-      }
+      if (!success || state is! ChatLoaded) return;
+
+      final currentState = state as ChatLoaded;
+      final updatedMessages = currentState.messages
+          .where((msg) => msg.eventId != event.eventId)
+          .toList();
+      emit(currentState.copyWith(messages: updatedMessages));
     });
   }
 
@@ -191,13 +201,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     result.fold((failure) => emit(ChatError(message: failure.toString())), (
       editedMessage,
     ) {
-      if (state is ChatLoaded) {
-        final currentState = state as ChatLoaded;
-        final updatedMessages = currentState.messages.map((msg) {
-          return msg.eventId == editedMessage.eventId ? editedMessage : msg;
-        }).toList();
-        emit(currentState.copyWith(messages: updatedMessages));
-      }
+      if (state is! ChatLoaded) return;
+
+      final currentState = state as ChatLoaded;
+      final updatedMessages = currentState.messages.map((msg) {
+        return msg.eventId == editedMessage.eventId ? editedMessage : msg;
+      }).toList();
+      emit(currentState.copyWith(messages: updatedMessages));
     });
   }
 
@@ -213,53 +223,70 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     result.fold(
       (failure) => emit(ChatError(message: failure.toString())),
-      (message) {},
+      (_) {}, // Message will be received via event stream
     );
   }
 
-  Future<void> _onSetInputAction(
-    SetInputAction event,
-    Emitter<ChatState> emit,
-  ) async {
-    if (state is ChatLoaded) {
-      final currentState = state as ChatLoaded;
-      final updatedInputAction = InputActionData(
-        action: event.action,
-        targetEventId: event.targetEventId,
-        initialContent: event.initialContent,
-      );
-      emit(currentState.copyWith(inputAction: updatedInputAction));
-    }
+  void _onSetInputAction(SetInputAction event, Emitter<ChatState> emit) {
+    if (state is! ChatLoaded) return;
+
+    final currentState = state as ChatLoaded;
+    emit(
+      currentState.copyWith(
+        inputAction: InputActionData(
+          action: event.action,
+          targetEventId: event.targetEventId,
+          initialContent: event.initialContent,
+        ),
+      ),
+    );
   }
 
   Future<void> _onLoadMoreMessages(
     LoadMoreMessages event,
     Emitter<ChatState> emit,
   ) async {
-    if (state is ChatLoaded) {
-      final currentState = state as ChatLoaded;
-      if (currentState.selectedRoomId == null) return;
+    if (state is! ChatLoaded) return;
 
-      emit(currentState.copyWith(isLoadingMore: true));
-
-      final result = await getMessagesUseCase(
-        roomId: currentState.selectedRoomId!,
-        limit: event.limit,
-        fromToken: MCEvent.endToken,
-      );
-
-      result.fold((failure) => emit(ChatError(message: failure.toString())), (
-        newMessages,
-      ) {
-        // Prepend new messages to the existing list
-        final updatedMessages = [...newMessages, ...currentState.messages];
-        emit(
-          currentState.copyWith(
-            messages: updatedMessages,
-            isLoadingMore: false,
-          ),
-        );
-      });
+    final currentState = state as ChatLoaded;
+    
+    // Check if we can load more
+    if (currentState.selectedRoomId == null ||
+        currentState.isLoadingMore ||
+        currentState.nextToken == null) {
+      return;
     }
+
+    emit(currentState.copyWith(isLoadingMore: true));
+
+    final result = await getMessagesUseCase(
+      roomId: currentState.selectedRoomId!,
+      limit: event.limit,
+      fromToken: currentState.nextToken,
+    );
+
+    result.fold(
+      (failure) {
+        emit(currentState.copyWith(isLoadingMore: false));
+      },
+      (data) {
+        final newMessages = data['messages'] as List<MCMessageEvent>;
+        final nextToken = data['nextToken'] as String?;
+        
+        if (newMessages.isEmpty) {
+          emit(currentState.copyWith(
+            isLoadingMore: false,
+            nextToken: null,
+          ));
+          return;
+        }
+
+        emit(currentState.copyWith(
+          messages: [...newMessages, ...currentState.messages],
+          isLoadingMore: false,
+          nextToken: nextToken,
+        ));
+      },
+    );
   }
 }

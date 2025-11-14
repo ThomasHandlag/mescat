@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+import 'package:mescat/shared/widgets/mc_button.dart';
+import 'package:mescat/window_scaffold.dart';
 import 'package:rive/rive.dart';
 
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
@@ -25,6 +27,7 @@ import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/l10n/mescat_localizations.dart';
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +42,15 @@ void main() async {
   await RiveNative.init();
   // Bloc.observer = AppBlocObserver();
   runApp(const MescatBlocProvider());
+  if (!Platform.isAndroid && !Platform.isIOS) {
+    appWindow.show();
+
+    doWhenWindowReady(() {
+      final window = appWindow;
+      window.alignment = Alignment.center;
+      window.show();
+    });
+  }
 }
 
 final class MescatBlocProvider extends StatelessWidget {
@@ -113,9 +125,16 @@ final class MescatBlocProvider extends StatelessWidget {
 final class MescatApp extends StatelessWidget {
   const MescatApp({super.key});
 
+  Widget _buildDesktop({required Widget child}) {
+    return WindowScaffold(
+      actions: [McButton(onPressed: () {}, child: const Icon(Icons.inbox))],
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
+    final main = MultiBlocListener(
       listeners: [
         BlocListener<MescatBloc, MescatStatus>(
           listener: (context, state) {
@@ -212,5 +231,9 @@ final class MescatApp extends StatelessWidget {
         },
       ),
     );
+
+    return Platform.isAndroid || Platform.isIOS
+        ? main
+        : _buildDesktop(child: main);
   }
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/features/rooms/widgets/invite_room.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/features/settings/widgets/manage_member.dart';
 import 'package:mescat/features/settings/widgets/manage_notification.dart';
@@ -38,7 +39,34 @@ class _SpaceSettingPageState extends State<SpaceSettingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.room.name} Settings')),
+      appBar: AppBar(
+        title: Text('${widget.room.name} Settings'),
+        actions: [
+          Tooltip(
+            message: 'Invite to Space',
+            child: IconButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: InviteRoom(room: widget.room),
+                      ),
+                    );
+                  },
+                );
+              },
+              icon: const Icon(Icons.group_add),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Platform.isAndroid || Platform.isIOS
             ? _buildMobile()
@@ -51,12 +79,8 @@ class _SpaceSettingPageState extends State<SpaceSettingPage> {
     return switch (_viewCategory) {
       RoomSettingCategory.general => ManageGeneral(room: room),
       RoomSettingCategory.members => ManageMember(room: room),
-      RoomSettingCategory.notifications => ManageNotification(
-        room: room,
-      ),
-      RoomSettingCategory.permissions => ManagePermission(
-        room: room,
-      ),
+      RoomSettingCategory.notifications => ManageNotification(room: room),
+      RoomSettingCategory.permissions => ManagePermission(room: room),
     };
   }
 
@@ -190,4 +214,3 @@ class _SpaceSettingPageState extends State<SpaceSettingPage> {
     );
   }
 }
-

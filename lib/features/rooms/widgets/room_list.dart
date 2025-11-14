@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
+import 'package:mescat/features/rooms/widgets/invite_room.dart';
 import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/rooms/widgets/expanse_channel.dart';
 import 'package:mescat/features/settings/pages/space_setting_page.dart';
@@ -321,7 +322,25 @@ class RoomList extends StatelessWidget {
             const SizedBox(width: 4),
             IconButton(
               onPressed: () {
-                
+                if (Platform.isAndroid || Platform.isIOS) {
+                  showFullscreenDialog(context, InviteRoom(room: room.room));
+                } else {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        constraints: const BoxConstraints(maxWidth: 600),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: InviteRoom(room: room.room),
+                        ),
+                      );
+                    },
+                  );
+                }
               },
               icon: Icon(
                 Icons.group_add,

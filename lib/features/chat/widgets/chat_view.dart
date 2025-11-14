@@ -29,11 +29,10 @@ class ChatView extends StatelessWidget {
                         chatState.selectedRoomId == selectedRoom.roomId) {
                       return MessageList(
                         messages: chatState.messages,
-                        isLoading: chatState.isLoadingMessages,
                       );
                     }
                     if (chatState is ChatLoading) {
-                      return const MessageList(messages: [], isLoading: true);
+                      return const MessageList(messages: []);
                     }
 
                     return const MessageList(messages: []);

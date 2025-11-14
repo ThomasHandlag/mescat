@@ -24,25 +24,27 @@ class ChatLoaded extends ChatState {
   final String? selectedRoomId;
   final MatrixRoom? selectedRoom;
   final List<MCMessageEvent> messages;
-  final bool isLoadingMessages;
   final InputActionData inputAction;
   final bool isLoadingMore;
+  final String? nextToken;
 
   const ChatLoaded({
     this.selectedRoomId,
     this.inputAction = const InputActionData(action: InputAction.none),
     this.messages = const [],
-    this.isLoadingMessages = false,
     this.isLoadingMore = false,
+    this.nextToken,
     this.selectedRoom,
   });
+
+  bool get hasMoreMessages => nextToken != null;
 
   @override
   List<Object?> get props => [
     messages,
-    isLoadingMessages,
     inputAction,
     isLoadingMore,
+    nextToken,
     selectedRoomId,
     selectedRoom,
   ];
@@ -50,17 +52,17 @@ class ChatLoaded extends ChatState {
   ChatLoaded copyWith({
     String? selectedRoomId,
     List<MCMessageEvent>? messages,
-    bool? isLoadingMessages,
     InputActionData? inputAction,
     bool? isLoadingMore,
+    String? nextToken,
     MatrixRoom? selectedRoom,
   }) {
     return ChatLoaded(
       selectedRoomId: selectedRoomId ?? this.selectedRoomId,
       messages: messages ?? this.messages,
-      isLoadingMessages: isLoadingMessages ?? this.isLoadingMessages,
       inputAction: inputAction ?? this.inputAction,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      nextToken: nextToken,
       selectedRoom: selectedRoom ?? this.selectedRoom,
     );
   }
