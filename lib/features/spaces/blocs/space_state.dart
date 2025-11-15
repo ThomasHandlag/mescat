@@ -13,17 +13,17 @@ class SpaceLoading extends SpaceState {}
 
 class SpaceLoaded extends SpaceState {
   final List<MatrixSpace> spaces;
-  final String? selectedSpaceId;
+  final MatrixSpace? selectedSpace;
 
-  const SpaceLoaded({required this.spaces, this.selectedSpaceId});
+  const SpaceLoaded({required this.spaces, this.selectedSpace});
 
   @override
-  List<Object?> get props => [spaces, selectedSpaceId];
+  List<Object?> get props => [spaces, selectedSpace];
 
-  SpaceLoaded copyWith({List<MatrixSpace>? spaces, String? selectedSpaceId}) {
+  SpaceLoaded copyWith({List<MatrixSpace>? spaces, MatrixSpace? selectedSpace}) {
     return SpaceLoaded(
       spaces: spaces ?? this.spaces,
-      selectedSpaceId: selectedSpaceId ?? this.selectedSpaceId,
+      selectedSpace: selectedSpace,
     );
   }
 }

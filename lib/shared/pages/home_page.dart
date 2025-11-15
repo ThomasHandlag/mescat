@@ -32,7 +32,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     super.dispose();
-    context.read<CallBloc>().add(const LeaveCall());
   }
 
   @override
@@ -66,17 +65,17 @@ class _HomePageState extends State<HomePage> {
                 return const SizedBox.shrink();
               }
               return BlocBuilder<CallBloc, MCCallState>(
-                builder: (context, roomState) {
+                builder: (context, callState) {
                   return UserBox(
-                    voiceMuted: roomState.voiceMuted,
-                    videoMuted: roomState is CallInProgress
-                        ? roomState.videoMuted
+                    voiceMuted: callState.voiceMuted,
+                    videoMuted: callState is CallInProgress
+                        ? callState.videoMuted
                         : false,
                     username: state.user.displayName,
                     avatarUrl: state.user.avatarUrl,
-                    mutedAll: (roomState.muted),
-                    stream: (roomState is CallInProgress)
-                        ? roomState.groupSession.backend.localUserMediaStream
+                    mutedAll: callState.muted,
+                    stream: (callState is CallInProgress)
+                        ? callState.groupSession.backend.localUserMediaStream
                         : null,
                   );
                 },
@@ -113,17 +112,17 @@ class _HomePageState extends State<HomePage> {
                     return const SizedBox.shrink();
                   }
                   return BlocBuilder<CallBloc, MCCallState>(
-                    builder: (context, roomState) {
+                    builder: (context, callState) {
                       return UserBox(
-                        voiceMuted: roomState.voiceMuted,
-                        videoMuted: roomState is CallInProgress
-                            ? roomState.videoMuted
+                        voiceMuted: callState.voiceMuted,
+                        videoMuted: callState is CallInProgress
+                            ? callState.videoMuted
                             : false,
                         username: state.user.displayName,
                         avatarUrl: state.user.avatarUrl,
-                        mutedAll: roomState.muted,
-                        stream: (roomState is CallInProgress)
-                            ? roomState
+                        mutedAll: callState.muted,
+                        stream: (callState is CallInProgress)
+                            ? callState
                                   .groupSession
                                   .backend
                                   .localUserMediaStream

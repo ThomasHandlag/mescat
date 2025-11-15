@@ -15,9 +15,8 @@ class SpaceMembersList extends StatelessWidget {
       child: BlocListener<SpaceBloc, SpaceState>(
         listener: (context, state) {
           if (state is SpaceLoaded &&
-              state.selectedSpaceId != null &&
-              state.selectedSpaceId!.isNotEmpty) {
-            context.read<MemberBloc>().add(LoadMembers(state.selectedSpaceId!));
+              state.selectedSpace != null) {
+            context.read<MemberBloc>().add(LoadMembers(state.selectedSpace!.spaceId));
           }
         },
         child: BlocBuilder<MemberBloc, MemberState>(

@@ -4,10 +4,13 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
+  bitsdojo_window_linux
   desktop_webview_window
   file_selector_linux
   flutter_webrtc
   gtk
+  media_kit_libs_linux
+  media_kit_video
   rive_native
   url_launcher_linux
   window_to_front

@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
 import 'package:mescat/core/notifications/event_pusher.dart';
+import 'package:mescat/features/notifications/data/notification_service.dart';
 import 'package:mescat/features/voip/data/call_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
@@ -60,13 +61,16 @@ Future<Client> createMatrixClient(
 Future<void> setupDependencyInjection() async {
   final matrixClient = await createMatrixClient("Mescat", "https://matrix.org");
   final sharedPref = await SharedPreferences.getInstance();
-  final appLinks = AppLinks(); 
+  final appLinks = AppLinks();
+  final notificationService = NotificationService();
+  await notificationService.initialize();
 
   getIt.registerSingleton<Client>(matrixClient);
   getIt.registerSingleton<AppLinks>(appLinks);
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),
   );
+  getIt.registerSingleton<NotificationService>(notificationService);
   getIt.registerLazySingleton<CallHandler>(
     () => CallHandler(matrixClient, sharedPref),
   );
@@ -75,7 +79,10 @@ Future<void> setupDependencyInjection() async {
   );
 
   getIt.registerLazySingleton<EventPusher>(
-    () => EventPusher(clientManager: getIt<MatrixClientManager>(), callHandler: getIt<CallHandler>()),
+    () => EventPusher(
+      clientManager: getIt<MatrixClientManager>(),
+      notificationService: getIt<NotificationService>(),
+    ),
   );
 
   getIt.registerLazySingleton<LoginUseCase>(
@@ -134,5 +141,10 @@ Future<void> setupDependencyInjection() async {
   );
   getIt.registerLazySingleton<SetServerUseCase>(
     () => SetServerUseCase(getIt<MCRepository>()),
+  );
+  
+  // Notification use cases
+  getIt.registerLazySingleton<GetNotificationsUseCase>(
+    () => GetNotificationsUseCase(getIt<MCRepository>()),
   );
 }

@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/features/settings/widgets/manage_member.dart';
 import 'package:mescat/features/settings/widgets/manage_notification.dart';
@@ -49,14 +51,10 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
 
   Widget _buildView(MatrixRoom room) {
     return switch (_viewCategory) {
-      RoomSettingCategory.general => ManageGeneral(room: widget.room),
-      RoomSettingCategory.members => ManageMember(room: widget.room.room),
-      RoomSettingCategory.notifications => ManageNotification(
-        room: widget.room.room,
-      ),
-      RoomSettingCategory.permissions => ManagePermission(
-        room: widget.room.room,
-      ),
+      RoomSettingCategory.general => ManageGeneral(room: room.room),
+      RoomSettingCategory.members => ManageMember(room: room.room),
+      RoomSettingCategory.notifications => ManageNotification(room: room.room),
+      RoomSettingCategory.permissions => ManagePermission(room: room.room),
     };
   }
 
@@ -150,6 +148,20 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
                           });
                         },
                       ),
+                      ListTile(
+                        title: Text(
+                          widget.room.room.canKick
+                              ? 'Remove room'
+                              : 'Leave room',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        onTap: () {
+                          context.read<RoomBloc>().add(
+                            LeaveRoom(widget.room.room.id),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -161,28 +173,28 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
           child: Stack(
             children: [
               _buildView(widget.room),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: const BoxDecoration(color: Color(0xff707070)),
-                  child: Row(
-                    children: [
-                      const Text('You have unsaved changes. '),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {},
-                        child: const Text('Save Changes'),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Discard Changes'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Align(
+              //   alignment: Alignment.bottomRight,
+              //   child: Container(
+              //     padding: const EdgeInsets.all(16.0),
+              //     decoration: const BoxDecoration(color: Color(0xff707070)),
+              //     child: Row(
+              //       children: [
+              //         const Text('You have unsaved changes. '),
+              //         const Spacer(),
+              //         ElevatedButton(
+              //           onPressed: () {},
+              //           child: const Text('Save Changes'),
+              //         ),
+              //         const SizedBox(width: 8),
+              //         TextButton(
+              //           onPressed: () {},
+              //           child: const Text('Discard Changes'),
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -190,4 +202,3 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
     );
   }
 }
-

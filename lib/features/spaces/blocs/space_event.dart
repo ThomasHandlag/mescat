@@ -25,11 +25,11 @@ class CreateSpace extends SpaceEvent {
 }
 
 class SelectSpace extends SpaceEvent {
-  final String? spaceId;
+  final MatrixSpace? space;
 
-  const SelectSpace(this.spaceId);
+  const SelectSpace(this.space);
 
   @override
-  List<Object?> get props => [spaceId];
+  List<Object?> get props => [space];
 }
 

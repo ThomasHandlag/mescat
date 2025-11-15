@@ -5,6 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+import 'package:mescat/features/notifications/blocs/notification_bloc.dart';
+import 'package:mescat/features/notifications/pages/notification_page.dart';
+import 'package:mescat/shared/widgets/mc_button.dart';
+import 'package:mescat/window_scaffold.dart';
+import 'package:rive/rive.dart';
+
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
 import 'package:mescat/features/authentication/pages/auth_page.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
@@ -12,8 +18,6 @@ import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/home_server/cubits/server_cubit.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/util/widget_overlay_service.dart';
-import 'package:rive/rive.dart';
-
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/pages/home_page.dart';
@@ -24,18 +28,31 @@ import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/l10n/mescat_localizations.dart';
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await vod.init();
   await setupDependencyInjection();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.blueAccent),
   );
+
   await RiveNative.init();
   // Bloc.observer = AppBlocObserver();
   runApp(const MescatBlocProvider());
+  if (!Platform.isAndroid && !Platform.isIOS) {
+    appWindow.show();
+
+    doWhenWindowReady(() {
+      final window = appWindow;
+      window.alignment = Alignment.center;
+      window.show();
+    });
+  }
 }
 
 final class MescatBlocProvider extends StatelessWidget {
@@ -91,21 +108,15 @@ final class MescatBlocProvider extends StatelessWidget {
           create: (context) => MemberBloc(getRoomMembersUseCase: getIt()),
         ),
         BlocProvider(
-          create: (context) => ChatBloc(
-            getMessagesUseCase: getIt(),
-            sendMessageUseCase: getIt(),
-            addReactionUseCase: getIt(),
-            removeReactionUseCase: getIt(),
-            deleteMessageUseCase: getIt(),
-            editMessageUseCase: getIt(),
-            replyMessageUseCase: getIt(),
-            eventPusher: getIt(),
-          ),
+          create: (context) =>
+              NotificationBloc(getNotificationsUseCase: getIt()),
         ),
       ],
       child: SafeArea(
         child: MaterialApp(
           title: 'Mescat',
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           debugShowCheckedModeBanner: false,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
@@ -120,21 +131,35 @@ final class MescatBlocProvider extends StatelessWidget {
 final class MescatApp extends StatelessWidget {
   const MescatApp({super.key});
 
+  Widget _buildDesktop(BuildContext context, {required Widget child}) {
+    return WindowScaffold(
+      actions: [
+        McButton(
+          onPressed: () {
+            showFullscreenDialog(context, const NotificationPage());
+          },
+          child: const Icon(Icons.inbox),
+        ),
+      ],
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
+    final main = MultiBlocListener(
       listeners: [
-        BlocListener<CallBloc, MCCallState>(
-          listener: (context, state) {
-            if (state is! CallInProgress) {
-              WidgetOverlayService.hide();
-            }
-          },
-        ),
         BlocListener<MescatBloc, MescatStatus>(
           listener: (context, state) {
             if (state is NetworkError || state is Unauthenticated) {
               context.read<CallBloc>().add(const LeaveCall());
+              WidgetOverlayService.hide();
+            }
+          },
+        ),
+        BlocListener<CallBloc, MCCallState>(
+          listener: (context, state) {
+            if (state is! CallInProgress) {
               WidgetOverlayService.hide();
             }
           },
@@ -219,5 +244,9 @@ final class MescatApp extends StatelessWidget {
         },
       ),
     );
+
+    return Platform.isAndroid || Platform.isIOS
+        ? main
+        : _buildDesktop(context, child: main);
   }
 }

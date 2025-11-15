@@ -1,0 +1,17 @@
+{
+    "@@locale": "en",
+    "appTitle": "MesCat",
+    "welcomeMessage": "Welcome to MesCat!",
+    "loginButton": "Log In",
+    "signupButton": "Sign Up",
+    "logoutButton": "Log Out",
+    "profileTitle": "User Profile",
+    "settingsTitle": "Settings",
+    "languageOption": "Language",
+    "themeOption": "Theme",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "notificationsTitle": "Notifications",
+    "enableNotifications": "Enable Notifications",
+    "disableNotifications": "Disable Notifications"
+}

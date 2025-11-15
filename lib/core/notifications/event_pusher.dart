@@ -2,17 +2,23 @@ import 'dart:async';
 
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+
 import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
-import 'package:mescat/features/voip/data/call_handler.dart';
+import 'package:mescat/features/notifications/data/notification_service.dart';
 
 final class EventPusher {
   final MatrixClientManager clientManager;
-  final CallHandler callHandler;
+  final NotificationService notificationService;
   final Logger logger = Logger();
 
-  EventPusher({required this.clientManager, required this.callHandler}) {
+  EventPusher({
+    required this.clientManager,
+    required this.notificationService,
+  }) {
+    registNotificationListener();
+
     clientManager.client.onTimelineEvent.stream.listen((event) async {
       final user = await clientManager.client.getUserProfile(event.senderId);
 
@@ -113,25 +119,10 @@ final class EventPusher {
             "Missing reaction content in event: $event",
           );
         }
-      } else if (event.type == MatrixEventTypes.msc3401) {
+      } else if (event.type == MatrixEventTypes.msc3417) {
         logger.log(
           Level.debug,
           'Received MSC3401 event: ${event.content.toString()}',
-        );
-      } else if (event.type == EventTypes.GroupCallMember) {
-        final membership = event.room.getCallMembershipsFromEvent(
-          event,
-          callHandler.voIP,
-        );
-        _controller.add(
-          GroupCallMemberCandidatesEvent(
-            memberships: membership,
-            eventId: event.eventId,
-            eventTypes: event.type,
-            roomId: event.room.id,
-            senderId: event.senderId,
-            timestamp: event.originServerTs,
-          ),
         );
       } else if (event.type == EventTypes.GroupCallMemberInvite) {
         logger.log(
@@ -158,6 +149,18 @@ final class EventPusher {
           Level.debug,
           'Received GroupCallMemberCandidates event: ${event.content.toString()}',
         );
+      } else if (event.type == EventTypes.RoomMember) {
+        _controller.add(
+          McRoomEvent(
+            eventId: event.eventId,
+            roomId: event.room.id,
+            senderId: event.senderId,
+            timestamp: event.originServerTs,
+            eventTypes: event.type,
+          ),
+        );
+      } else if (event.type == EventTypes.Redaction) {
+        logger.log(Level.debug, 'Received Redaction event: ${event.toJson()}');
       } else {
         logger.log(Level.debug, "Unhandled event type: ${event.type}");
       }
@@ -168,4 +171,47 @@ final class EventPusher {
       StreamController<MCEvent>.broadcast();
 
   Stream<MCEvent> get eventStream => _controller.stream;
+
+  void registNotificationListener() async {
+    clientManager.client.onNotification.stream.listen((event) async {
+      final roomId = event.room.id;
+      final roomName = event.room.name;
+      if (event.type == EventTypes.CallInvite) {
+        final inviterName = event.senderId;
+
+        notificationService.showInviteNotification(
+          roomId: roomId,
+          roomName: roomName,
+          inviterName: inviterName,
+        );
+      } else if (event.type == EventTypes.Message) {
+        final roomId = event.room.id;
+        final senderName = event.senderId;
+        final messageContent = event.content['body'] as String? ?? '';
+        notificationService.showMessageNotification(
+          roomId: roomId,
+          roomName: roomName,
+          senderName: senderName,
+          message: messageContent,
+          eventId: event.eventId,
+        );
+      } else if (event.type == EventTypes.GroupCallMemberInvite) {
+        final roomId = event.room.id;
+        final inviterName = event.senderId;
+        notificationService.showInviteNotification(
+          roomId: roomId,
+          roomName: roomName,
+          inviterName: inviterName,
+        );
+      } else if (event.type == EventTypes.RoomMember) {
+        final roomId = event.room.id;
+        final inviterName = event.senderId;
+        notificationService.showInviteNotification(
+          roomId: roomId,
+          roomName: roomName,
+          inviterName: inviterName,
+        );
+      }
+    });
+  }
 }

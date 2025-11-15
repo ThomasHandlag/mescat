@@ -1,0 +1,17 @@
+{
+    "@@locale": "vi",
+    "appTitle": "MesCat",
+    "welcomeMessage": "Chào mừng bạn đến với MesCat!",
+    "loginButton": "Đăng nhập",
+    "signupButton": "Đăng ký",
+    "logoutButton": "Đăng xuất",
+    "profileTitle": "Hồ sơ người dùng",
+    "settingsTitle": "Cài đặt",
+    "languageOption": "Ngôn ngữ",
+    "themeOption": "Chủ đề",
+    "darkMode": "Chế độ tối",
+    "lightMode": "Light Mode",
+    "notificationsTitle": "Thông báo",
+    "enableNotifications": "Bật thông báo",
+    "disableNotifications": "Tắt thông báo"
+}

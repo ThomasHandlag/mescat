@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
@@ -71,43 +73,72 @@ class _MessageItemState extends State<MessageItem>
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) {
-        setState(() => _isHovered = true);
-      },
-      onExit: (_) {
-        setState(() => _isHovered = false);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: _isHovered ? const Color.fromARGB(255, 79, 79, 79) : null,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            widget.child,
+    return Material(
+      child: InkWell(
+        onLongPress: Platform.isAndroid || Platform.isIOS
+            ? _showActionModal
+            : null,
+        child: MouseRegion(
+          onEnter: (_) {
+            setState(() => _isHovered = true);
+          },
+          onExit: (_) {
+            setState(() => _isHovered = false);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: _isHovered ? const Color.fromARGB(255, 79, 79, 79) : null,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                widget.child,
 
-            if (_isHovered)
-              Positioned(
-                top: -24,
-                right: 0,
-                child: MessageActions(
-                  message: widget.message,
-                  isCurrentUser: widget.isCurrentUser,
-                  onReply: _handleReplyMessage,
-                  onReact: _handleReactToMessage,
-                  onEdit: widget.onEdit,
-                  onDelete: _handleDeleteMessage,
-                  onPin: _handlePinMessage,
-                  onReport: widget.onReport,
-                  onCopy: _handleCopyMessage,
-                ),
-              ),
-          ],
+                if (_isHovered)
+                  Positioned(
+                    top: -24,
+                    right: 0,
+                    child: MessageActions(
+                      message: widget.message,
+                      isCurrentUser: widget.isCurrentUser,
+                      onReply: _handleReplyMessage,
+                      onReact: _handleReactToMessage,
+                      onEdit: widget.onEdit,
+                      onDelete: _handleDeleteMessage,
+                      onPin: _handlePinMessage,
+                      onReport: widget.onReport,
+                      onCopy: _handleCopyMessage,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  void _showActionModal() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) {
+        return MessageActions(
+          message: widget.message,
+          isCurrentUser: widget.isCurrentUser,
+          onReply: _handleReplyMessage,
+          onReact: _handleReactToMessage,
+          onEdit: widget.onEdit,
+          onDelete: _handleDeleteMessage,
+          onPin: _handlePinMessage,
+          onReport: widget.onReport,
+          onCopy: _handleCopyMessage,
+        );
+      },
     );
   }
 }

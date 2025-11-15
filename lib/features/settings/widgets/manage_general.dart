@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 
 class ManageGeneral extends StatefulWidget {
-  final MatrixRoom room;
+  final Room room;
 
   const ManageGeneral({super.key, required this.room});
 
@@ -36,9 +35,9 @@ class _ManageGeneralState extends State<ManageGeneral> {
 
   void _initializeFormData() {
     // Initialize original values from room
-    _originalName = widget.room.name ?? '';
-    _originalTopic = widget.room.topic ?? '';
-    _originalEncrypted = widget.room.isEncrypted;
+    _originalName = widget.room.name;
+    _originalTopic = widget.room.topic;
+    _originalEncrypted = widget.room.encrypted;
 
     // Initialize controllers with original values
     _nameController = TextEditingController(text: _originalName);
@@ -236,12 +235,12 @@ class _ManageGeneralState extends State<ManageGeneral> {
   }
 
   void _onSubEncryptedChanged(_) async {
-    if (widget.room.room.joinRules == JoinRules.public) {
+    if (widget.room.joinRules == JoinRules.public) {
       showOkAlertDialog(context: context, title: 'Can not Enable Encryption');
       return;
     }
 
-    if (widget.room.room.canChangeStateEvent(EventTypes.Encryption)) {
+    if (widget.room.canChangeStateEvent(EventTypes.Encryption)) {
       showOkAlertDialog(
         context: context,
         title: 'Can not Enable Encryption',
@@ -275,7 +274,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
     );
 
     if (confirmed == true) {
-      await widget.room.room.enableEncryption();
+      await widget.room.enableEncryption();
       setState(() {
         _isEncrypted = true;
         _onFormChanged();
@@ -283,10 +282,26 @@ class _ManageGeneralState extends State<ManageGeneral> {
     }
   }
 
+  void _leaveRoom() async {
+    final result = await showOkAlertDialog(
+      context: context,
+      title: 'Leave Room',
+      message: 'Are you sure you want to leave this room?',
+      okLabel: 'Leave',
+    );
+
+    if (result == OkCancelResult.ok) {
+      await widget.room.leave();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final altAliases =
-        widget.room.room
+        widget.room
             .getState(EventTypes.RoomCanonicalAlias)
             ?.content
             .tryGetList<String>('alt_aliases') ??
@@ -449,7 +464,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                   ),
                 const ListTile(title: Text('Chats Visibility')),
                 RadioGroup(
-                  groupValue: widget.room.room.historyVisibility,
+                  groupValue: widget.room.historyVisibility,
                   onChanged: (value) {},
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -464,7 +479,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                 ),
                 const ListTile(title: Text('Who can join this room?')),
                 RadioGroup(
-                  groupValue: widget.room.room.joinRules,
+                  groupValue: widget.room.joinRules,
                   onChanged: (value) {},
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -472,7 +487,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                       for (final joinRule in JoinRules.values)
                         if (joinRule != JoinRules.private)
                           RadioListTile<JoinRules>.adaptive(
-                            enabled: widget.room.room.canChangeJoinRules,
+                            enabled: widget.room.canChangeJoinRules,
                             title: Text(
                               joinRule == JoinRules.public
                                   ? 'Anyone can join'
@@ -486,7 +501,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                 if ({
                   JoinRules.public,
                   JoinRules.knock,
-                }.contains(widget.room.room.joinRules)) ...[
+                }.contains(widget.room.joinRules)) ...[
                   const ListTile(
                     title: Text(
                       'Guest Access',
@@ -494,14 +509,14 @@ class _ManageGeneralState extends State<ManageGeneral> {
                     ),
                   ),
                   RadioGroup(
-                    groupValue: widget.room.room.guestAccess,
+                    groupValue: widget.room.guestAccess,
                     onChanged: (value) {},
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         for (final guestAccess in GuestAccess.values)
                           RadioListTile<GuestAccess>.adaptive(
-                            enabled: widget.room.room.canChangeGuestAccess,
+                            enabled: widget.room.canChangeGuestAccess,
                             title: Text(
                               guestAccess == GuestAccess.canJoin
                                   ? 'Guests can join'
@@ -523,11 +538,11 @@ class _ManageGeneralState extends State<ManageGeneral> {
                       onPressed: () {},
                     ),
                   ),
-                  if (widget.room.room.canonicalAlias.isNotEmpty)
+                  if (widget.room.canonicalAlias.isNotEmpty)
                     _AliasListTile(
-                      alias: widget.room.room.canonicalAlias,
+                      alias: widget.room.canonicalAlias,
                       onDelete:
-                          widget.room.room.canChangeStateEvent(
+                          widget.room.canChangeStateEvent(
                             EventTypes.RoomCanonicalAlias,
                           )
                           ? () => () {}
@@ -538,22 +553,20 @@ class _ManageGeneralState extends State<ManageGeneral> {
                     _AliasListTile(
                       alias: alias,
                       onDelete:
-                          widget.room.room.canChangeStateEvent(
+                          widget.room.canChangeStateEvent(
                             EventTypes.RoomCanonicalAlias,
                           )
                           ? () => () {}
                           : null,
                     ),
                   FutureBuilder(
-                    future: widget.room.room.client.getLocalAliases(
-                      widget.room.room.id,
-                    ),
+                    future: widget.room.client.getLocalAliases(widget.room.id),
                     builder: (context, snapshot) {
                       final localAddresses = snapshot.data;
                       if (localAddresses == null) {
                         return const SizedBox.shrink();
                       }
-                      localAddresses.remove(widget.room.room.canonicalAlias);
+                      localAddresses.remove(widget.room.canonicalAlias);
                       localAddresses.removeWhere(
                         (alias) => altAliases.contains(alias),
                       );
@@ -572,12 +585,13 @@ class _ManageGeneralState extends State<ManageGeneral> {
                     },
                   ),
                   FutureBuilder(
-                    future: widget.room.room.client
-                        .getRoomVisibilityOnDirectory(widget.room.room.id),
+                    future: widget.room.client.getRoomVisibilityOnDirectory(
+                      widget.room.id,
+                    ),
                     builder: (context, snapshot) => SwitchListTile.adaptive(
                       value: snapshot.data == Visibility.public,
                       title: Text(
-                        'Chat can be discovered via search on ${widget.room.room.client.userID!.domain!}',
+                        'Chat can be discovered via search on ${widget.room.client.userID!.domain!}',
                       ),
                       onChanged: (value) {},
                     ),
@@ -585,32 +599,40 @@ class _ManageGeneralState extends State<ManageGeneral> {
                 ],
                 ListTile(
                   title: const Text('Global Room ID'),
-                  subtitle: SelectableText(widget.room.room.id),
+                  subtitle: SelectableText(widget.room.id),
                   trailing: IconButton(
                     icon: const Icon(Icons.copy_outlined),
                     onPressed: () {
-                      Clipboard.setData(
-                        ClipboardData(text: widget.room.room.id),
-                      );
+                      Clipboard.setData(ClipboardData(text: widget.room.id));
                     },
                   ),
                 ),
                 ListTile(
                   title: const Text('Room Version'),
                   subtitle: SelectableText(
-                    widget.room.room
+                    widget.room
                             .getState(EventTypes.RoomCreate)!
                             .content
                             .tryGet<String>('room_version') ??
                         'Unknown',
                   ),
-                  trailing:
-                      widget.room.room.canSendEvent(EventTypes.RoomTombstone)
+                  trailing: widget.room.canSendEvent(EventTypes.RoomTombstone)
                       ? IconButton(
                           icon: const Icon(Icons.upgrade_outlined),
                           onPressed: () {},
                         )
                       : null,
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: const Text(
+                    'Leave Room',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  trailing: const Icon(Icons.logout, color: Colors.red),
+                  onTap: () {
+                    _leaveRoom();
+                  },
                 ),
               ],
             ),

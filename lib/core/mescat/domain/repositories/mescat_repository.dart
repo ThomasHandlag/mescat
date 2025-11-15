@@ -64,7 +64,7 @@ abstract class MCRepository {
   Future<Either<MCFailure, List<MCUser>>> getRoomMembers(String roomId);
 
   // Message management
-  Future<Either<MCFailure, List<MCMessageEvent>>> getMessages(
+  Future<Either<MCFailure, Map<String, dynamic>>> getMessages(
     String roomId, {
     int limit = 100,
     String? fromToken,
@@ -180,4 +180,21 @@ abstract class MCRepository {
   Future<Either<MCFailure, List<CallParticipant>>> getCallParticipants({
     required String roomId,
   });
+
+  // Push notifications
+  Future<Either<MCFailure, bool>> registerPusher({
+    required String pushkey,
+    required String appId,
+    String? pushGatewayUrl,
+    String? deviceDisplayName,
+    String? lang,
+  });
+
+  Future<Either<MCFailure, bool>> unregisterPusher({
+    required String pushkey,
+    required String appId,
+  });
+
+  // Notification management
+  Future<Either<MCFailure, Map<String ,dynamic>>> getNotifications();
 }

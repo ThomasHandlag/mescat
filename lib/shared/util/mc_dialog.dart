@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:mescat/window_scaffold.dart';
 
 void showImageDialog(BuildContext context, String imageUrl) {
   showDialog(
@@ -19,8 +20,6 @@ void showImageDialog(BuildContext context, String imageUrl) {
   );
 }
 
-
-
 void showFullscreenDialog(BuildContext context, Widget child) {
   showDialog(
     context: context,
@@ -29,7 +28,9 @@ void showFullscreenDialog(BuildContext context, Widget child) {
       return Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.zero,
-        child: child,
+        child: Platform.isAndroid || Platform.isIOS
+            ? child
+            : WindowScaffold(child: child),
       );
     },
   );
@@ -43,26 +44,25 @@ Future<OkCancelResult?> showOkAlertDialog({
   String? message,
   String? okLabel,
   bool useRootNavigator = true,
-}) =>
-    showAdaptiveDialog<OkCancelResult>(
-      context: context,
-      useRootNavigator: useRootNavigator,
-      builder: (context) => AlertDialog.adaptive(
-        title: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 256),
-          child: Text(title),
-        ),
-        content: message != null
-            ? ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 256),
-                child: Text(message),
-              )
-            : null,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(OkCancelResult.ok),
-            child: Text(okLabel ?? 'OK'),
-          ),
-        ],
+}) => showAdaptiveDialog<OkCancelResult>(
+  context: context,
+  useRootNavigator: useRootNavigator,
+  builder: (context) => AlertDialog.adaptive(
+    title: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 256),
+      child: Text(title),
+    ),
+    content: message != null
+        ? ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 256),
+            child: Text(message),
+          )
+        : null,
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(OkCancelResult.ok),
+        child: Text(okLabel ?? 'OK'),
       ),
-    );
+    ],
+  ),
+);

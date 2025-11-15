@@ -26,7 +26,7 @@ class GetMessagesUseCase {
 
   GetMessagesUseCase(this.repository);
 
-  Future<Either<MCFailure, List<MCMessageEvent>>> call({
+  Future<Either<MCFailure, Map<String, dynamic>>> call({
     required String roomId,
     int limit = 50,
     String? fromToken,

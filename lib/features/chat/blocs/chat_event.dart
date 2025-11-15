@@ -1,7 +1,7 @@
 part of 'chat_bloc.dart';
 
 // Chat Events
-abstract class ChatEvent extends Equatable {
+sealed class ChatEvent extends Equatable {
   const ChatEvent();
 
   @override
@@ -52,15 +52,17 @@ class RemoveReaction extends ChatEvent {
   final String roomId;
   final String eventId;
   final String emoji;
+  final String reactEventId;
 
   const RemoveReaction({
     required this.roomId,
     required this.eventId,
     required this.emoji,
+    required this.reactEventId,
   });
 
   @override
-  List<Object?> get props => [roomId, eventId, emoji];
+  List<Object?> get props => [roomId, eventId, emoji, reactEventId];
 }
 
 class DeleteMessage extends ChatEvent {

@@ -32,6 +32,13 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<JoinRoom>(_onJoinRoom);
     on<SelectRoom>(_onSelectRoom);
     on<UpdateRoom>(_onUpdateRoom);
+    on<LeaveRoom>(_onLeaveRoom);
+
+    eventPusher.eventStream.listen((event) {
+      if (event is McRoomEvent) {
+        add(const LoadRooms());
+      }
+    });
   }
 
   Future<void> _onUpdateRoom(UpdateRoom event, Emitter<RoomState> emit) async {
@@ -96,6 +103,24 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
           flag: event.flag,
         ),
       );
+    }
+  }
+
+  Future<void> _onLeaveRoom(LeaveRoom event, Emitter<RoomState> emit) async {
+    if (state is RoomLoaded) {
+      final currentState = state as RoomLoaded;
+      try {
+        await currentState.rooms
+            .firstWhere((room) => room.roomId == event.roomId)
+            .room
+            .leave();
+        final updatedRooms = currentState.rooms
+            .where((room) => room.roomId != event.roomId)
+            .toList();
+        emit(currentState.copyWith(rooms: updatedRooms));
+      } catch (e) {
+        emit(RoomError('Failed to leave room: $e'));
+      }
     }
   }
 }

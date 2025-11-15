@@ -17,7 +17,12 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   final Logger logger = Logger();
 
   CallBloc({required this.eventPusher, required this.callHandler})
-    : super(const CallIdle(voiceMuted: true, muted: false)) {
+    : super(
+        CallIdle(
+          voiceMuted: callHandler.voiceMuted,
+          muted: callHandler.muteAll,
+        ),
+      ) {
     on<JoinCall>(_onJoinCall);
     on<LeaveCall>(_onLeaveCall);
     on<ToggleMute>(_onToggleMute);
@@ -41,8 +46,8 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
         emit(
           CallFailed(
             error: failed.message,
-            muted: state.muted,
-            voiceMuted: state.voiceMuted,
+            muted: callHandler.muteAll,
+            voiceMuted: callHandler.voiceMuted,
           ),
         );
       },
@@ -53,8 +58,8 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
             roomId: event.mRoom.room.id,
             groupSession: session,
             participants: session.participants,
-            voiceMuted: state.voiceMuted,
-            muted: state.muted,
+            voiceMuted: callHandler.voiceMuted,
+            muted: callHandler.muteAll,
             mRoom: event.mRoom,
           ),
         );
@@ -64,21 +69,22 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
 
   Future<void> _onLeaveCall(LeaveCall event, Emitter<MCCallState> emit) async {
     await callHandler.leaveCall();
-    emit(CallIdle(muted: state.muted, voiceMuted: state.voiceMuted));
+    emit(CallIdle(muted: callHandler.muteAll, voiceMuted: callHandler.voiceMuted));
   }
 
   Future<void> _onToggleMute(
     ToggleMute event,
     Emitter<MCCallState> emit,
   ) async {
-    emit(state.copyWith(muted: event.isMuted));
+    await callHandler.setMuteAll(event.isMuted);
+    emit(state.copyWith(muted: callHandler.muteAll));
   }
 
   Future<void> _onToggleVoice(
     ToggleVoice event,
     Emitter<MCCallState> emit,
   ) async {
-    callHandler.setAudioMuted(event.muted);
+    await callHandler.setAudioMuted(event.muted);
     emit(state.copyWith(voiceMuted: event.muted));
   }
 
@@ -88,13 +94,13 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   ) async {
     if (state is CallInProgress) {
       final currentState = state as CallInProgress;
-      callHandler.setVideoMuted(event.muted);
+      await callHandler.setVideoMuted(event.muted);
       emit(
         currentState.copyWith(
           groupSession: currentState.groupSession,
           videoMuted: event.muted,
-          muted: currentState.muted,
-          voiceMuted: currentState.voiceMuted,
+          muted: callHandler.muteAll,
+          voiceMuted: callHandler.voiceMuted,
         ),
       );
     }

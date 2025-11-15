@@ -17,6 +17,7 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
+.vscode/
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
@@ -47,5 +48,9 @@ app.*.map.json
 
 *GUIDE*
 *instructions*
+
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase**
 
 **/.github/workflows/ci-cd.yml

@@ -4,7 +4,7 @@ abstract class MCCallState extends Equatable {
   final bool voiceMuted;
   final bool muted;
 
-  const MCCallState({this.voiceMuted = false, this.muted = false});
+  const MCCallState({this.voiceMuted = true, this.muted = true});
 
   @override
   List<Object?> get props => [voiceMuted, muted];
@@ -13,11 +13,14 @@ abstract class MCCallState extends Equatable {
 }
 
 class CallIdle extends MCCallState {
-  const CallIdle({super.voiceMuted = false, super.muted = false});
+  const CallIdle({super.voiceMuted = true, super.muted = false});
 
   @override
-  MCCallState copyWith({bool? voiceMuted, bool? muted}) {
-    return const CallIdle(voiceMuted: false, muted: false);
+  List<Object?> get props => [super.voiceMuted, super.muted];
+
+  @override
+  CallIdle copyWith({bool? voiceMuted, bool? muted}) {
+    return  CallIdle(voiceMuted: voiceMuted ?? this.voiceMuted, muted: muted ?? this.muted);
   }
 }
 
@@ -43,9 +46,9 @@ class CallInProgress extends MCCallState {
   @override
   List<Object?> get props => [
     callId,
-    voiceMuted,
+    super.voiceMuted,
     roomId,
-    muted,
+    super.muted,
     participants,
     groupSession,
     videoMuted,
@@ -87,11 +90,15 @@ class CallLoading extends MCCallState {
   });
 
   @override
-  List<Object?> get props => [callId];
+  List<Object?> get props => [callId, super.voiceMuted, super.muted];
 
   @override
-  MCCallState copyWith({bool? voiceMuted, bool? muted}) {
-    return CallLoading(callId: callId);
+  CallLoading copyWith({bool? voiceMuted, bool? muted}) {
+    return CallLoading(
+      callId: callId,
+      voiceMuted: voiceMuted ?? this.voiceMuted,
+      muted: muted ?? this.muted,
+    );
   }
 }
 
@@ -100,15 +107,15 @@ class CallFailed extends MCCallState {
 
   const CallFailed({
     required this.error,
-    super.voiceMuted = false,
-    super.muted = false,
+    super.voiceMuted = true,
+    super.muted = true,
   });
 
   @override
-  List<Object?> get props => [error];
+  List<Object?> get props => [error, super.voiceMuted, super.muted];
 
   @override
-  MCCallState copyWith({bool? voiceMuted, bool? muted}) {
+  CallFailed copyWith({bool? voiceMuted, bool? muted}) {
     return CallFailed(
       error: error,
       voiceMuted: voiceMuted ?? this.voiceMuted,

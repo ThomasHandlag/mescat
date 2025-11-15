@@ -189,25 +189,17 @@ class MCReactionEvent extends MCEvent {
     relType,
     senderDisplayNames,
     isCurrentUser,
+    reactEventIds,
     ...super.props,
   ];
 }
 
-class GroupCallMemberCandidatesEvent extends MCEvent {
-  final List<CallMembership> memberships;
-
-  const GroupCallMemberCandidatesEvent({
-    required this.memberships,
+class McRoomEvent extends MCEvent {
+  const McRoomEvent({
     required super.eventId,
     required super.roomId,
     required super.senderId,
     required super.timestamp,
     required super.eventTypes,
   });
-
-  @override
-  List<Object?> get props => [
-    memberships,
-    ...super.props,
-  ];
 }
