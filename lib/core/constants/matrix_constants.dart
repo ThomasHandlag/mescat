@@ -81,5 +81,5 @@ class MatrixConfig {
 }
 
 final class MatrixEventTypes {
-  static const msc3401 = 'org.matrix.msc3401.call.member';
+  static const msc3417 = 'org.matrix.msc3417.call';
 }

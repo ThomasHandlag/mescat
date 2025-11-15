@@ -21,6 +21,11 @@ class SpaceBloc extends Bloc<SpaceEvent, SpaceState> {
     on<LoadSpaces>(_onLoadSpaces);
     on<CreateSpace>(_onCreateSpace);
     on<SelectSpace>(_onSelectSpace);
+    eventPusher.eventStream.listen((event) {
+      if (event is McRoomEvent) {
+        add(LoadSpaces());
+      }
+    });
   }
 
   Future<void> _onLoadSpaces(

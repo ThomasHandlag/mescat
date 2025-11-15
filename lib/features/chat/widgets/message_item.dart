@@ -95,7 +95,7 @@ class _MessageItemState extends State<MessageItem>
               clipBehavior: Clip.none,
               children: [
                 widget.child,
-      
+
                 if (_isHovered)
                   Positioned(
                     top: -24,
@@ -121,8 +121,11 @@ class _MessageItemState extends State<MessageItem>
   }
 
   void _showActionModal() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
+      showDragHandle: true,
+      isDismissible: true,
+      enableDrag: true,
       builder: (context) {
         return MessageActions(
           message: widget.message,

@@ -119,7 +119,7 @@ final class EventPusher {
             "Missing reaction content in event: $event",
           );
         }
-      } else if (event.type == MatrixEventTypes.msc3401) {
+      } else if (event.type == MatrixEventTypes.msc3417) {
         logger.log(
           Level.debug,
           'Received MSC3401 event: ${event.content.toString()}',
@@ -149,6 +149,18 @@ final class EventPusher {
           Level.debug,
           'Received GroupCallMemberCandidates event: ${event.content.toString()}',
         );
+      } else if (event.type == EventTypes.RoomMember) {
+        _controller.add(
+          McRoomEvent(
+            eventId: event.eventId,
+            roomId: event.room.id,
+            senderId: event.senderId,
+            timestamp: event.originServerTs,
+            eventTypes: event.type,
+          ),
+        );
+      } else if (event.type == EventTypes.Redaction) {
+        logger.log(Level.debug, 'Received Redaction event: ${event.toJson()}');
       } else {
         logger.log(Level.debug, "Unhandled event type: ${event.type}");
       }
@@ -184,6 +196,14 @@ final class EventPusher {
           eventId: event.eventId,
         );
       } else if (event.type == EventTypes.GroupCallMemberInvite) {
+        final roomId = event.room.id;
+        final inviterName = event.senderId;
+        notificationService.showInviteNotification(
+          roomId: roomId,
+          roomName: roomName,
+          inviterName: inviterName,
+        );
+      } else if (event.type == EventTypes.RoomMember) {
         final roomId = event.room.id;
         final inviterName = event.senderId;
         notificationService.showInviteNotification(

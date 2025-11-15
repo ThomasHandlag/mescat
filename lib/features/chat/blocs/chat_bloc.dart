@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
@@ -100,22 +102,21 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       limit: event.limit,
     );
 
-    result.fold(
-      (failure) => emit(ChatError(message: failure.toString())),
-      (data) {
-        final messages = data['messages'] as List<MCMessageEvent>;
-        final nextToken = data['nextToken'] as String?;
-        
-        emit(
-          ChatLoaded(
-            selectedRoomId: event.roomId,
-            messages: messages,
-            inputAction: const InputActionData(action: InputAction.none),
-            nextToken: nextToken,
-          ),
-        );
-      },
-    );
+    result.fold((failure) => emit(ChatError(message: failure.toString())), (
+      data,
+    ) {
+      final messages = data['messages'] as List<MCMessageEvent>;
+      final nextToken = data['nextToken'] as String?;
+
+      emit(
+        ChatLoaded(
+          selectedRoomId: event.roomId,
+          messages: messages,
+          inputAction: const InputActionData(action: InputAction.none),
+          nextToken: nextToken,
+        ),
+      );
+    });
   }
 
   Future<void> _onSendMessage(
@@ -160,10 +161,43 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emoji: event.emoji,
     );
 
-    result.fold(
-      (failure) => emit(ChatError(message: failure.toString())),
-      (success) {},
-    );
+    result.fold((failure) => emit(ChatError(message: failure.toString())), (
+      success,
+    ) {
+      if (state is! ChatLoaded && !success) return;
+
+      final currentState = state as ChatLoaded;
+      final messageIndex = currentState.messages.indexWhere(
+        (msg) => msg.eventId == event.eventId,
+      );
+      if (messageIndex == -1) return;
+
+      final updatedMessages = List<MCMessageEvent>.from(currentState.messages);
+      final message = updatedMessages[messageIndex];
+      final reactEvents = List<MCReactionEvent>.from(message.reactions);
+
+      final reactEventIndex = reactEvents.indexWhere(
+        (react) => react.key == event.emoji,
+      );
+
+      if (reactEventIndex == -1) return;
+
+      final reactEvent = reactEvents[reactEventIndex];
+
+      reactEvents[reactEventIndex] = reactEvent.copyWith(
+        reactEventIds: reactEvent.reactEventIds
+            .where((id) => id.key != event.reactEventId)
+            .toList(),
+      );
+
+      log(
+        'Updated reactEventIds: ${reactEvents[reactEventIndex].reactEventIds.map((e) => e.key).toList()}',
+      );
+
+      updatedMessages[messageIndex] = message.copyWith(reactions: reactEvents);
+
+      emit(currentState.copyWith(messages: updatedMessages));
+    });
   }
 
   Future<void> _onDeleteMessage(
@@ -249,7 +283,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (state is! ChatLoaded) return;
 
     final currentState = state as ChatLoaded;
-    
+
     // Check if we can load more
     if (currentState.selectedRoomId == null ||
         currentState.isLoadingMore ||
@@ -272,20 +306,19 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       (data) {
         final newMessages = data['messages'] as List<MCMessageEvent>;
         final nextToken = data['nextToken'] as String?;
-        
+
         if (newMessages.isEmpty) {
-          emit(currentState.copyWith(
-            isLoadingMore: false,
-            nextToken: null,
-          ));
+          emit(currentState.copyWith(isLoadingMore: false, nextToken: null));
           return;
         }
 
-        emit(currentState.copyWith(
-          messages: [...newMessages, ...currentState.messages],
-          isLoadingMore: false,
-          nextToken: nextToken,
-        ));
+        emit(
+          currentState.copyWith(
+            messages: [...newMessages, ...currentState.messages],
+            isLoadingMore: false,
+            nextToken: nextToken,
+          ),
+        );
       },
     );
   }

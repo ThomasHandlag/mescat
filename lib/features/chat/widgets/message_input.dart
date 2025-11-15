@@ -1,13 +1,16 @@
-import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/input_action_banner.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 typedef MessageSendCallback = void Function(String content, String type);
 
@@ -67,13 +70,39 @@ class _MessageInputState extends State<MessageInput> {
   void _sendMessage() {
     final message = _messageController.text.trim();
     if (message.isNotEmpty || _attachments.isNotEmpty) {
-      widget.onSendMessage(message, MessageTypes.Text);
-      _messageController.clear();
-      _attachments.clear();
-      setState(() {
-        _isTyping = false;
-      });
+      if (_attachments.isNotEmpty) {
+        if (!_checkAttachmentSize()) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('One or more attachments exceed the size limit.'),
+            ),
+          );
+          return;
+        }
+        final client = getIt<Client>();
+        final room = client.getRoomById(widget.roomId);
+        if (room != null) {
+          for (final filePath in _attachments) {
+            final file = MatrixFile(
+              bytes: File(filePath).readAsBytesSync(),
+              name: filePath.split(RegExp(r'[\\/]+')).last,
+            );
+            room.sendFileEvent(file, extraContent: {'body': message});
+          }
+        }
+      } else {
+        widget.onSendMessage(message, MessageTypes.Text);
+
+        setState(() {
+          _isTyping = false;
+        });
+      }
     }
+    _messageController.clear();
+    _attachments.clear();
+    setState(() {
+      _isTyping = !_isTyping;
+    });
   }
 
   void _editMessage(String eventId) {
@@ -87,13 +116,48 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   void _replyToMessage(String eventId) {
-    context.read<ChatBloc>().add(
-      ReplyMessage(
-        roomId: widget.roomId,
-        content: _messageController.text.trim(),
-        replyToEventId: eventId,
-      ),
-    );
+    if (_attachments.isNotEmpty) {
+      if (!_checkAttachmentSize()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('One or more attachments exceed the size limit.'),
+          ),
+        );
+        return;
+      }
+      final client = getIt<Client>();
+      final room = client.getRoomById(widget.roomId);
+
+      if (room != null) {
+        final replyContent = {
+          'msgtype': MessageTypes.File,
+          'body': _messageController.text.trim(),
+          'm.relates_to': {
+            'm.in_reply_to': {'event_id': eventId},
+          },
+        };
+        for (final filePath in _attachments) {
+          final file = MatrixFile(
+            bytes: File(filePath).readAsBytesSync(),
+            name: filePath.split(RegExp(r'[\\/]+')).last,
+          );
+          room.sendFileEvent(file, extraContent: {...replyContent});
+        }
+      }
+    } else {
+      context.read<ChatBloc>().add(
+        ReplyMessage(
+          roomId: widget.roomId,
+          content: _messageController.text.trim(),
+          replyToEventId: eventId,
+        ),
+      );
+    }
+    _messageController.clear();
+    _attachments.clear();
+    setState(() {
+      _isTyping = !_isTyping;
+    });
   }
 
   void _removeAttachment(int index) {
@@ -114,7 +178,10 @@ class _MessageInputState extends State<MessageInput> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
-      decoration: const BoxDecoration(color: Color.fromARGB(255, 70, 70, 70)),
+      decoration: const BoxDecoration(
+        color: Color.fromARGB(255, 70, 70, 70),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -267,9 +334,28 @@ class _MessageInputState extends State<MessageInput> {
     );
   }
 
+  bool _validFileSize(Uint8List data) {
+    const maxFileSize = 10 * 1024 * 1024;
+    return data.lengthInBytes <= maxFileSize;
+  }
+
+  bool _checkAttachmentSize() {
+    bool allValid = true;
+    for (final filePath in _attachments) {
+      final file = File(filePath);
+      final data = file.readAsBytesSync();
+      if (!_validFileSize(data)) {
+        allValid = false;
+        break;
+      }
+    }
+    return allValid;
+  }
+
   Widget _buildSendButton() {
     final colorScheme = Theme.of(context).colorScheme;
-    final canSend = _isTyping || _attachments.isNotEmpty;
+    final canSend =
+        _messageController.text.isNotEmpty || _attachments.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.all(4),
@@ -356,6 +442,7 @@ class _MessageInputState extends State<MessageInput> {
                   fontWeight: FontWeight.w500,
                   color: colorScheme.onSurface.withAlpha(190),
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -382,11 +469,15 @@ class _MessageInputState extends State<MessageInput> {
                       color: colorScheme.onPrimaryContainer,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      attachment.split('/').last,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onPrimaryContainer,
+                    SizedBox(
+                      width: 100,
+                      child: Text(
+                        attachment.split('/').last,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -460,4 +551,14 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   // void _shareLocation() {}
+}
+
+Future<void> downloadFile(Uint8List data, String fileName) async {
+  // pick a location to save the file
+  final directory = await getApplicationDocumentsDirectory();
+
+  final filePath = '${directory.path}/$fileName';
+
+  final file = File(filePath);
+  await file.writeAsBytes(data);
 }

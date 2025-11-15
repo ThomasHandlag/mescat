@@ -167,34 +167,77 @@ final class MCRepositoryImpl implements MCRepository {
     bool isPublic = false,
     String? parentSpaceId,
   }) async {
-    final isDirect = parentSpaceId == null || parentSpaceId.isEmpty;
-    String roomId = await _matrixClientManager.client.createRoom(
-      name: name,
-      topic: topic,
-      isDirect: isDirect,
-      visibility: isPublic ? Visibility.public : Visibility.private,
-    );
+    try {
+      final isDirect = parentSpaceId == null || parentSpaceId.isEmpty;
 
-    if (parentSpaceId != null && parentSpaceId.isNotEmpty) {
-      await addRoomToSpace(parentSpaceId, roomId);
-    }
+      final List<String> userIds = [];
+      if (isPublic &&
+          parentSpaceId != null &&
+          parentSpaceId.isNotEmpty &&
+          !isDirect) {
+        final result = await getRoomMembers(parentSpaceId);
+        result.fold((failure) => <String>[], (members) {
+          userIds.addAll(
+            members
+                .map((m) => m.userId)
+                .where((userId) => userId != _matrixClientManager.client.userID)
+                .toList(),
+          );
+        });
+      }
 
-    final room = _matrixClientManager.client.getRoomById(roomId);
-
-    if (room == null) {
-      return const Left(UnknownFailure(message: 'Failed to create room'));
-    }
-    return Right(
-      MatrixRoom(
-        roomId: roomId,
+      String roomId = await _matrixClientManager.client.createRoom(
+        creationContent: type == RoomType.voiceChannel
+            ? {'type': MatrixEventTypes.msc3417}
+            : null,
+        initialState: [
+          StateEvent(content: {}, type: EventTypes.GroupCallMember),
+        ],
         name: name,
         topic: topic,
-        type: type,
-        isPublic: isPublic,
-        parentSpaceId: parentSpaceId,
-        room: room,
-      ),
-    );
+        isDirect: isDirect,
+        invite: userIds,
+        preset: isPublic
+            ? CreateRoomPreset.publicChat
+            : CreateRoomPreset.privateChat,
+        visibility: isPublic ? Visibility.public : Visibility.private,
+      );
+
+      final room = (await _matrixClientManager.client.getJoinedRooms())
+          .map((id) => _matrixClientManager.client.getRoomById(id))
+          .firstWhere((r) => r != null && r.id == roomId, orElse: () => null);
+
+      if (room == null) {
+        throw Exception('Room creation failed');
+      }
+
+      if (parentSpaceId != null && parentSpaceId.isNotEmpty) {
+        await addRoomToSpace(parentSpaceId, roomId);
+      }
+
+      if (type == RoomType.voiceChannel) {
+        final createEvent = room.getState(EventTypes.RoomCreate);
+        _matrixClientManager.logger.d(
+          'Create event after room creation: ${createEvent?.toJson()}',
+        );
+        await room.enableGroupCalls();
+      }
+
+      return Right(
+        MatrixRoom(
+          roomId: roomId,
+          name: name,
+          topic: topic,
+          type: type,
+          isPublic: isPublic,
+          parentSpaceId: parentSpaceId,
+          room: room,
+        ),
+      );
+    } catch (e) {
+      _matrixClientManager.logger.e('Error creating room: $e');
+      return Left(UnknownFailure(message: 'Failed to create room: $e'));
+    }
   }
 
   @override
@@ -544,7 +587,6 @@ final class MCRepositoryImpl implements MCRepository {
             break;
         }
       }
-      _matrixClientManager.logger.d('Token for next fetch: $nextToken');
       return Right({'messages': matrixMessages, 'nextToken': nextToken});
     } catch (e) {
       return Left(UnknownFailure(message: 'Failed to get messages: $e'));
@@ -572,14 +614,13 @@ final class MCRepositoryImpl implements MCRepository {
 
   @override
   Future<Either<MCFailure, List<MatrixRoom>>> getRooms() async {
-    final roomsId = await _matrixClientManager.client.getJoinedRooms();
+    final roomsId = _matrixClientManager.client.rooms;
 
     final rooms = roomsId
-        .map((roomId) {
-          final room = _matrixClientManager.client.getRoomById(roomId);
-          if (room != null && !room.isSpace && room.spaceParents.isEmpty) {
+        .map((room) {
+          if (!room.isSpace && room.spaceParents.isEmpty) {
             return MatrixRoom(
-              roomId: roomId,
+              roomId: room.id,
               name: room.getLocalizedDisplayname(),
               topic: room.topic,
               type: RoomType.directMessage,
@@ -629,19 +670,18 @@ final class MCRepositoryImpl implements MCRepository {
           .map((room) {
             bool isVoiceRoom = false;
 
-            final createEvent = room.getState(EventTypes.RoomCreate);
-
-            if (createEvent != null &&
-                createEvent.content.containsKey('type')) {
-              final roomType = createEvent.content['type'] as String;
-              // 'org.matrix.msc3417.call'
-              if (roomType == 'org.matrix.msc3417.call') {
-                isVoiceRoom = room.canJoinGroupCall & true;
-              }
-            }
-
             if (room.id != spaceId &&
                 room.spaceParents.any((parent) => parent.roomId == spaceId)) {
+              final createEvent = room.getState(EventTypes.RoomCreate);
+              if (createEvent != null &&
+                  createEvent.content.containsKey('type')) {
+                final roomType = createEvent.content['type'] as String;
+                // 'org.matrix.msc3417.call'
+                if (roomType == MatrixEventTypes.msc3417) {
+                  isVoiceRoom = room.canJoinGroupCall & true;
+                }
+              }
+
               return MatrixRoom(
                 roomId: room.id,
                 name: room.name,
@@ -675,10 +715,9 @@ final class MCRepositoryImpl implements MCRepository {
   Future<Either<MCFailure, List<MatrixSpace>>> getSpaces() async {
     try {
       final rooms = _matrixClientManager.client.rooms;
-      _matrixClientManager.logger.log(Level.debug, 'All rooms: $rooms');
       final spaces = rooms
           .map((r) {
-            if (r.isSpace) {
+            if (r.isSpace && !r.isUnreadOrInvited) {
               return MatrixSpace(
                 spaceId: r.id,
                 name: r.name,
@@ -1165,6 +1204,21 @@ final class MCRepositoryImpl implements MCRepository {
       return Left(
         UnknownFailure(message: 'Failed to unregister push notifications: $e'),
       );
+    }
+  }
+
+  @override
+  Future<Either<MCFailure, Map<String, dynamic>>> getNotifications() async {
+    try {
+      final notifications = await _matrixClientManager.client.getNotifications(
+        limit: 20,
+      );
+      return Right({
+        'notifications': notifications.notifications,
+        'nextToken': notifications.nextToken,
+      });
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Failed to get notifications: $e'));
     }
   }
 }

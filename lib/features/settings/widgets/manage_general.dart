@@ -282,6 +282,22 @@ class _ManageGeneralState extends State<ManageGeneral> {
     }
   }
 
+  void _leaveRoom() async {
+    final result = await showOkAlertDialog(
+      context: context,
+      title: 'Leave Room',
+      message: 'Are you sure you want to leave this room?',
+      okLabel: 'Leave',
+    );
+
+    if (result == OkCancelResult.ok) {
+      await widget.room.leave();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final altAliases =
@@ -544,9 +560,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                           : null,
                     ),
                   FutureBuilder(
-                    future: widget.room.client.getLocalAliases(
-                      widget.room.id,
-                    ),
+                    future: widget.room.client.getLocalAliases(widget.room.id),
                     builder: (context, snapshot) {
                       final localAddresses = snapshot.data;
                       if (localAddresses == null) {
@@ -571,8 +585,9 @@ class _ManageGeneralState extends State<ManageGeneral> {
                     },
                   ),
                   FutureBuilder(
-                    future: widget.room.client
-                        .getRoomVisibilityOnDirectory(widget.room.id),
+                    future: widget.room.client.getRoomVisibilityOnDirectory(
+                      widget.room.id,
+                    ),
                     builder: (context, snapshot) => SwitchListTile.adaptive(
                       value: snapshot.data == Visibility.public,
                       title: Text(
@@ -588,9 +603,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                   trailing: IconButton(
                     icon: const Icon(Icons.copy_outlined),
                     onPressed: () {
-                      Clipboard.setData(
-                        ClipboardData(text: widget.room.id),
-                      );
+                      Clipboard.setData(ClipboardData(text: widget.room.id));
                     },
                   ),
                 ),
@@ -603,13 +616,23 @@ class _ManageGeneralState extends State<ManageGeneral> {
                             .tryGet<String>('room_version') ??
                         'Unknown',
                   ),
-                  trailing:
-                      widget.room.canSendEvent(EventTypes.RoomTombstone)
+                  trailing: widget.room.canSendEvent(EventTypes.RoomTombstone)
                       ? IconButton(
                           icon: const Icon(Icons.upgrade_outlined),
                           onPressed: () {},
                         )
                       : null,
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: const Text(
+                    'Leave Room',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  trailing: const Icon(Icons.logout, color: Colors.red),
+                  onTap: () {
+                    _leaveRoom();
+                  },
                 ),
               ],
             ),

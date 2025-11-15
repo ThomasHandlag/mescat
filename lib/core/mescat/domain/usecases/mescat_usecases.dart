@@ -8,6 +8,7 @@ part 'mc_room_usecases.dart';
 part 'mc_space_usecases.dart';
 part 'mc_user_usecases.dart';
 part 'mc_auth_usecases.dart';
+part 'mc_notification_usecases.dart';
 part 'mc_push_notification_usecases.dart';
 
 /// Use case for setting user presence

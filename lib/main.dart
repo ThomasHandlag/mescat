@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+import 'package:mescat/features/notifications/blocs/notification_bloc.dart';
+import 'package:mescat/features/notifications/pages/notification_page.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/window_scaffold.dart';
 import 'package:rive/rive.dart';
@@ -105,6 +107,10 @@ final class MescatBlocProvider extends StatelessWidget {
         BlocProvider(
           create: (context) => MemberBloc(getRoomMembersUseCase: getIt()),
         ),
+        BlocProvider(
+          create: (context) =>
+              NotificationBloc(getNotificationsUseCase: getIt()),
+        ),
       ],
       child: SafeArea(
         child: MaterialApp(
@@ -125,9 +131,16 @@ final class MescatBlocProvider extends StatelessWidget {
 final class MescatApp extends StatelessWidget {
   const MescatApp({super.key});
 
-  Widget _buildDesktop({required Widget child}) {
+  Widget _buildDesktop(BuildContext context, {required Widget child}) {
     return WindowScaffold(
-      actions: [McButton(onPressed: () {}, child: const Icon(Icons.inbox))],
+      actions: [
+        McButton(
+          onPressed: () {
+            showFullscreenDialog(context, const NotificationPage());
+          },
+          child: const Icon(Icons.inbox),
+        ),
+      ],
       child: child,
     );
   }
@@ -234,6 +247,6 @@ final class MescatApp extends StatelessWidget {
 
     return Platform.isAndroid || Platform.isIOS
         ? main
-        : _buildDesktop(child: main);
+        : _buildDesktop(context, child: main);
   }
 }

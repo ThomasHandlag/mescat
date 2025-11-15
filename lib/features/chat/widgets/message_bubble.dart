@@ -6,9 +6,11 @@ import 'package:matrix/matrix.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
+import 'package:mescat/features/chat/widgets/mc_player.dart';
 import 'package:mescat/features/chat/widgets/message_item.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
 import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:mescat/shared/widgets/youtube_webview.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -140,7 +142,7 @@ class MessageBubble extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: message.isCurrentUser
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface,
+                            : _generateColorFromUserId(message.senderId),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -215,7 +217,7 @@ class MessageBubble extends StatelessWidget {
                     const SizedBox.shrink(),
               ),
               if (message.reactions.isNotEmpty) ...[
-                _buildReactionsRow(context, message.reactions),
+                _buildReactionsRow(context, message.reactions, message),
               ],
             ],
           ),
@@ -229,6 +231,12 @@ class MessageBubble extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
+  }
+
+  Color _generateColorFromUserId(String userId) {
+    final hash = userId.codeUnits.fold(0, (prev, elem) => prev + elem);
+    final hue = (hash % 360).toDouble();
+    return HSLColor.fromAHSL(1.0, hue, 0.5, 0.6).toColor();
   }
 
   Widget? _buildMessageContent(BuildContext context, MCMessageEvent message) {
@@ -316,11 +324,9 @@ class MessageBubble extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.memory(
-                  message.file!.bytes,
+                child: McImage.memory(
+                  data: message.file!.bytes,
                   fit: BoxFit.cover,
-                  width: message.width?.toDouble(),
-                  height: message.height?.toDouble(),
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       width: 300,
@@ -365,6 +371,7 @@ class MessageBubble extends StatelessWidget {
                     ),
                   ),
                 ),
+              Text(message.body),
             ],
           );
         }
@@ -375,6 +382,9 @@ class MessageBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -384,11 +394,22 @@ class MessageBubble extends StatelessWidget {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(
-                'File: ${message.body}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              SizedBox(
+                width: 200,
+                child: Text(
+                  'File: ${message.file?.name}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(
+                  Icons.download_rounded,
                   color: Theme.of(context).colorScheme.primary,
-                  decoration: TextDecoration.underline,
                 ),
               ),
             ],
@@ -396,52 +417,10 @@ class MessageBubble extends StatelessWidget {
         );
 
       case MessageTypes.Audio:
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.audiotrack,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Audio message',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(width: 8),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.play_arrow)),
-            ],
-          ),
-        );
+        return McPlayer(data: message.file!.bytes);
 
       case MessageTypes.Video:
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.videocam,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Video message',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        );
+        return McVideoPlayer(data: message.file!.bytes);
       default:
         return null;
     }
@@ -475,6 +454,7 @@ class MessageBubble extends StatelessWidget {
   Widget _buildReactionsRow(
     BuildContext context,
     List<MCReactionEvent> reactions,
+    MCMessageEvent message,
   ) {
     return Flex(
       direction: Axis.horizontal,
@@ -497,7 +477,8 @@ class MessageBubble extends StatelessWidget {
                     context.read<ChatBloc>().add(
                       RemoveReaction(
                         roomId: reaction.roomId,
-                        eventId: existingReaction.key,
+                        reactEventId: existingReaction.key,
+                        eventId: message.eventId,
                         emoji: reaction.key,
                       ),
                     );

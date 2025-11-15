@@ -285,12 +285,6 @@ class MessageActions extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Divider(
-            thickness: 4,
-            indent: 120,
-            endIndent: 120,
-            radius: BorderRadius.all(Radius.circular(5)),
-          ),
           Expanded(
             child: ListView(
               children: [
@@ -300,7 +294,7 @@ class MessageActions extends StatelessWidget {
                   label: 'Add Reaction',
                   onTap: onReact,
                 ),
-
+                const Divider(),
                 // Reply
                 _buildMobileActionTile(
                   context,
@@ -308,7 +302,7 @@ class MessageActions extends StatelessWidget {
                   label: 'Reply',
                   onTap: onReply,
                 ),
-
+                const Divider(),
                 // Copy message
                 _buildMobileActionTile(
                   context,
@@ -316,16 +310,17 @@ class MessageActions extends StatelessWidget {
                   label: 'Copy Text',
                   onTap: onCopy,
                 ),
-
                 // Edit (only for current user)
-                if (isCurrentUser)
+                if (isCurrentUser) ...[
+                  const Divider(),
                   _buildMobileActionTile(
                     context,
                     icon: Icons.edit,
                     label: 'Edit',
                     onTap: onEdit,
                   ),
-
+                ],
+                const Divider(),
                 // Pin message
                 _buildMobileActionTile(
                   context,
@@ -333,9 +328,9 @@ class MessageActions extends StatelessWidget {
                   label: 'Pin Message',
                   onTap: onPin,
                 ),
-
                 // Delete (only for current user)
-                if (isCurrentUser)
+                if (isCurrentUser) ...[
+                  const Divider(),
                   _buildMobileActionTile(
                     context,
                     icon: Icons.delete_outline,
@@ -343,7 +338,8 @@ class MessageActions extends StatelessWidget {
                     onTap: onDelete,
                     isDestructive: true,
                   ),
-
+                ],
+                const Divider(),
                 // More actions
                 _buildMobileActionTile(
                   context,
@@ -388,8 +384,8 @@ class MessageActions extends StatelessWidget {
         ),
       ),
       onTap: () {
-        onTap?.call();
         Navigator.of(context).pop();
+        onTap?.call();
       },
     );
   }

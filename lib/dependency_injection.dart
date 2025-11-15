@@ -142,4 +142,9 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<SetServerUseCase>(
     () => SetServerUseCase(getIt<MCRepository>()),
   );
+  
+  // Notification use cases
+  getIt.registerLazySingleton<GetNotificationsUseCase>(
+    () => GetNotificationsUseCase(getIt<MCRepository>()),
+  );
 }

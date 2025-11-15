@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mescat/features/notifications/pages/notification_page.dart';
+import 'package:mescat/features/spaces/pages/explore_space_page.dart';
 import 'package:mescat/features/spaces/widgets/space_icon.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
+import 'package:mescat/shared/util/mc_dialog.dart';
 
 class SpaceSidebar extends StatelessWidget {
   const SpaceSidebar({super.key});
@@ -37,8 +42,7 @@ class SpaceSidebar extends StatelessWidget {
                         return SpaceIcon(
                           icon: Icons.home,
                           label: 'Home',
-                          isSelected:
-                              state.selectedSpace == null,
+                          isSelected: state.selectedSpace == null,
                           onTap: () {
                             context.read<SpaceBloc>().add(
                               const SelectSpace(null),
@@ -48,16 +52,15 @@ class SpaceSidebar extends StatelessWidget {
                       }
 
                       final space = state.spaces[index - 1];
-                      final isSelected = space.spaceId == state.selectedSpace?.spaceId;
+                      final isSelected =
+                          space.spaceId == state.selectedSpace?.spaceId;
 
                       return SpaceIcon(
                         avatarUrl: space.avatarUrl,
                         label: space.name,
                         isSelected: isSelected,
                         onTap: () {
-                          context.read<SpaceBloc>().add(
-                            SelectSpace(space),
-                          );
+                          context.read<SpaceBloc>().add(SelectSpace(space));
                         },
                       );
                     },
@@ -77,11 +80,24 @@ class SpaceSidebar extends StatelessWidget {
               },
             ),
           ),
+          if (Platform.isAndroid || Platform.isIOS) ...[
+            SpaceIcon(
+              icon: Icons.notifications,
+              label: 'Notifications',
+              isSelected: false,
+              onTap: () {
+                showFullscreenDialog(context, const NotificationPage());
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
           SpaceIcon(
             icon: Icons.explore,
             label: 'Explore Spaces',
             isSelected: false,
-            onTap: () {},
+            onTap: () {
+              showFullscreenDialog(context, const ExploreSpacePage());
+            },
           ),
           const SizedBox(height: 8),
           SpaceIcon(

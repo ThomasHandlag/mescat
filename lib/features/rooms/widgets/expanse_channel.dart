@@ -26,6 +26,9 @@ class _ExpanseChannelState extends State<ExpanseChannel> {
       child: ExpansionTile(
         expansionAnimationStyle: AnimationStyle.noAnimation,
         initiallyExpanded: _isExpanded,
+        tilePadding: const EdgeInsets.all(4),
+        childrenPadding: const EdgeInsets.all(0),
+        visualDensity: const VisualDensity(vertical: -4),
         onExpansionChanged: (expanded) {
           setState(() {
             _isExpanded = expanded;

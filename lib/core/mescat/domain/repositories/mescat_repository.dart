@@ -194,4 +194,7 @@ abstract class MCRepository {
     required String pushkey,
     required String appId,
   });
+
+  // Notification management
+  Future<Either<MCFailure, Map<String ,dynamic>>> getNotifications();
 }
