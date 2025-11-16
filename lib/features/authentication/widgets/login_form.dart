@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 
@@ -48,23 +50,40 @@ class _LoginFormState extends State<LoginForm> {
     super.initState();
   }
 
+  bool isLoading = false;
+
   Future<void> launchSSO() async {
     try {
-      final redirectUrl = Platform.isWindows || Platform.isLinux
-          ? 'http://localhost:3001'
-          : 'mescat://login';
+      final redirectUrl = Platform.isAndroid || Platform.isIOS
+          ? 'mescat://login'
+          : 'http://localhost:3001';
+
+      final client = getIt<Client>();
+
+      final url = (client.homeserver ?? Uri.parse('https://matrix.org'))
+          .replace(
+            path: '/_matrix/client/v3/login/sso/redirect',
+            queryParameters: {'redirectUrl': redirectUrl},
+          );
+
+      final urlScheme = Platform.isAndroid || Platform.isIOS
+          ? 'mescat'
+          : 'http://localhost:3001';
+
       final result = await FlutterWebAuth2.authenticate(
-        url:
-            'https://account.matrix.org/_matrix/client/v3/login/sso/redirect?redirectUrl=$redirectUrl',
-        callbackUrlScheme: Platform.isWindows || Platform.isLinux
-            ? 'http://localhost:3001'
-            : 'mescat',
+        url: url.toString(),
+        callbackUrlScheme: urlScheme,
         options: FlutterWebAuth2Options(
           useWebview: Platform.isWindows || Platform.isLinux ? false : true,
         ),
       );
       final token = Uri.parse(result).queryParameters['loginToken'];
       if (token?.isEmpty ?? false) return;
+
+      setState(() {
+        isLoading = true;
+      });
+
       _loginWithToken(token!);
     } catch (e) {
       log('error during oauth login: $e');
@@ -117,13 +136,13 @@ class _LoginFormState extends State<LoginForm> {
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  suffixIcon: McButton(
+                  suffixIcon: IconButton(
                     onPressed: () {
                       setState(() {
                         _obscurePassword = !_obscurePassword;
                       });
                     },
-                    child: Icon(
+                    icon: Icon(
                       _obscurePassword
                           ? Icons.visibility
                           : Icons.visibility_off,

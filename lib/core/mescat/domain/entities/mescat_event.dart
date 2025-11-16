@@ -25,7 +25,7 @@ class MCEvent extends Equatable {
 
 class MCMessageEvent extends MCEvent {
   final String? senderDisplayName;
-  final String? senderAvatarUrl;
+  final Uri? senderAvatarUrl;
   final String msgtype;
   final bool isEdited;
   final DateTime? editedTimestamp;
@@ -92,7 +92,7 @@ class MCMessageEvent extends MCEvent {
     String? roomId,
     String? senderId,
     String? senderDisplayName,
-    String? senderAvatarUrl,
+    Uri? senderAvatarUrl,
     String? msgtype,
     String? eventTypes,
     String? body,

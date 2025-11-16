@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
+import 'package:matrix/matrix.dart';
 import 'package:mescat/features/notifications/blocs/notification_bloc.dart';
 import 'package:mescat/features/notifications/pages/notification_page.dart';
+import 'package:mescat/shared/pages/verify_device_page.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/window_scaffold.dart';
 import 'package:rive/rive.dart';
@@ -132,8 +134,30 @@ final class MescatApp extends StatelessWidget {
   const MescatApp({super.key});
 
   Widget _buildDesktop(BuildContext context, {required Widget child}) {
+    final client = getIt<Client>();
     return WindowScaffold(
       actions: [
+        if (client.isUnknownSession)
+          SizedBox(
+            child: Row(
+              children: [
+                const Icon(Icons.warning, color: Colors.amber, size: 12),
+                const SizedBox(width: 4),
+                TextButton(
+                  onPressed: () {
+                    showFullscreenDialog(context, const VerifyDevicePage());
+                  },
+                  child: const Text(
+                    'Device Unverified',
+                    style: TextStyle(
+                      color: Colors.amber,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         McButton(
           onPressed: () {
             showFullscreenDialog(context, const NotificationPage());

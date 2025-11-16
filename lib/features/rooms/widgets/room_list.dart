@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/dependency_injection.dart';
 
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/rooms/widgets/invite_room.dart';
@@ -11,6 +13,7 @@ import 'package:mescat/features/settings/pages/space_setting_page.dart';
 import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/shared/pages/verify_device_page.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 
 class RoomList extends StatelessWidget {
@@ -18,6 +21,8 @@ class RoomList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final client = getIt<Client>();
+
     return Column(
       children: [
         Container(
@@ -126,6 +131,37 @@ class RoomList extends StatelessWidget {
 
                     return ListView(
                       children: [
+                        if (client.isUnknownSession)
+                          ListTile(
+                            onTap: () => showFullscreenDialog(
+                              context,
+                              const VerifyDevicePage(),
+                            ),
+                            leading: const Icon(
+                              Icons.warning,
+                              color: Colors.amber,
+                            ),
+                            title: const Text(
+                              'Verify Device',
+                              style: TextStyle(
+                                color: Colors.amber,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                            trailing: IconButton(
+                              onPressed: () {
+                                showAboutDialog(
+                                  context: context,
+                                  children: [
+                                    const Text(
+                                      'Verifying your device helps keep your account secure and ensures that your communications remain private. By verifying, you confirm that this device is trusted to access your messages and data.',
+                                    ),
+                                  ],
+                                );
+                              },
+                              icon: const Icon(Icons.help),
+                            ),
+                          ),
                         if (spaceState is SpaceLoaded &&
                             spaceState.selectedSpace != null) ...[
                           // Text channels

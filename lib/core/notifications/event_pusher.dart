@@ -81,7 +81,7 @@ final class EventPusher {
             isCurrentUser: clientManager.currentUserId == event.senderId,
             msgtype: messageType,
             mimeType: event.attachmentMimetype,
-            senderAvatarUrl: user.avatarUrl?.toFilePath(),
+            senderAvatarUrl: user.avatarUrl,
             repliedEvent: repliedEventContent,
           ),
         );

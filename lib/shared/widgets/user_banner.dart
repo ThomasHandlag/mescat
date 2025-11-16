@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mescat/shared/util/string_util.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
 
 class UserBanner extends StatelessWidget {
   final String? username;
-  final String? avatarUrl;
+  final Uri? avatarUrl;
   final List<Widget>? actions;
 
   const UserBanner({
@@ -22,22 +24,20 @@ class UserBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              image: avatarUrl != null
-                  ? DecorationImage(
-                      image: NetworkImage(avatarUrl!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-              color: avatarUrl == null ? Colors.grey : null,
-            ),
+          CircleAvatar(
+            radius: 20,
             child: avatarUrl == null
-                ? const Icon(Icons.person, color: Colors.white)
-                : null,
+                ? Text(
+                    getInitials(username ?? 'Unknown User'),
+                    style: const TextStyle(fontSize: 14),
+                  )
+                : McImage(
+                    uri: avatarUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
           ),
           const SizedBox(width: 12),
           SizedBox(

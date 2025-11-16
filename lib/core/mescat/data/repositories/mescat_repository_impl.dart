@@ -262,7 +262,7 @@ final class MCRepositoryImpl implements MCRepository {
       return MCUser(
         displayName: user.displayname,
         userId: member.senderId,
-        avatarUrl: user.avatarUrl?.toFilePath(),
+        avatarUrl: user.avatarUrl,
         isOnline: isOnline,
       );
     }).toList();
@@ -446,7 +446,7 @@ final class MCRepositoryImpl implements MCRepository {
                 roomId: roomId,
                 senderId: mtEvent.senderId,
                 senderDisplayName: user.displayname ?? mtEvent.senderId,
-                senderAvatarUrl: user.avatarUrl?.toFilePath(),
+                senderAvatarUrl: user.avatarUrl,
                 msgtype: event.messageType,
                 body: text,
                 timestamp: mtEvent.originServerTs,
@@ -588,7 +588,11 @@ final class MCRepositoryImpl implements MCRepository {
         }
       }
       return Right({'messages': matrixMessages, 'nextToken': nextToken});
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _matrixClientManager.logger.e(
+        'Error getting messages: $e',
+        stackTrace: stackTrace,
+      );
       return Left(UnknownFailure(message: 'Failed to get messages: $e'));
     }
   }
@@ -748,7 +752,7 @@ final class MCRepositoryImpl implements MCRepository {
       MCUser(
         displayName: user.displayname,
         userId: userId,
-        avatarUrl: user.avatarUrl.toString(),
+        avatarUrl: user.avatarUrl,
       ),
     );
   }
@@ -808,7 +812,7 @@ final class MCRepositoryImpl implements MCRepository {
         MCUser(
           displayName: user.displayname,
           userId: loginResponse.userId,
-          avatarUrl: user.avatarUrl?.toFilePath(),
+          avatarUrl: user.avatarUrl,
           accessToken: loginResponse.accessToken,
           refreshToken: loginResponse.refreshToken,
         ),
@@ -835,7 +839,7 @@ final class MCRepositoryImpl implements MCRepository {
         MCUser(
           displayName: user.displayname,
           userId: loginResponse.userId,
-          avatarUrl: user.avatarUrl?.toFilePath(),
+          avatarUrl: user.avatarUrl,
           accessToken: loginResponse.accessToken,
           refreshToken: loginResponse.refreshToken,
         ),

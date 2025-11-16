@@ -54,9 +54,6 @@ class MessageBubble extends StatelessWidget {
               children: [
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: message.senderAvatarUrl != null
-                        ? NetworkImage(message.senderAvatarUrl!)
-                        : null,
                     child: message.senderAvatarUrl == null
                         ? Text(
                             _getInitials(
@@ -64,7 +61,13 @@ class MessageBubble extends StatelessWidget {
                             ),
                             style: const TextStyle(fontSize: 14),
                           )
-                        : null,
+                        : McImage(
+                            uri: message.senderAvatarUrl,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                   ),
                   title: Text(
                     message.senderDisplayName ?? message.senderId,
@@ -108,9 +111,6 @@ class MessageBubble extends StatelessWidget {
               onTap: () => _showUserProfile(context, message.senderId),
               child: CircleAvatar(
                 radius: 20,
-                backgroundImage: message.senderAvatarUrl != null
-                    ? NetworkImage(message.senderAvatarUrl!)
-                    : null,
                 child: message.senderAvatarUrl == null
                     ? Text(
                         _getInitials(
@@ -118,7 +118,13 @@ class MessageBubble extends StatelessWidget {
                         ),
                         style: const TextStyle(fontSize: 14),
                       )
-                    : null,
+                    : McImage(
+                        uri: message.senderAvatarUrl,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
               ),
             ),
           ),
@@ -395,7 +401,7 @@ class MessageBubble extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               SizedBox(
-                width: 200,
+                width: 150,
                 child: Text(
                   'File: ${message.file?.name}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
