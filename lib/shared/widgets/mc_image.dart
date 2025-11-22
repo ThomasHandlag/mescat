@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/shared/util/extension_utils.dart';
+import 'dart:developer' as dev;
 
 class McImage extends StatefulWidget {
   final Uri? uri;
@@ -131,8 +132,8 @@ class _McImageState extends State<McImage> {
           return;
         }
       }
-    } catch (e) {
-      Logs().d('Unable to load mxc image', e);
+    } catch (e, s) {
+      dev.log('Unable to load mxc image', error: e, stackTrace: s);
       rethrow;
     }
   }

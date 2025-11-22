@@ -5,25 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
-import 'package:matrix/matrix.dart';
+import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/features/notifications/blocs/notification_bloc.dart';
-import 'package:mescat/features/notifications/pages/notification_page.dart';
-import 'package:mescat/shared/pages/verify_device_page.dart';
-import 'package:mescat/shared/widgets/mc_button.dart';
-import 'package:mescat/window_scaffold.dart';
 import 'package:rive/rive.dart';
 
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
-import 'package:mescat/features/authentication/pages/auth_page.dart';
-import 'package:mescat/features/chat/pages/chat_page.dart';
-import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/home_server/cubits/server_cubit.dart';
-import 'package:mescat/shared/util/mc_dialog.dart';
-import 'package:mescat/shared/util/widget_overlay_service.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
-import 'package:mescat/shared/pages/home_page.dart';
-import 'package:mescat/shared/pages/loading_page.dart';
 import 'package:mescat/features/members/blocs/member_bloc.dart';
 import 'package:mescat/core/themes/app_themes.dart';
 import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
@@ -72,7 +61,7 @@ final class MescatBlocProvider extends StatelessWidget {
             getCurrentUserUseCase: getIt(),
             setServerUseCase: getIt(),
             oauthLoginUseCase: getIt(),
-          )..add(InitialEvent()),
+          ),
         ),
         BlocProvider(
           create: (context) => ChatBloc(
@@ -83,6 +72,7 @@ final class MescatBlocProvider extends StatelessWidget {
             deleteMessageUseCase: getIt(),
             editMessageUseCase: getIt(),
             replyMessageUseCase: getIt(),
+            getRoomUseCase: getIt(),
             eventPusher: getIt(),
           ),
         ),
@@ -114,163 +104,25 @@ final class MescatBlocProvider extends StatelessWidget {
               NotificationBloc(getNotificationsUseCase: getIt()),
         ),
       ],
-      child: SafeArea(
-        child: MaterialApp(
-          title: 'Mescat',
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          debugShowCheckedModeBanner: false,
-          theme: AppThemes.lightTheme,
-          darkTheme: AppThemes.darkTheme,
-          themeMode: ThemeMode.system,
-          home: const MescatApp(),
-        ),
-      ),
+      child: const MescatApp(),
     );
   }
 }
 
-final class MescatApp extends StatelessWidget {
+class MescatApp extends StatelessWidget {
   const MescatApp({super.key});
-
-  Widget _buildDesktop(BuildContext context, {required Widget child}) {
-    final client = getIt<Client>();
-    return WindowScaffold(
-      actions: [
-        if (client.isUnknownSession)
-          SizedBox(
-            child: Row(
-              children: [
-                const Icon(Icons.warning, color: Colors.amber, size: 12),
-                const SizedBox(width: 4),
-                TextButton(
-                  onPressed: () {
-                    showFullscreenDialog(context, const VerifyDevicePage());
-                  },
-                  child: const Text(
-                    'Device Unverified',
-                    style: TextStyle(
-                      color: Colors.amber,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        McButton(
-          onPressed: () {
-            showFullscreenDialog(context, const NotificationPage());
-          },
-          child: const Icon(Icons.inbox),
-        ),
-      ],
-      child: child,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    final main = MultiBlocListener(
-      listeners: [
-        BlocListener<MescatBloc, MescatStatus>(
-          listener: (context, state) {
-            if (state is NetworkError || state is Unauthenticated) {
-              context.read<CallBloc>().add(const LeaveCall());
-              WidgetOverlayService.hide();
-            }
-          },
-        ),
-        BlocListener<CallBloc, MCCallState>(
-          listener: (context, state) {
-            if (state is! CallInProgress) {
-              WidgetOverlayService.hide();
-            }
-          },
-        ),
-        BlocListener<RoomBloc, RoomState>(
-          listener: (context, state) {
-            final callState = context.read<CallBloc>().state;
-            if (state is RoomLoaded) {
-              if (state.selectedRoom?.canHaveCall == true) {
-                if (callState is CallInProgress) {
-                  if (state.selectedRoomId == callState.roomId) {
-                    WidgetOverlayService.hide();
-                    if (Platform.isAndroid || Platform.isIOS) {
-                      showFullscreenDialog(
-                        context,
-                        ChatPage(parentContext: context),
-                      );
-                    }
-                  } else {
-                    context.read<CallBloc>().add(
-                      JoinCall(mRoom: state.selectedRoom!),
-                    );
-                    if (Platform.isAndroid || Platform.isIOS) {
-                      showFullscreenDialog(
-                        context,
-                        ChatPage(parentContext: context),
-                      );
-                    }
-                  }
-                } else {
-                  context.read<CallBloc>().add(
-                    JoinCall(mRoom: state.selectedRoom!),
-                  );
-                  if (Platform.isAndroid || Platform.isIOS) {
-                    showFullscreenDialog(
-                      context,
-                      ChatPage(parentContext: context),
-                    );
-                  }
-                }
-              } else {
-                if (state.selectedRoom == null) {
-                  return;
-                }
-                final room = state.selectedRoom!;
-                context.read<ChatBloc>().add(LoadMessages(roomId: room.roomId));
-
-                if (callState is CallInProgress) {
-                  WidgetOverlayService.show(
-                    context,
-                    onExpand: () {
-                      context.read<RoomBloc>().add(
-                        SelectRoom(callState.mRoom, flag: true),
-                      );
-                    },
-                    child: const CollapseCallView(),
-                  );
-                }
-
-                if (Platform.isAndroid || Platform.isIOS) {
-                  showFullscreenDialog(
-                    context,
-                    ChatPage(parentContext: context),
-                  );
-                }
-              }
-            }
-          },
-        ),
-      ],
-      child: BlocBuilder<MescatBloc, MescatStatus>(
-        builder: (context, state) {
-          if (state is Authenticated) {
-            return const HomePage();
-          } else if (state is Loading || state is Inititial) {
-            return const LoadingPage();
-          } else if (state is NetworkError) {
-            return Scaffold(body: Center(child: Text(state.message)));
-          } else {
-            return const AuthPage();
-          }
-        },
-      ),
+    return MaterialApp.router(
+      title: 'Mescat',
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      debugShowCheckedModeBanner: false,
+      theme: AppThemes.lightTheme,
+      darkTheme: AppThemes.darkTheme,
+      themeMode: ThemeMode.system,
+      routerConfig: MescatRoutes(bloc: context.read<MescatBloc>()).goRouter,
     );
-
-    return Platform.isAndroid || Platform.isIOS
-        ? main
-        : _buildDesktop(context, child: main);
   }
 }

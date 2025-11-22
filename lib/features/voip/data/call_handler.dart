@@ -21,7 +21,7 @@ class CallHandler implements WebRTCDelegate {
   final audioAssetPlayer = AudioPlayer();
   final String audioStoreKey = 'audio_call';
   final String muteStoreKey = 'headphone_call';
-  // final McEncryptionProvider encryptionProvider = McEncryptionProvider(); livekit backend does not implement yet
+  // final McEncryptionProvider encryptionProvider = McEncryptionProvider(); //livekit backend does not implement yet
 
   late VoIP voIP;
 
@@ -69,23 +69,21 @@ class CallHandler implements WebRTCDelegate {
     //   'm.call',
     //   'm.room',
     // );
-
-    session.backend.localUserMediaStream?.setAudioMuted(voiceMuted);
-    session.backend.localUserMediaStream?.setVideoMuted(true);
-
+    _groupSession = session;
     try {
-      if (session.state == GroupCallState.entered) {
-        await session.leave();
+      if (_groupSession!.state == GroupCallState.entered) {
+        await _groupSession!.leave();
       }
-      await session.enter();
+      await _groupSession!.enter();
       await audioAssetPlayer.play(
         AssetSource('${Assets.audioAsset}/discord-join.mp3'),
       );
+      await setAudioMuted(voiceMuted);
+      await setVideoMuted(true);
     } catch (e, stackTrace) {
       logger.log(Level.error, 'Failed to join call: $e');
       logger.log(Level.trace, 'Stack trace: $stackTrace');
     }
-    _groupSession = session;
 
     return right(session);
   }

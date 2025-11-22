@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/call_view.dart';
 import 'package:mescat/features/chat/widgets/chat_view.dart';
 import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
@@ -11,9 +14,9 @@ import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/util/widget_overlay_service.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, required this.parentContext});
+  const ChatPage({super.key, required this.context});
 
-  final BuildContext parentContext;
+  final BuildContext context;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -21,6 +24,8 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   bool _showMembers = true;
+
+  final client = getIt<Client>();
 
   @override
   void initState() {
@@ -34,12 +39,9 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RoomBloc, RoomState>(
+    return BlocBuilder<ChatBloc, ChatState>(
       builder: (context, state) {
-        return Scaffold(
-          appBar: _buildAppBar(state),
-          body: _buildView(state, context),
-        );
+        return Scaffold(appBar: _buildAppBar(state), body: _buildView(state));
       },
     );
   }
@@ -61,19 +63,23 @@ class _ChatPageState extends State<ChatPage> {
           icon: const Icon(Icons.group),
           tooltip: 'Room Options',
         ),
-        SizedBox(
+        Container(
+          padding: const EdgeInsets.only(right: 10),
           width: 250,
           child: TextField(
             decoration: InputDecoration(
               hintText: 'Search',
-              prefixIcon: const Icon(Icons.search),
+              suffixIcon: const Icon(Icons.search),
+
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
               ),
               filled: true,
               fillColor: Theme.of(context).colorScheme.onSurface.withAlpha(20),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 0,
+                horizontal: 10,
+              ),
               isDense: true,
             ),
             onSubmitted: (value) {},
@@ -83,12 +89,14 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  PreferredSizeWidget? _buildAppBar(RoomState state) {
-    if (state is RoomLoaded && state.selectedRoom != null) {
-      if (state.selectedRoom!.canHaveCall) {
+  PreferredSizeWidget? _buildAppBar(ChatState state) {
+    if (state.selectedRoom != null) {
+      if (state.selectedRoom?.canHaveCall == true) {
         return null;
       } else {
         return AppBar(
+          backgroundColor: const Color.fromARGB(255, 35, 35, 42),
+          primary: true,
           title: Row(
             children: [
               const Icon(Icons.tag, size: 16),
@@ -101,39 +109,29 @@ class _ChatPageState extends State<ChatPage> {
           actions: [_buildChatHeader(context)],
         );
       }
-    } else if (state is RoomLoading) {
-      return AppBar(title: const Text('Loading...'));
-    } else {
-      return null;
     }
+    return null;
   }
 
-  Widget _buildView(RoomState state, context) {
-    if (state is RoomLoaded) {
-      final selectedRoom = state.selectedRoom;
-      if (selectedRoom != null && selectedRoom.canHaveCall) {
-        return CallView(
-          onClose: () {
-            WidgetOverlayService.show(
-              context,
-              onExpand: () {
-                WidgetOverlayService.hide();
-                showFullscreenDialog(
-                  widget.parentContext,
-                  ChatPage(parentContext: widget.parentContext),
-                );
-              },
-              child: const CollapseCallView(),
-            );
-          },
-        );
-      } else {
-        return Platform.isAndroid || Platform.isIOS
-            ? _buildMobile()
-            : _buildDesktop();
-      }
+  Widget _buildView(ChatState state) {
+    final selectedRoom = state.selectedRoom;
+    if (selectedRoom != null && selectedRoom.canHaveCall) {
+      return CallView(
+        onClose: () {
+          WidgetOverlayService.show(
+            widget.context,
+            onExpand: () {
+              WidgetOverlayService.hide();
+              widget.context.read<RoomBloc>().add(SelectedRoom(selectedRoom));
+            },
+            child: const CollapseCallView(),
+          );
+        },
+      );
     } else {
-      return const Text('Select a channel to start chatting');
+      return Platform.isAndroid || Platform.isIOS
+          ? _buildMobile()
+          : _buildDesktop();
     }
   }
 

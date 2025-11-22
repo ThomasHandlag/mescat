@@ -49,14 +49,22 @@ class GetRoomsUseCase {
   }
 }
 
+class GetRoomUsecase {
+  final MCRepository repository;
+
+  GetRoomUsecase(this.repository);
+
+  Future<Either<MCFailure, MatrixRoom>> call(String roomId) async {
+    return await repository.getRoom(roomId);
+  }
+}
+
 class GetRoomMembersUseCase {
   final MCRepository repository;
 
   GetRoomMembersUseCase(this.repository);
 
-  Future<Either<MCFailure, List<MCUser>>> call(
-    String roomId,
-  ) async {
+  Future<Either<MCFailure, List<MCUser>>> call(String roomId) async {
     return await repository.getRoomMembers(roomId);
   }
 }

@@ -359,7 +359,11 @@ final class MCRepositoryImpl implements MCRepository {
         userId,
       );
       return Right(
-        MCUser(displayName: userProfile.displayname, userId: userId),
+        MCUser(
+          displayName: userProfile.displayname,
+          userId: userId,
+          avatarUrl: userProfile.avatarUrl,
+        ),
       );
     } else {
       return const Left(AuthenticationFailure(message: 'No user logged in'));
@@ -388,11 +392,12 @@ final class MCRepositoryImpl implements MCRepository {
       final nextToken = eventsResponse.end;
       final List<MCMessageEvent> matrixMessages = [];
 
+      final room = _matrixClientManager.client.getRoomById(roomId);
+
       for (final mtEvent in mtEvents.reversed) {
         switch (mtEvent.type) {
           case EventTypes.Message:
             {
-              final room = _matrixClientManager.client.getRoomById(roomId);
               if (mtEvent.content.isEmpty || room == null) continue;
 
               final event = Event.fromMatrixEvent(mtEvent, room);
@@ -600,14 +605,28 @@ final class MCRepositoryImpl implements MCRepository {
   @override
   Future<Either<MCFailure, MatrixRoom>> getRoom(String roomId) async {
     final room = _matrixClientManager.client.getRoomById(roomId);
+    bool isVoiceRoom = false;
     if (room != null) {
+      final createEvent = room.getState(EventTypes.RoomCreate);
+      if (createEvent != null && createEvent.content.containsKey('type')) {
+        final roomType = createEvent.content['type'] as String;
+        // 'org.matrix.msc3417.call'
+        if (roomType == MatrixEventTypes.msc3417) {
+          isVoiceRoom = room.canJoinGroupCall & true;
+        }
+      }
       return Right(
         MatrixRoom(
-          roomId: roomId,
-          name: room.name,
+          roomId: room.id,
+          name: room.getLocalizedDisplayname(),
           topic: room.topic,
-          type: RoomType.directMessage,
+          type: isVoiceRoom
+              ? RoomType.voiceChannel
+              : room.isDirectChat
+              ? RoomType.directMessage
+              : RoomType.textChannel,
           isPublic: room.isFederated,
+          canHaveCall: isVoiceRoom,
           room: room,
         ),
       );
@@ -728,6 +747,7 @@ final class MCRepositoryImpl implements MCRepository {
                 description: r.topic,
                 isPublic: r.isFederated,
                 createdAt: DateTime.now(),
+                avatarUrl: r.avatar,
                 mRoom: r,
               );
             }

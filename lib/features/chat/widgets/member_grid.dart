@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/features/chat/widgets/call_video.dart';
@@ -20,8 +22,6 @@ class _MemberGrid extends StatelessWidget {
 
   String? get displayName => stream.displayName;
 
-  String get avatarName => stream.avatarName;
-
   bool get isLocal => stream.isLocal();
 
   bool get mirrored =>
@@ -42,6 +42,7 @@ class _MemberGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    log('$avatarUri');
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[900],
@@ -67,7 +68,13 @@ class _MemberGrid extends StatelessWidget {
                                 ? getInitials(displayName!)
                                 : '',
                           )
-                        : McImage(uri: avatarUri),
+                        : McImage(
+                            uri: avatarUri,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(40),
+                          ),
                   );
                 } else {
                   return CallVideo(
@@ -123,7 +130,7 @@ class _MemberGrid extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
-                  color: Colors.grey[800],
+                  color: Colors.black45,
                 ),
                 height: 20,
                 child: Text(

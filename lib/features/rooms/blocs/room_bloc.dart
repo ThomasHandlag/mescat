@@ -30,7 +30,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<LoadRooms>(_onLoadRooms);
     on<CreateRoom>(_onCreateRoom);
     on<JoinRoom>(_onJoinRoom);
-    on<SelectRoom>(_onSelectRoom);
+    on<SelectedRoom>(_onSelectRoom);
     on<UpdateRoom>(_onUpdateRoom);
     on<LeaveRoom>(_onLeaveRoom);
 
@@ -91,7 +91,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     });
   }
 
-  Future<void> _onSelectRoom(SelectRoom event, Emitter<RoomState> emit) async {
+  Future<void> _onSelectRoom(SelectedRoom event, Emitter<RoomState> emit) async {
     if (state is RoomLoaded) {
       final currentState = state as RoomLoaded;
       final selectedRoom = event.room;
@@ -100,7 +100,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
         currentState.copyWith(
           selectedRoomId: event.room.roomId,
           selectedRoom: selectedRoom,
-          flag: event.flag,
+          flag: !currentState.flag
         ),
       );
     }

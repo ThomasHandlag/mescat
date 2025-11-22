@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:rive/rive.dart';
 
 class LoadingPage extends StatefulWidget {
@@ -10,6 +12,14 @@ class LoadingPage extends StatefulWidget {
 }
 
 class _LoadingPageState extends State<LoadingPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MescatBloc>().add(InitialEvent());
+    });
+  }
+
   final fileLoader = FileLoader.fromAsset(
     '${Assets.riveAsset}/cat.riv',
     riveFactory: Factory.rive,

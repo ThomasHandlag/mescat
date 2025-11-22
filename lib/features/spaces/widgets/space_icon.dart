@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
 
 class SpaceIcon extends StatelessWidget {
-  final String? avatarUrl;
+  final Uri? avatarUrl;
   final IconData? icon;
   final String label;
   final bool isSelected;
+  final bool useGenerateColor;
   final VoidCallback onTap;
 
   const SpaceIcon({
@@ -14,6 +17,7 @@ class SpaceIcon extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.useGenerateColor = true,
   });
 
   @override
@@ -27,29 +31,32 @@ class SpaceIcon extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : const Color(0xFF808080),
+            color: useGenerateColor
+                ? label.generateFromString()
+                : Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withAlpha(76),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
+            border: isSelected
+                ? Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  )
                 : null,
           ),
           child: avatarUrl != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    avatarUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => _buildIcon(),
+              ? CircleAvatar(
+                  radius: 10,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(),
+                    ),
+                    child: McImage(
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      uri: avatarUrl!,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 )
               : icon != null

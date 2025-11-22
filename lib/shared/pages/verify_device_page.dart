@@ -187,7 +187,12 @@ class _VerifyDevicePageState extends State<VerifyDevicePage> {
           break;
         case BootstrapState.openExistingSsss:
           return Scaffold(
-            appBar: AppBar(title: const Text('Verify Device')),
+            appBar: AppBar(
+              title: const Text('Verify Device'),
+              leading: CloseButton(
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
             body: Center(
               child: SizedBox(
                 width: Platform.isAndroid || Platform.isIOS

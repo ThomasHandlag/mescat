@@ -4,7 +4,7 @@ class MatrixSpace extends Equatable {
   final String spaceId;
   final String name;
   final String? description;
-  final String? avatarUrl;
+  final Uri? avatarUrl;
   final bool isPublic;
   final List<String> childRoomIds;
   final List<String> adminIds;
@@ -49,7 +49,7 @@ class MatrixSpace extends Equatable {
     String? spaceId,
     String? name,
     String? description,
-    String? avatarUrl,
+    Uri? avatarUrl,
     bool? isPublic,
     List<String>? childRoomIds,
     List<String>? adminIds,
