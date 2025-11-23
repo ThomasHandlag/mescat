@@ -1,3 +1,4 @@
+import 'package:flutter_background/flutter_background.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void requirePermissions() async {
@@ -36,5 +37,26 @@ void requirePermissions() async {
   }
   if (optimizeStat.isRestricted) {
     await Permission.ignoreBatteryOptimizations.request();
+  }
+}
+
+Future<bool> startForegroundService() async {
+  final androidConfig = const FlutterBackgroundAndroidConfig(
+    notificationTitle: 'Shared Media Service',
+    notificationText: 'Mescat is running in background to share media streams',
+    notificationImportance: AndroidNotificationImportance.normal,
+    notificationIcon: AndroidResource(
+      name: 'background_icon',
+      defType: 'drawable',
+    ),
+    shouldRequestBatteryOptimizationsOff: false,
+  );
+  await FlutterBackground.initialize(androidConfig: androidConfig);
+  return FlutterBackground.enableBackgroundExecution();
+}
+
+Future<void> stopForegroundService() async {
+  if (FlutterBackground.isBackgroundExecutionEnabled) {
+    await FlutterBackground.disableBackgroundExecution();
   }
 }

@@ -30,10 +30,10 @@ final class EventPusher {
         }
 
         RepliedEventContent? repliedEventContent;
-        if (event.relationshipType == RelationshipTypes.reply) {
+        if (event.inReplyToEventId() != null) {
           final repliedMxEvent = await clientManager.client.getOneRoomEvent(
             event.room.id,
-            event.eventId,
+            event.inReplyToEventId()!,
           );
           final repliedEvent = Event.fromMatrixEvent(
             repliedMxEvent,

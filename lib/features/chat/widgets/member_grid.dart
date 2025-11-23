@@ -12,11 +12,13 @@ class _MemberGrid extends StatelessWidget {
     this.mainGrid = false,
     required this.stream,
     required this.groupCallSession,
+    required this.isActiveSpeaker,
   });
 
   final bool mainGrid;
   final WrappedMediaStream stream;
   final GroupCallSession groupCallSession;
+  final bool isActiveSpeaker;
 
   Uri? get avatarUri => stream.avatarUrl;
 
@@ -36,10 +38,6 @@ class _MemberGrid extends StatelessWidget {
 
   bool get isCurrentUser => stream.isLocal();
 
-  bool get isTalk =>
-      groupCallSession.backend.activeSpeaker?.userId ==
-      stream.participant.userId;
-
   @override
   Widget build(BuildContext context) {
     log('$avatarUri');
@@ -47,8 +45,8 @@ class _MemberGrid extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey[900],
         border: Border.all(
-          color: isTalk ? Colors.blue : Colors.grey,
-          width: isTalk ? 3 : 1,
+          color: isActiveSpeaker ? Colors.blue : Colors.grey,
+          width: isActiveSpeaker ? 3 : 1,
         ),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -80,7 +78,7 @@ class _MemberGrid extends StatelessWidget {
                   return CallVideo(
                     stream: stream,
                     isMirror: mirrored,
-                    fit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                    fit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
                   );
                 }
               },
@@ -161,6 +159,9 @@ class MemberGridView extends StatelessWidget {
         for (final stream in groupCall.backend.userMediaStreams) {
           streams[stream] = groupCall;
         }
+        for (final stream in groupCall.backend.screenShareStreams) {
+          streams[stream] = groupCall;
+        }
       }
     }
     return streams;
@@ -181,6 +182,9 @@ class MemberGridView extends StatelessWidget {
           groupCallSession: participantStreams[stream]!,
           stream: stream,
           mainGrid: index == 0,
+          isActiveSpeaker:
+              participantStreams[stream]!.backend.activeSpeaker?.userId ==
+              stream.participant.userId,
         );
       },
     );

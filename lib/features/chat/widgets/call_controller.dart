@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
+import 'package:mescat/features/voip/widgets/screen_select_dialog.dart';
 
 class CallController extends StatelessWidget {
   const CallController({
@@ -13,6 +15,27 @@ class CallController extends StatelessWidget {
 
   final bool voiceMuted;
   final bool videoMuted;
+
+  void _onShareScreen(BuildContext context) async {
+    if (WebRTC.platformIsDesktop) {
+      final source = await showDialog<DesktopCapturerSource>(
+        context: context,
+        builder: (context) {
+          return const ScreenSelectDialog();
+        },
+      );
+
+      if (source != null) {
+        // ignore: use_build_context_synchronously
+        context.read<CallBloc>().add(
+          ShareScreen.fromSourceId(enable: true, sourceId: source.id),
+        );
+      }
+    } else {
+      // ignore: use_build_context_synchronously
+      context.read<CallBloc>().add(const ShareScreen(enable: true));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +70,12 @@ class CallController extends StatelessWidget {
               }
             },
           ),
-          IconButton(icon: const Icon(Icons.screen_share), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.screen_share),
+            onPressed: () {
+              _onShareScreen(context);
+            },
+          ),
         ],
       ),
     );

@@ -37,7 +37,6 @@ void main() async {
   runApp(const MescatBlocProvider());
   if (!Platform.isAndroid && !Platform.isIOS) {
     appWindow.show();
-
     doWhenWindowReady(() {
       final window = appWindow;
       window.alignment = Alignment.center;

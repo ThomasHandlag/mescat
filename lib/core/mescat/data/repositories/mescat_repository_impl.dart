@@ -416,9 +416,9 @@ final class MCRepositoryImpl implements MCRepository {
                 file = await event.downloadAndDecryptAttachment();
               }
 
-              if (event.relationshipType == RelationshipTypes.reply) {
+              if (event.inReplyToEventId() != null) {
                 final repliedMTEvent = await _matrixClientManager.client
-                    .getOneRoomEvent(roomId, event.relationshipEventId!);
+                    .getOneRoomEvent(roomId, event.inReplyToEventId()!);
 
                 final repliedEvent = Event.fromMatrixEvent(
                   repliedMTEvent,

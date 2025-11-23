@@ -121,6 +121,29 @@ class CallHandler implements WebRTCDelegate {
     );
   }
 
+  Future<void> enableShareScreen(bool enable, String sourceId) async {
+    if (_groupSession != null) {
+      try {
+        if (enable) {
+          await _groupSession!.backend.setScreensharingEnabled(
+            _groupSession!,
+            enable,
+            sourceId,
+          );
+        } else {
+          await _groupSession!.backend.setScreensharingEnabled(
+            _groupSession!,
+            enable,
+            sourceId,
+          );
+        }
+      } catch (e, stackTrace) {
+        logger.log(Level.error, 'Failed to toggle screen sharing: $e');
+        logger.log(Level.trace, 'Stack trace: $stackTrace');
+      }
+    }
+  }
+
   Future<void> setMuteAll(bool muted) async {
     await _store.setBool(muteStoreKey, muted);
   }
