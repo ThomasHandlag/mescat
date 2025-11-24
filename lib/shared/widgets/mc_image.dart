@@ -163,7 +163,6 @@ class _McImageState extends State<McImage> {
         width: widget.width,
         height: widget.height,
         alignment: Alignment.center,
-        child: const CircularProgressIndicator.adaptive(strokeWidth: 2),
       );
 
   @override

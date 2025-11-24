@@ -38,7 +38,13 @@ class CollapseCallView extends StatelessWidget {
                                   ? getInitials(displayName)
                                   : '',
                             )
-                          : McImage(uri: avatarUri),
+                          : McImage(
+                              uri: avatarUri,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              borderRadius: BorderRadius.circular(40),
+                            ),
                     )
                   else
                     CallVideo(

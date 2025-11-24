@@ -32,7 +32,9 @@ class SpaceIcon extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: useGenerateColor
-                ? label.generateFromString()
+                ? avatarUrl != null
+                      ? null
+                      : label.generateFromString()
                 : Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(10),
             border: isSelected
@@ -45,18 +47,12 @@ class SpaceIcon extends StatelessWidget {
           child: avatarUrl != null
               ? CircleAvatar(
                   radius: 10,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(),
-                    ),
-                    child: McImage(
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                      uri: avatarUrl!,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                  child: McImage(
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    uri: avatarUrl!,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 )
               : icon != null

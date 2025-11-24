@@ -7,6 +7,7 @@ import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
 import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
+import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/util/widget_overlay_service.dart';
@@ -31,6 +32,40 @@ class AppBlocListener extends StatelessWidget {
           listener: (context, state) {
             if (state is! CallInProgress) {
               WidgetOverlayService.hide();
+            }
+          },
+        ),
+        BlocListener<SpaceBloc, SpaceState>(
+          listener: (context, state) {
+            final callState = context.read<CallBloc>().state;
+            if (state is SpaceLoaded) {
+              if (state.selectedSpace != null && callState is CallInProgress) {
+                if (state.selectedSpace?.childRoomIds.contains(
+                      callState.mRoom.roomId,
+                    ) ==
+                    true) {
+                  // The current call is in the selected space
+                  return;
+                } else {
+                  if (!WidgetOverlayService.isShowing()) {
+                    WidgetOverlayService.show(
+                      buildContext,
+                      onExpand: () {
+                        context.read<RoomBloc>().add(
+                          SelectedRoom(callState.mRoom),
+                        );
+                        context.read<ChatBloc>().add(
+                          SelectRoom(callState.mRoom.roomId),
+                        );
+                        // context.read<SpaceBloc>().add(
+                        //   SelectSpaceId(callState.mRoom.parentSpaceId!),
+                        // );
+                      },
+                      child: const CollapseCallView(),
+                    );
+                  }
+                }
+              }
             }
           },
         ),

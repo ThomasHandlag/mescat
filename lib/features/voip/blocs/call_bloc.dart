@@ -64,6 +64,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
             voiceMuted: callHandler.voiceMuted,
             muted: callHandler.muteAll,
             mRoom: event.mRoom,
+            videoMuted: true,
           ),
         );
       },

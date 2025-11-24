@@ -88,7 +88,7 @@ class _HomePageState extends State<HomePage> {
                     voiceMuted: callState.voiceMuted,
                     videoMuted: callState is CallInProgress
                         ? callState.videoMuted
-                        : false,
+                        : true,
                     username: state.user.displayName,
                     avatarUrl: state.user.avatarUrl,
                     mutedAll: callState.muted,

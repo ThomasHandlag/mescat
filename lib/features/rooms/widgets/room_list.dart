@@ -43,7 +43,8 @@ class RoomList extends StatelessWidget {
       ),
       child: Column(
         children: [
-          SizedBox(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             height: kToolbarHeight,
             child: Row(
               children: [

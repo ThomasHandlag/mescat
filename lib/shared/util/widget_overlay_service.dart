@@ -35,10 +35,7 @@ class WidgetOverlayService {
         onPositionChanged: (newPosition) {
           _positions[overlayId] = newPosition;
         },
-        onClose: () {
-          hide(overlayId);
-          onClose?.call();
-        },
+        onClose: onClose,
         onExpand: onExpand,
         child: child,
       ),
@@ -296,16 +293,6 @@ class _DraggableOverlayState extends State<_DraggableOverlay> {
                         ),
                         onPressed: widget.onExpand,
                         tooltip: 'Expand',
-                      ),
-                    if (widget.onClose != null)
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                        onPressed: widget.onClose,
-                        tooltip: 'Close',
                       ),
                   ],
                 ),
