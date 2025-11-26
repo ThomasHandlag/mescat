@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/chat/widgets/call_video.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/string_util.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:webrtc_interface/webrtc_interface.dart';
 
 class CollapseCallView extends StatelessWidget {
@@ -30,16 +31,20 @@ class CollapseCallView extends StatelessWidget {
                   if (stream?.videoMuted == true)
                     CircleAvatar(
                       radius: 40,
-                      backgroundImage: avatarUri != null
-                          ? NetworkImage(avatarUri.toFilePath())
-                          : null,
+
                       child: avatarUri == null
                           ? Text(
                               displayName != null
                                   ? getInitials(displayName)
                                   : '',
                             )
-                          : null,
+                          : McImage(
+                              uri: avatarUri,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              borderRadius: BorderRadius.circular(40),
+                            ),
                     )
                   else
                     CallVideo(

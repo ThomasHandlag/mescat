@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/notifications/pages/notification_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
 import 'package:mescat/features/spaces/widgets/space_icon.dart';
@@ -16,14 +17,6 @@ class SpaceSidebar extends StatelessWidget {
     return Container(
       width: 60,
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
-            width: 0.5,
-          ),
-        ),
-      ),
       child: Column(
         children: [
           Expanded(
@@ -43,7 +36,9 @@ class SpaceSidebar extends StatelessWidget {
                           icon: Icons.home,
                           label: 'Home',
                           isSelected: state.selectedSpace == null,
+                          useGenerateColor: false,
                           onTap: () {
+                            context.read<ChatBloc>().add(const SelectRoom('0'));
                             context.read<SpaceBloc>().add(
                               const SelectSpace(null),
                             );
@@ -61,6 +56,7 @@ class SpaceSidebar extends StatelessWidget {
                         isSelected: isSelected,
                         onTap: () {
                           context.read<SpaceBloc>().add(SelectSpace(space));
+                          context.read<ChatBloc>().add(const SelectRoom('0'));
                         },
                       );
                     },
@@ -85,6 +81,7 @@ class SpaceSidebar extends StatelessWidget {
               icon: Icons.notifications,
               label: 'Notifications',
               isSelected: false,
+              useGenerateColor: false,
               onTap: () {
                 showFullscreenDialog(context, const NotificationPage());
               },
@@ -95,6 +92,7 @@ class SpaceSidebar extends StatelessWidget {
             icon: Icons.explore,
             label: 'Explore Spaces',
             isSelected: false,
+            useGenerateColor: false,
             onTap: () {
               showFullscreenDialog(context, const ExploreSpacePage());
             },
@@ -104,6 +102,7 @@ class SpaceSidebar extends StatelessWidget {
             icon: Icons.add,
             label: 'Create Space',
             isSelected: false,
+            useGenerateColor: false,
             onTap: () {
               _showCreateSpaceDialog(context);
             },

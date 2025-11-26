@@ -53,6 +53,7 @@ class SwitchCamera extends CallEvent {
   @override
   List<Object> get props => [];
 }
+
 final class SwitchCall extends CallEvent {
   const SwitchCall({required this.mRoom});
 
@@ -60,4 +61,19 @@ final class SwitchCall extends CallEvent {
 
   @override
   List<Object> get props => [mRoom];
+}
+
+final class ShareScreen extends CallEvent {
+  final bool enable;
+  final String sourceId;
+
+  const ShareScreen({required this.enable, this.sourceId = ''});
+
+  const ShareScreen.fromSourceId({
+    required this.sourceId,
+    required this.enable,
+  });
+
+  @override
+  List<Object> get props => [enable, sourceId];
 }

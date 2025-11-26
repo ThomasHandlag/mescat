@@ -24,7 +24,7 @@ class UserBox extends StatelessWidget {
   final bool mutedAll;
   final WrappedMediaStream? stream;
   final String? username;
-  final String? avatarUrl;
+  final Uri? avatarUrl;
 
   @override
   Widget build(BuildContext context) {

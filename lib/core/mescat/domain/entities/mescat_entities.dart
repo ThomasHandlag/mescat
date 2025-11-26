@@ -10,7 +10,7 @@ part 'mescat_room.dart';
 class MCUser extends Equatable {
   final String userId;
   final String? displayName;
-  final String? avatarUrl;
+  final Uri? avatarUrl;
   final bool isOnline;
   final DateTime? lastActiveTime;
   final String? presenceMessage;
@@ -44,7 +44,7 @@ class MCUser extends Equatable {
   MCUser copyWith({
     String? userId,
     String? displayName,
-    String? avatarUrl,
+    Uri? avatarUrl,
     bool? isOnline,
     DateTime? lastActiveTime,
     String? presenceMessage,

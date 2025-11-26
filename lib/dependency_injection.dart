@@ -97,6 +97,9 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<OAuthLoginUseCase>(
     () => OAuthLoginUseCase(getIt<MCRepository>()),
   );
+  getIt.registerLazySingleton<GetRoomUsecase>(
+    () => GetRoomUsecase(getIt<MCRepository>()),
+  );
   getIt.registerLazySingleton<GetCurrentUserUseCase>(
     () => GetCurrentUserUseCase(getIt<MCRepository>()),
   );
@@ -142,7 +145,7 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<SetServerUseCase>(
     () => SetServerUseCase(getIt<MCRepository>()),
   );
-  
+
   // Notification use cases
   getIt.registerLazySingleton<GetNotificationsUseCase>(
     () => GetNotificationsUseCase(getIt<MCRepository>()),

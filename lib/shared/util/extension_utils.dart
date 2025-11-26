@@ -122,3 +122,13 @@ Future<Uint8List> _convertToCircularImage(
   final byteData = await circularImage.toByteData(format: ImageByteFormat.png);
   return byteData!.buffer.asUint8List();
 }
+
+extension StringToColor on String {
+  Color generateFromString() {
+    final hash = codeUnits.fold(0, (prev, elem) => prev + elem);
+    final r = (hash * 123) % 256;
+    final g = (hash * 456) % 256;
+    final b = (hash * 789) % 256;
+    return Color.fromARGB(255, r, g, b);
+  }
+}

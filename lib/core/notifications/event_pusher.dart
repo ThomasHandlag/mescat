@@ -30,10 +30,10 @@ final class EventPusher {
         }
 
         RepliedEventContent? repliedEventContent;
-        if (event.relationshipType == RelationshipTypes.reply) {
+        if (event.inReplyToEventId() != null) {
           final repliedMxEvent = await clientManager.client.getOneRoomEvent(
             event.room.id,
-            event.eventId,
+            event.inReplyToEventId()!,
           );
           final repliedEvent = Event.fromMatrixEvent(
             repliedMxEvent,
@@ -57,32 +57,21 @@ final class EventPusher {
         }
 
         final text = event.content['body'] as String;
-        final imageInfo = event.content['info'] as Map<String, dynamic>?;
-        final width = imageInfo != null ? imageInfo['w'] : null;
-        final height = imageInfo != null ? imageInfo['h'] : null;
-        MatrixFile? mtFile;
-
-        if (event.hasAttachment) {
-          mtFile = await event.downloadAndDecryptAttachment();
-        }
 
         _controller.add(
           MCMessageEvent(
             roomId: event.room.id,
             senderId: event.senderId,
             senderDisplayName: user.displayname,
-            width: width,
-            height: height,
             timestamp: event.originServerTs,
             eventId: event.eventId,
-            file: mtFile,
             body: text,
             eventTypes: event.type,
             isCurrentUser: clientManager.currentUserId == event.senderId,
             msgtype: messageType,
-            mimeType: event.attachmentMimetype,
-            senderAvatarUrl: user.avatarUrl?.toFilePath(),
+            senderAvatarUrl: user.avatarUrl,
             repliedEvent: repliedEventContent,
+            event: event,
           ),
         );
       } else if (event.type == EventTypes.Reaction) {

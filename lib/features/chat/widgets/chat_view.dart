@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
-import 'package:mescat/features/rooms/blocs/room_bloc.dart';
+import 'package:mescat/features/chat/widgets/chat_skeleton.dart';
 import 'package:mescat/features/chat/widgets/message_input.dart';
 import 'package:mescat/features/chat/widgets/message_list.dart';
 
@@ -11,59 +11,32 @@ class ChatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RoomBloc, RoomState>(
+    return BlocBuilder<ChatBloc, ChatState>(
       builder: (context, state) {
-        if (state is RoomLoaded && state.selectedRoom != null) {
-          final selectedRoom = state.selectedRoom!;
-
-          if (selectedRoom.roomId.isEmpty) {
-            return _buildEmptyState(context, 'Room not found');
-          }
-
-          return Column(
-            children: [
-              Expanded(
-                child: BlocBuilder<ChatBloc, ChatState>(
-                  builder: (context, chatState) {
-                    if (chatState is ChatLoaded &&
-                        chatState.selectedRoomId == selectedRoom.roomId) {
-                      return MessageList(
-                        messages: chatState.messages,
-                      );
-                    }
-                    if (chatState is ChatLoading) {
-                      return const MessageList(messages: []);
-                    }
-
-                    return const MessageList(messages: []);
-                  },
-                ),
+        return Column(
+          children: [
+            Expanded(
+              child: state is ChatLoaded
+                  ? MessageList(messages: state.messages)
+                  : state is ChatLoading
+                  ? const ChatSkeleton()
+                  : _buildEmptyState(
+                      context,
+                      'Select a room to start chatting',
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: UIConstraints.mSmallPadding,
+                right: UIConstraints.mSmallPadding,
+                left: UIConstraints.mSmallPadding,
               ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  bottom: UIConstraints.mSmallPadding,
-                  right: UIConstraints.mSmallPadding,
-                  left: UIConstraints.mSmallPadding,
-                ),
-                child: MessageInput(
-                  roomId: selectedRoom.roomId,
-                  channelName: selectedRoom.name,
-                  onSendMessage: (content, type) {
-                    context.read<ChatBloc>().add(
-                      SendMessage(
-                        roomId: selectedRoom.roomId,
-                        content: content,
-                        type: type,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        }
-
-        return _buildEmptyState(context, 'Select a channel to start chatting');
+              child: state.selectedRoom != null
+                  ? MessageInput(room: state.selectedRoom)
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        );
       },
     );
   }

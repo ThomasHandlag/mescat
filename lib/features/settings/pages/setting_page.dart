@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
+import 'package:mescat/features/voip/blocs/call_bloc.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -80,6 +81,7 @@ class _SettingPageState extends State<SettingPage> {
                         enabled: enabled,
                         iconColor: Colors.red,
                         onTap: () {
+                          context.read<CallBloc>().add(const LeaveCall());
                           context.read<MescatBloc>().add(LogoutRequested());
                           if (Navigator.canPop(context)) {
                             Navigator.of(context).pop();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:mescat/shared/util/string_util.dart';
 
@@ -8,7 +9,7 @@ class YoutubeDialog extends StatefulWidget {
   final YoutubePlayerController controller;
   final String message;
   final String? displayName;
-  final String? avatarUrl;
+  final Uri? avatarUrl;
   const YoutubeDialog({
     super.key,
     required this.controller,
@@ -83,9 +84,7 @@ class _YoutubeDialogState extends State<YoutubeDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (widget.avatarUrl != null)
-                          CircleAvatar(
-                            backgroundImage: NetworkImage(widget.avatarUrl!),
-                          )
+                          CircleAvatar(child: McImage(uri: widget.avatarUrl!))
                         else
                           CircleAvatar(
                             child: Text(getInitials(widget.displayName ?? '')),
@@ -129,7 +128,7 @@ class YoutubeWebview extends StatefulWidget {
   final Size videoSize;
   final String message;
   final String? displayName;
-  final String? avatarUrl;
+  final Uri? avatarUrl;
 
   const YoutubeWebview({
     super.key,

@@ -25,7 +25,7 @@ class MCEvent extends Equatable {
 
 class MCMessageEvent extends MCEvent {
   final String? senderDisplayName;
-  final String? senderAvatarUrl;
+  final Uri? senderAvatarUrl;
   final String msgtype;
   final bool isEdited;
   final DateTime? editedTimestamp;
@@ -33,13 +33,9 @@ class MCMessageEvent extends MCEvent {
   final RepliedEventContent? repliedEvent;
   final bool isEncrypted;
   final MessageStatus status;
-  final Map<String, dynamic>? metadata;
-  final MatrixFile? file;
   final bool isCurrentUser;
   final String body;
-  final int? height;
-  final int? width;
-  final String? mimeType;
+  final Event event;
 
   const MCMessageEvent({
     required super.eventId,
@@ -58,15 +54,8 @@ class MCMessageEvent extends MCEvent {
     this.repliedEvent,
     this.isEncrypted = false,
     this.status = MessageStatus.sent,
-    this.metadata,
-    this.file,
-    this.height,
-    this.width,
-    this.mimeType,
-  }) : assert(
-         msgtype != MessageTypes.Image || file != null,
-         'File must be provided for image messages',
-       );
+    required this.event,
+  });
 
   @override
   List<Object?> get props => [
@@ -82,9 +71,8 @@ class MCMessageEvent extends MCEvent {
     repliedEvent,
     isEncrypted,
     status,
-    metadata,
-    file,
     isCurrentUser,
+    event,
   ];
 
   MCMessageEvent copyWith({
@@ -92,7 +80,7 @@ class MCMessageEvent extends MCEvent {
     String? roomId,
     String? senderId,
     String? senderDisplayName,
-    String? senderAvatarUrl,
+    Uri? senderAvatarUrl,
     String? msgtype,
     String? eventTypes,
     String? body,
@@ -103,10 +91,9 @@ class MCMessageEvent extends MCEvent {
     RepliedEventContent? repliedEvent,
     bool? isEncrypted,
     MessageStatus? status,
-    Map<String, dynamic>? metadata,
-    MatrixFile? file,
     bool? isCurrentUser,
     String? replyToContent,
+    Event? event,
   }) {
     return MCMessageEvent(
       eventId: eventId ?? this.eventId,
@@ -124,9 +111,8 @@ class MCMessageEvent extends MCEvent {
       repliedEvent: repliedEvent ?? this.repliedEvent,
       isEncrypted: isEncrypted ?? this.isEncrypted,
       status: status ?? this.status,
-      metadata: metadata ?? this.metadata,
-      file: file ?? this.file,
       isCurrentUser: isCurrentUser ?? this.isCurrentUser,
+      event: event ?? this.event,
     );
   }
 }

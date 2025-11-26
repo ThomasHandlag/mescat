@@ -54,7 +54,8 @@ class WindowScaffold extends StatelessWidget {
       children: [
         WindowTitleBar(
           height: titleBarHeight,
-          backgroundColor: const Color.fromARGB(255, 34, 33, 37),
+          backgroundColor:
+              titleBarColor ?? const Color.fromARGB(255, 34, 33, 37),
           title: title,
           titleColor: effectiveTitleBarTextColor,
           showTitle: showTitle,

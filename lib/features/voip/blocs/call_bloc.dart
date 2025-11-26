@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/notifications/event_pusher.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/utils/permission_util.dart';
 import 'package:mescat/features/voip/data/call_handler.dart';
 
 part 'call_event.dart';
@@ -29,6 +31,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
     on<ToggleCamera>(_onToggleCamera);
     on<SwitchCamera>(_onSwitchCamera);
     on<ToggleVoice>(_onToggleVoice);
+    on<ShareScreen>(_onShareScreen);
   }
 
   Future<void> _onJoinCall(JoinCall event, Emitter<MCCallState> emit) async {
@@ -61,6 +64,7 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
             voiceMuted: callHandler.voiceMuted,
             muted: callHandler.muteAll,
             mRoom: event.mRoom,
+            videoMuted: true,
           ),
         );
       },
@@ -69,7 +73,12 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
 
   Future<void> _onLeaveCall(LeaveCall event, Emitter<MCCallState> emit) async {
     await callHandler.leaveCall();
-    emit(CallIdle(muted: callHandler.muteAll, voiceMuted: callHandler.voiceMuted));
+    if (Platform.isAndroid) {
+      await stopForegroundService();
+    }
+    emit(
+      CallIdle(muted: callHandler.muteAll, voiceMuted: callHandler.voiceMuted),
+    );
   }
 
   Future<void> _onToggleMute(
@@ -115,4 +124,16 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   // Future<void> close() {
   //   return super.close();
   // }
+
+  Future<void> _onShareScreen(
+    ShareScreen event,
+    Emitter<MCCallState> emit,
+  ) async {
+    if (state is CallInProgress) {
+      if (Platform.isAndroid) {
+        await startForegroundService();
+      }
+      await callHandler.enableShareScreen(event.enable, event.sourceId);
+    }
+  }
 }

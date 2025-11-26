@@ -18,6 +18,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final DeleteMessageUseCase deleteMessageUseCase;
   final EditMessageUseCase editMessageUseCase;
   final ReplyMessageUseCase replyMessageUseCase;
+  final GetRoomUsecase getRoomUseCase;
   final EventPusher eventPusher;
 
   ChatBloc({
@@ -28,8 +29,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     required this.deleteMessageUseCase,
     required this.editMessageUseCase,
     required this.replyMessageUseCase,
+    required this.getRoomUseCase,
     required this.eventPusher,
-  }) : super(ChatInitial()) {
+  }) : super(const ChatInitial()) {
     on<LoadMessages>(_onLoadMessages);
     on<SendMessage>(_onSendMessage);
     on<AddReaction>(_onAddReaction);
@@ -41,6 +43,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<LoadMoreMessages>(_onLoadMoreMessages);
     on<ReceiveMessage>(_onReceiveMessage);
     on<MessageReacted>(_onMessageReacted);
+    on<SelectRoom>(_onSelectRoom);
     _eventSubscription();
   }
 
@@ -91,12 +94,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(currentState.copyWith(messages: updatedMessages));
   }
 
+  Future<void> _onSelectRoom(SelectRoom event, Emitter<ChatState> emit) async {
+    if (event.roomId == '0') {
+      emit(const ChatInitial());
+      return;
+    }
+
+    final roomResult = await getRoomUseCase(event.roomId);
+
+    await roomResult.fold(
+      (failure) async {
+        emit(ChatError(message: failure.toString()));
+      },
+      (room) async {
+        emit(ChatLoading(selectedRoom: room));
+        add(LoadMessages(roomId: event.roomId));
+      },
+    );
+  }
+
   Future<void> _onLoadMessages(
     LoadMessages event,
     Emitter<ChatState> emit,
   ) async {
-    emit(ChatLoading());
-
     final result = await getMessagesUseCase(
       roomId: event.roomId,
       limit: event.limit,
@@ -105,6 +125,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     result.fold((failure) => emit(ChatError(message: failure.toString())), (
       data,
     ) {
+      if (state is ChatLoaded) return;
+
       final messages = data['messages'] as List<MCMessageEvent>;
       final nextToken = data['nextToken'] as String?;
 
@@ -114,6 +136,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           messages: messages,
           inputAction: const InputActionData(action: InputAction.none),
           nextToken: nextToken,
+          selectedRoom: state.selectedRoom,
         ),
       );
     });

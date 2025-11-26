@@ -1,8 +1,10 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
+import 'package:mescat/dependency_injection.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -98,6 +100,7 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
             user.copyWith(
               accessToken: success.accessToken,
               refreshToken: success.refreshToken,
+              avatarUrl: success.avatarUrl,
             ),
           ),
         ),
@@ -116,9 +119,7 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
       return;
     }
 
-    final result = await oauthLoginUseCase(
-      loginToken: event.loginToken,
-    );
+    final result = await oauthLoginUseCase(loginToken: event.loginToken);
 
     await result.fold((failure) async => emit(AuthError(failure.message)), (
       success,
@@ -131,6 +132,7 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
             user.copyWith(
               accessToken: success.accessToken,
               refreshToken: success.refreshToken,
+              avatarUrl: success.avatarUrl,
             ),
           ),
         ),
@@ -191,12 +193,14 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
       emit(const NetworkError('No internet connection'));
       return;
     }
-    await Future.delayed(const Duration(milliseconds: 3000));
     final result = await getCurrentUserUseCase();
 
-    result.fold(
-      (failure) => emit(Unauthenticated()),
-      (user) => emit(Authenticated(user)),
-    );
+    await result.fold((failure) async => emit(Unauthenticated()), (user) async {
+      final client = getIt<Client>();
+      await client.roomsLoading;
+      await client.accountDataLoading;
+
+      emit(Authenticated(user));
+    });
   }
 }

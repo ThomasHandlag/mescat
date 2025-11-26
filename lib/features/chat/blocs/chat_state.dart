@@ -1,15 +1,23 @@
 part of 'chat_bloc.dart';
 
 abstract class ChatState extends Equatable {
-  const ChatState();
+  const ChatState({this.selectedRoom});
+  final MatrixRoom? selectedRoom;
 
   @override
   List<Object?> get props => [];
 }
 
-class ChatInitial extends ChatState {}
+class ChatInitial extends ChatState {
+  const ChatInitial();
+}
 
-class ChatLoading extends ChatState {}
+class ChatLoading extends ChatState {
+  const ChatLoading({required super.selectedRoom});
+
+  @override
+  List<Object?> get props => [selectedRoom];
+}
 
 class ChatError extends ChatState {
   final String message;
@@ -17,12 +25,11 @@ class ChatError extends ChatState {
   const ChatError({required this.message});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, selectedRoom];
 }
 
 class ChatLoaded extends ChatState {
   final String? selectedRoomId;
-  final MatrixRoom? selectedRoom;
   final List<MCMessageEvent> messages;
   final InputActionData inputAction;
   final bool isLoadingMore;
@@ -34,7 +41,7 @@ class ChatLoaded extends ChatState {
     this.messages = const [],
     this.isLoadingMore = false,
     this.nextToken,
-    this.selectedRoom,
+    required super.selectedRoom,
   });
 
   bool get hasMoreMessages => nextToken != null;

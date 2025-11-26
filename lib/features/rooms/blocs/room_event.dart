@@ -80,19 +80,14 @@ class LeaveRoom extends RoomEvent {
   List<Object?> get props => [roomId];
 }
 
-class SelectRoom extends RoomEvent {
+class SelectedRoom extends RoomEvent {
   final MatrixRoom room;
   final RoomType? roomType;
-  final bool flag;
 
-  const SelectRoom(
-    this.room, {
-    required this.flag,
-    this.roomType,
-  });
+  const SelectedRoom(this.room, {this.roomType});
 
   @override
-  List<Object?> get props => [room, roomType, flag];
+  List<Object?> get props => [room, roomType];
 }
 
 class UpdateRoom extends RoomEvent {

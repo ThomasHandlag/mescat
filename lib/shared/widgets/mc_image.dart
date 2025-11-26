@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/shared/util/extension_utils.dart';
+import 'dart:developer' as dev;
 
 class McImage extends StatefulWidget {
   final Uri? uri;
@@ -62,10 +63,10 @@ class McImage extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.easeInOut,
     this.borderRadius = BorderRadius.zero,
+    this.isThumbnail = true,
     super.key,
   }) : uri = null,
        event = null,
-       isThumbnail = false,
        retryDuration = const Duration(seconds: 2),
        thumbnailMethod = ThumbnailMethod.scale,
        cacheKey = null,
@@ -131,8 +132,8 @@ class _McImageState extends State<McImage> {
           return;
         }
       }
-    } catch (e) {
-      Logs().d('Unable to load mxc image', e);
+    } catch (e, s) {
+      dev.log('Unable to load mxc image', error: e, stackTrace: s);
       rethrow;
     }
   }
@@ -162,7 +163,6 @@ class _McImageState extends State<McImage> {
         width: widget.width,
         height: widget.height,
         alignment: Alignment.center,
-        child: const CircularProgressIndicator.adaptive(strokeWidth: 2),
       );
 
   @override

@@ -6,6 +6,7 @@ final class UIConstraints {
   static const double mMessageInputHeight = 60;
   static const double mFloatWidgetSize = 80.0;
   static const double mCustomBtnHeight = 40.0;
+  static const double mSpaceSidebar = 60.0;
 }
 
 final class Assets {

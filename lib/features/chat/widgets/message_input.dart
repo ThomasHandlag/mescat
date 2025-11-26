@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/input_action_banner.dart';
@@ -15,16 +16,9 @@ import 'package:path_provider/path_provider.dart';
 typedef MessageSendCallback = void Function(String content, String type);
 
 class MessageInput extends StatefulWidget {
-  final String roomId;
-  final MessageSendCallback onSendMessage;
-  final String? channelName;
+  final MatrixRoom? room;
 
-  const MessageInput({
-    super.key,
-    required this.roomId,
-    required this.onSendMessage,
-    this.channelName,
-  });
+  const MessageInput({super.key, required this.room});
 
   @override
   State<MessageInput> createState() => _MessageInputState();
@@ -68,6 +62,7 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   void _sendMessage() {
+    if (widget.room == null) return;
     final message = _messageController.text.trim();
     if (message.isNotEmpty || _attachments.isNotEmpty) {
       if (_attachments.isNotEmpty) {
@@ -80,7 +75,7 @@ class _MessageInputState extends State<MessageInput> {
           return;
         }
         final client = getIt<Client>();
-        final room = client.getRoomById(widget.roomId);
+        final room = client.getRoomById(widget.room!.roomId);
         if (room != null) {
           for (final filePath in _attachments) {
             final file = MatrixFile(
@@ -91,8 +86,13 @@ class _MessageInputState extends State<MessageInput> {
           }
         }
       } else {
-        widget.onSendMessage(message, MessageTypes.Text);
-
+        // normal text send
+        context.read<ChatBloc>().add(
+          SendMessage(
+            roomId: widget.room!.roomId,
+            content: message,
+          ),
+        );
         setState(() {
           _isTyping = false;
         });
@@ -106,9 +106,10 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   void _editMessage(String eventId) {
+    if (widget.room == null) return;
     context.read<ChatBloc>().add(
       EditMessage(
-        roomId: widget.roomId,
+        roomId: widget.room!.roomId,
         eventId: eventId,
         newContent: _messageController.text.trim(),
       ),
@@ -116,6 +117,7 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   void _replyToMessage(String eventId) {
+    if (widget.room == null) return;
     if (_attachments.isNotEmpty) {
       if (!_checkAttachmentSize()) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,7 +128,7 @@ class _MessageInputState extends State<MessageInput> {
         return;
       }
       final client = getIt<Client>();
-      final room = client.getRoomById(widget.roomId);
+      final room = client.getRoomById(widget.room!.roomId);
 
       if (room != null) {
         final replyContent = {
@@ -147,7 +149,7 @@ class _MessageInputState extends State<MessageInput> {
     } else {
       context.read<ChatBloc>().add(
         ReplyMessage(
-          roomId: widget.roomId,
+          roomId: widget.room!.roomId,
           content: _messageController.text.trim(),
           replyToEventId: eventId,
         ),
@@ -167,8 +169,8 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   String get _placeholderText {
-    if (widget.channelName != null) {
-      return 'Message #${widget.channelName}';
+    if (widget.room?.name != null) {
+      return 'Message #${widget.room!.name}';
     }
     return 'Type a message...';
   }

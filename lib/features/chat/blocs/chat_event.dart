@@ -107,6 +107,15 @@ class ReplyMessage extends ChatEvent {
   List<Object?> get props => [roomId, content, replyToEventId, type];
 }
 
+final class SelectRoom extends ChatEvent {
+  final String roomId;
+
+  const SelectRoom(this.roomId);
+
+  @override
+  List<Object?> get props => [roomId];
+}
+
 class SetInputAction extends ChatEvent {
   final InputAction action;
   final String? targetEventId;
