@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/message_bubble.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 class MessageList extends StatefulWidget {
   final List<MCMessageEvent> messages;

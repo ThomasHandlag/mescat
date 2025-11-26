@@ -57,6 +57,10 @@ dependencies:
   get_it: ^8.2.0
   go_router: ^17.0.0
   google_fonts: ^6.2.1
+  gridexts:
+    path: ../gridexts
+    # git:
+    #   url: https://github.com/ThomasHandlag/gridexts.git
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   http: ^1.5.0
@@ -65,7 +69,6 @@ dependencies:
   ipfsdart:
     git:
       url: https://github.com/ThomasHandlag/ipfsdart.git
-      ref: main
   json_annotation: ^4.9.0
   logger: ^2.6.2
   matrix: 

@@ -38,34 +38,10 @@ class AppBlocListener extends StatelessWidget {
         BlocListener<SpaceBloc, SpaceState>(
           listener: (context, state) {
             final callState = context.read<CallBloc>().state;
-            if (state is SpaceLoaded) {
-              if (state.selectedSpace != null && callState is CallInProgress) {
-                if (state.selectedSpace?.childRoomIds.contains(
-                      callState.mRoom.roomId,
-                    ) ==
-                    true) {
-                  // The current call is in the selected space
-                  return;
-                } else {
-                  if (!WidgetOverlayService.isShowing()) {
-                    WidgetOverlayService.show(
-                      buildContext,
-                      onExpand: () {
-                        context.read<RoomBloc>().add(
-                          SelectedRoom(callState.mRoom),
-                        );
-                        context.read<ChatBloc>().add(
-                          SelectRoom(callState.mRoom.roomId),
-                        );
-                        // context.read<SpaceBloc>().add(
-                        //   SelectSpaceId(callState.mRoom.parentSpaceId!),
-                        // );
-                      },
-                      child: const CollapseCallView(),
-                    );
-                  }
-                }
-              }
+            if (callState is CallInProgress &&
+                state is SpaceLoaded &&
+                callState.mRoom.parentSpaceId != state.selectedSpace?.spaceId) {
+              context.read<CallBloc>().add(const LeaveCall());
             }
           },
         ),
@@ -78,8 +54,7 @@ class AppBlocListener extends StatelessWidget {
                   if (state.selectedRoomId == callState.roomId) {
                     WidgetOverlayService.hide();
                     context.read<ChatBloc>().add(SelectRoom(callState.roomId));
-                    if ((Platform.isAndroid || Platform.isIOS) &&
-                        state.selectedRoom?.roomId != callState.roomId) {
+                    if (Platform.isAndroid || Platform.isIOS) {
                       showFullscreenDialog(
                         buildContext,
                         ChatPage(context: buildContext),

@@ -102,11 +102,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     final roomResult = await getRoomUseCase(event.roomId);
 
-    roomResult.fold(
-      (failure) {
+    await roomResult.fold(
+      (failure) async {
         emit(ChatError(message: failure.toString()));
       },
-      (room) {
+      (room) async {
         emit(ChatLoading(selectedRoom: room));
         add(LoadMessages(roomId: event.roomId));
       },

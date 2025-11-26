@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
+import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
 import 'package:mescat/features/chat/widgets/call_view.dart';
 import 'package:mescat/features/chat/widgets/chat_view.dart';
 import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
@@ -116,17 +117,20 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildView(ChatState state) {
     final selectedRoom = state.selectedRoom;
     if (selectedRoom != null && selectedRoom.canHaveCall) {
-      return CallView(
-        onClose: () {
-          WidgetOverlayService.show(
-            widget.context,
-            onExpand: () {
-              WidgetOverlayService.hide();
-              widget.context.read<RoomBloc>().add(SelectedRoom(selectedRoom));
-            },
-            child: const CollapseCallView(),
-          );
-        },
+      return MultiBlocProvider(
+        providers: [BlocProvider(create: (_) => CallControllerCubit())],
+        child: CallView(
+          onClose: () {
+            WidgetOverlayService.show(
+              widget.context,
+              onExpand: () {
+                WidgetOverlayService.hide();
+                widget.context.read<RoomBloc>().add(SelectedRoom(selectedRoom));
+              },
+              child: const CollapseCallView(),
+            );
+          },
+        ),
       );
     } else {
       return Platform.isAndroid || Platform.isIOS

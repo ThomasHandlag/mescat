@@ -1,3 +1,4 @@
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -121,7 +122,10 @@ class MescatApp extends StatelessWidget {
       theme: AppThemes.lightTheme,
       darkTheme: AppThemes.darkTheme,
       themeMode: ThemeMode.system,
-      routerConfig: MescatRoutes(bloc: context.read<MescatBloc>()).goRouter,
+      routerConfig: MescatRoutes(
+        bloc: context.read<MescatBloc>(),
+        roomBloc: context.read<RoomBloc>(),
+      ).goRouter,
     );
   }
 }

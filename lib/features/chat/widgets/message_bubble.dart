@@ -6,10 +6,10 @@ import 'package:matrix/matrix.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
-import 'package:mescat/features/chat/widgets/mc_player.dart';
 import 'package:mescat/features/chat/widgets/message_item.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
 import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:mescat/shared/widgets/mc_file.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:mescat/shared/widgets/youtube_webview.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -186,7 +186,7 @@ class MessageBubble extends StatelessWidget {
                     targetEventId: message.eventId,
                     initialContent: switch (message.msgtype) {
                       MessageTypes.Text => message.body,
-                      _ => 'Attachment ${message.file?.name ?? ''}',
+                      _ => 'Attachment ${message.event.attachmentMimetype}',
                     },
                   ),
                 ),
@@ -246,190 +246,11 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget? _buildMessageContent(BuildContext context, MCMessageEvent message) {
-    switch (message.msgtype) {
-      case MessageTypes.Text:
-        {
-          final textSpanLists = List<TextSpan>.empty(growable: true);
-          if (message.isEdited) {
-            textSpanLists.add(
-              const TextSpan(
-                text: '(edited) ',
-                style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
-              ),
-            );
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (message.repliedEvent != null)
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text.rich(
-                      TextSpan(
-                        text:
-                            'Replying to ${message.repliedEvent?.senderName}: ',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha(0x80),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: message.repliedEvent!.content,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  fontStyle: FontStyle.italic,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withAlpha(0xB3),
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              GestureDetector(
-                onTap: () {
-                  if (message.body.isValidUrl) {
-                    // Open the link
-                    _onClickLink(message.body);
-                  }
-                },
-                child: Text.rich(
-                  TextSpan(text: message.body, children: textSpanLists),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    decoration:
-                        Uri.tryParse(message.body)?.hasAbsolutePath == true
-                        ? TextDecoration.underline
-                        : TextDecoration.none,
-                  ),
-                ),
-              ),
-              if (message.body.isValidYoutubeUrl)
-                YoutubeWebview(
-                  videoUrl: message.body,
-                  message: message.body,
-                  displayName: message.senderDisplayName,
-                  avatarUrl: message.senderAvatarUrl,
-                ),
-            ],
-          );
-        }
-
-      case MessageTypes.Image:
-        {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: McImage.memory(
-                  data: message.file!.bytes,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 300,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Failed to load image',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onErrorContainer,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              if (message.file != null && message.file!.name.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    message.file!.name,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha(0x80),
-                    ),
-                  ),
-                ),
-              Text(message.body),
-            ],
-          );
-        }
-
-      case MessageTypes.File:
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.attach_file,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 150,
-                child: Text(
-                  'File: ${message.file?.name}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    decoration: TextDecoration.underline,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(
-                  Icons.download_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-        );
-
-      case MessageTypes.Audio:
-        return McPlayer(data: message.file!.bytes);
-
-      case MessageTypes.Video:
-        return McVideoPlayer(data: message.file!.bytes);
-      default:
-        return null;
-    }
+    final widget = switch (message.msgtype) {
+      MessageTypes.Text => _buildTextMessage(context, message),
+      _ => McFile(event: message.event),
+    };
+    return widget;
   }
 
   String _getInitials(String name) {
@@ -520,6 +341,78 @@ class MessageBubble extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildTextMessage(BuildContext context, MCMessageEvent message) {
+    final textSpanLists = List<TextSpan>.empty(growable: true);
+    if (message.isEdited) {
+      textSpanLists.add(
+        const TextSpan(
+          text: '(edited) ',
+          style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (message.repliedEvent != null)
+          GestureDetector(
+            onTap: () {},
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text.rich(
+                TextSpan(
+                  text: 'Replying to ${message.repliedEvent?.senderName}: ',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha(0x80),
+                  ),
+                  children: [
+                    TextSpan(
+                      text: message.repliedEvent!.content,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(0xB3),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        GestureDetector(
+          onTap: () {
+            if (message.body.isValidUrl) {
+              // Open the link
+              _onClickLink(message.body);
+            }
+          },
+          child: Text.rich(
+            TextSpan(text: message.body, children: textSpanLists),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              decoration: Uri.tryParse(message.body)?.hasAbsolutePath == true
+                  ? TextDecoration.underline
+                  : TextDecoration.none,
+            ),
+          ),
+        ),
+        if (message.body.isValidYoutubeUrl)
+          YoutubeWebview(
+            videoUrl: message.body,
+            message: message.body,
+            displayName: message.senderDisplayName,
+            avatarUrl: message.senderAvatarUrl,
+          ),
+      ],
     );
   }
 }

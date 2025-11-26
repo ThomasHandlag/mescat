@@ -8,6 +8,7 @@ import 'package:mescat/features/authentication/pages/auth_page.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
 import 'package:mescat/features/notifications/pages/notification_page.dart';
+import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
 import 'package:mescat/shared/layouts/app_layout.dart';
@@ -48,7 +49,7 @@ final class MescatRoutes {
       '/room/$roomId/settings';
   static String profileRoute(String userId) => '/profile/$userId';
 
-  MescatRoutes({required this.bloc})
+  MescatRoutes({required this.bloc, required this.roomBloc})
     : goRouter = GoRouter(
         navigatorKey: _rootNavigatorKey,
         initialLocation: MescatRoutes.loading,
@@ -60,7 +61,14 @@ final class MescatRoutes {
             final isLoading = state.matchedLocation == MescatRoutes.loading;
 
             if (isLoggingIn || isLoading) {
-              return '/room/0';
+              final roomState = roomBloc.state;
+              if (roomState is RoomLoaded && roomState.selectedRoom != null) {
+                return MescatRoutes.roomRoute(
+                  roomState.selectedRoom!.roomId,
+                );
+              } else {
+                return MescatRoutes.roomRoute('0');
+              }
             }
             return null;
           } else if (authState is Unauthenticated) {
@@ -201,6 +209,7 @@ final class MescatRoutes {
       );
 
   final MescatBloc bloc;
+  final RoomBloc roomBloc;
 
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>();
@@ -210,3 +219,4 @@ final class MescatRoutes {
 
   final GoRouter goRouter;
 }
+
