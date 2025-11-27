@@ -949,15 +949,22 @@ final class MCRepositoryImpl implements MCRepository {
     required String password,
     String? email,
   }) async {
-    final result = await _matrixClientManager.client.register(
-      username: username,
-      password: password,
-    );
+    try {
+      final result = await _matrixClientManager.client.register(
+        username: username,
+        password: password,
+        initialDeviceDisplayName: MatrixConfig.defaultClientName
+      );
 
-    if (result.accessToken == null) {
-      return const Left(AuthenticationFailure(message: 'Registration failed'));
+      if (result.accessToken == null) {
+        return const Left(
+          AuthenticationFailure(message: 'Registration failed'),
+        );
+      }
+      return const Right(true);
+    } catch (e) {
+      return Left(AuthenticationFailure(message: 'Registration failed: $e'));
     }
-    return const Right(true);
   }
 
   @override

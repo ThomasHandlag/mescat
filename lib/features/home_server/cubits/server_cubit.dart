@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logger/logger.dart';
+// import 'package:mescat/core/http/servers_list_api.dart';
+import 'package:mescat/features/home_server/cubits/server_lists_file.dart';
 
 part 'server_state.dart';
 
@@ -19,9 +21,10 @@ final class ServerCubit extends Cubit<ServerState> {
     final box = await Hive.openBox(_selected);
     final listBox = await Hive.openBox(_serversBox);
     final existingServers = listBox.get(listKey) as List<dynamic>? ?? [];
-    if (!existingServers
-        .any((element) => ServerInfo.fromJson(jsonDecode(element)).domain ==
-            server.domain)) {
+    if (!existingServers.any(
+      (element) =>
+          ServerInfo.fromJson(jsonDecode(element)).domain == server.domain,
+    )) {
       existingServers.add(jsonEncode(server.toJson()));
       await listBox.put(listKey, existingServers);
     }
@@ -65,6 +68,21 @@ final class ServerCubit extends Cubit<ServerState> {
           selectedServerDomainBox.put('server_info', servers.first.toJson());
           emit(ServerListLoaded(servers, selectedServer: servers.first));
         }
+      } else {
+        // final serverList = await ServersListApi.fetchServersList();
+        // for (final serverMap in serverList) {
+        //   final serverInfo = ServerInfo.fromJson(serverMap);
+        //   servers.add(serverInfo);
+        // }
+        // final selectedServerDomainBox = await Hive.openBox(_selected);
+        // final selectedServerJson = selectedServerDomainBox.get('server_info');
+        // if (selectedServerJson != null) {
+        //   selectedServer = ServerInfo.fromJson(jsonDecode(selectedServerJson));
+        //   emit(ServerListLoaded(servers, selectedServer: selectedServer));
+        // } else {
+        //   selectedServerDomainBox.put('server_info', servers.first.toJson());
+        //   emit(ServerListLoaded(servers, selectedServer: servers.first));
+        // }
       }
     } catch (e, stackTrace) {
       _logger.log(
@@ -74,6 +92,16 @@ final class ServerCubit extends Cubit<ServerState> {
         stackTrace: stackTrace,
       );
     } finally {
+      final localList = ServerListsFile.loadServerListAsset();
+
+      final List<dynamic> jsonList = jsonDecode(await localList)['public_servers'];
+      for (final serverMap in jsonList) {
+        final serverInfo = ServerInfo.fromJson(serverMap);
+        if (!servers.any((s) => s.domain == serverInfo.domain)) {
+          servers.add(serverInfo);
+        }
+      }
+
       emit(ServerListLoaded(servers, selectedServer: servers.first));
     }
   }

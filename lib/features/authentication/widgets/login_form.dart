@@ -8,10 +8,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
-import 'package:mescat/shared/widgets/mc_button.dart';
 
 class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+  const LoginForm({super.key, this.onSwitchToRegister});
+
+  final void Function()? onSwitchToRegister;
 
   @override
   State<LoginForm> createState() => _LoginFormState();
@@ -92,7 +93,7 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   void _loginWithToken(String token) {
-    context.read<MescatBloc>().add(OAuthLoginRequested(loginToken: token));
+    context.read<MescatBloc>().add(SSOLoginRequested(loginToken: token));
   }
 
   void _snackBar(String message) {
@@ -109,7 +110,6 @@ class _LoginFormState extends State<LoginForm> {
         return Form(
           key: _formKey,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             spacing: 10,
             children: [
               TextFormField(
@@ -118,7 +118,8 @@ class _LoginFormState extends State<LoginForm> {
                 decoration: const InputDecoration(
                   labelText: 'Username',
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: BorderSide(color: Colors.black),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   labelStyle: TextStyle(color: Color(0xFF707E75)),
                 ),
@@ -149,7 +150,8 @@ class _LoginFormState extends State<LoginForm> {
                     ),
                   ),
                   border: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: BorderSide(color: Colors.white10),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   labelStyle: const TextStyle(color: Color(0xFF707E75)),
                 ),
@@ -160,77 +162,72 @@ class _LoginFormState extends State<LoginForm> {
                   return null;
                 },
               ),
-
-              // Login button
-              Row(
-                children: [
-                  TextButton(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Forgot password feature coming soon',
-                                ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Forgot password feature coming soon',
                               ),
-                            );
-                          },
-                    child: const Text('Forgot Password?'),
+                            ),
+                          );
+                        },
+                  child: const Text('Forgot Password?'),
+                ),
+              ),
+              // Login button
+              ElevatedButton(
+                onPressed: isLoading ? null : _login,
+                style: ButtonStyle(
+                  minimumSize: WidgetStateProperty.all<Size>(
+                    const Size(double.infinity, 48),
                   ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Login'),
-                  ),
-                ],
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Login'),
               ),
               const Text('Or login with'),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 5,
-                children: [
-                  McButton(
-                    onPressed: () {
-                      launchSSO();
-                    },
-                    child: const Icon(FontAwesomeIcons.google),
+              ElevatedButton.icon(
+                style: ButtonStyle(
+                  minimumSize: WidgetStateProperty.all<Size>(
+                    const Size(double.infinity, 48),
                   ),
-                  McButton(
-                    onPressed: () {},
-                    child: const Icon(FontAwesomeIcons.facebook),
-                  ),
-                  McButton(
-                    onPressed: () {},
-                    child: const Icon(FontAwesomeIcons.github),
-                  ),
-                ],
+                ),
+                onPressed: () {
+                  launchSSO();
+                },
+                label: const Text('Matrix SSO'),
+                icon: const Icon(FontAwesomeIcons.elementor),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Don\'t have an account?'),
-                  TextButton(
-                    style: const ButtonStyle(
-                      padding: WidgetStatePropertyAll<EdgeInsets>(
-                        EdgeInsets.symmetric(horizontal: 4.0),
-                      ),
-                    ),
-                    onPressed: isLoading ? null : () {},
-                    child: const Text('Register'),
-                  ),
-                ],
+              // ElevatedButton.icon(
+              //   style: ButtonStyle(
+              //     minimumSize: WidgetStateProperty.all<Size>(
+              //       const Size(double.infinity, 48),
+              //     ),
+              //   ),
+              //   onPressed: () {
+              //     context.push(MescatRoutes.walletAuth);
+              //   },
+              //   label: const Text('Wallet Key'),
+              //   icon: const Icon(FontAwesomeIcons.wallet),
+              // ),
+              Text(
+                'By continuing, you agree to our Terms of Service and Privacy Policy',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withAlpha(0x99),
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

@@ -22,6 +22,7 @@ import 'package:mescat/shared/widgets/app_bloc_listener.dart';
 final class MescatRoutes {
   static const String auth = '/auth';
   static const String loading = '/';
+  static const String walletAuth = '/auth/wallet-auth';
 
   static const String space = '/space/:spaceId';
   static const String spaceSettings = '/space/:spaceId/settings';
@@ -52,7 +53,7 @@ final class MescatRoutes {
   MescatRoutes({required this.bloc, required this.roomBloc})
     : goRouter = GoRouter(
         navigatorKey: _rootNavigatorKey,
-        initialLocation: MescatRoutes.loading,
+        initialLocation: MescatRoutes.auth,
         redirect: (context, state) {
           final authState = bloc.state;
 
@@ -63,21 +64,22 @@ final class MescatRoutes {
             if (isLoggingIn || isLoading) {
               final roomState = roomBloc.state;
               if (roomState is RoomLoaded && roomState.selectedRoom != null) {
-                return MescatRoutes.roomRoute(
-                  roomState.selectedRoom!.roomId,
-                );
+                return MescatRoutes.roomRoute(roomState.selectedRoom!.roomId);
               } else {
                 return MescatRoutes.roomRoute('0');
               }
             }
             return null;
           } else if (authState is Unauthenticated) {
-            if (state.matchedLocation == MescatRoutes.auth) {
+            if ([
+              MescatRoutes.auth,
+              MescatRoutes.walletAuth,
+            ].contains(state.matchedLocation)) {
               return null;
             }
             return MescatRoutes.auth;
           } else {
-            return MescatRoutes.loading;
+            return MescatRoutes.auth;
           }
         },
         refreshListenable: StreamRouting([bloc.stream]),
@@ -89,6 +91,12 @@ final class MescatRoutes {
                 const MaterialPage(child: AppLayout(child: AuthPage())),
             builder: (context, state) => const AuthPage(),
           ),
+          // GoRoute(
+          //   path: MescatRoutes.walletAuth,
+          //   name: 'wallet-auth',
+          //   pageBuilder: (context, state) =>
+          //       const MaterialPage(child: AppLayout(child: WalletAuthPage())),
+          // ),
           ShellRoute(
             navigatorKey: _shellNavigatorKey,
             pageBuilder: (context, state, child) {
@@ -219,4 +227,3 @@ final class MescatRoutes {
 
   final GoRouter goRouter;
 }
-
