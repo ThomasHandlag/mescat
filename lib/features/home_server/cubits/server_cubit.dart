@@ -21,13 +21,10 @@ final class ServerCubit extends Cubit<ServerState> {
     final box = await Hive.openBox(_selected);
     final listBox = await Hive.openBox(_serversBox);
     final existingServers = listBox.get(listKey) as List<dynamic>? ?? [];
-    if (!existingServers.any(
-      (element) =>
-          ServerInfo.fromJson(jsonDecode(element)).domain == server.domain,
-    )) {
-      existingServers.add(jsonEncode(server.toJson()));
-      await listBox.put(listKey, existingServers);
-    }
+
+    existingServers.add(jsonEncode(server.toJson()));
+    await listBox.put(listKey, existingServers);
+    
     await box.put('server_info', server.toJson());
     if (state is ServerListLoaded) {
       final currentState = state as ServerListLoaded;
@@ -94,7 +91,9 @@ final class ServerCubit extends Cubit<ServerState> {
     } finally {
       final localList = ServerListsFile.loadServerListAsset();
 
-      final List<dynamic> jsonList = jsonDecode(await localList)['public_servers'];
+      final List<dynamic> jsonList = jsonDecode(
+        await localList,
+      )['public_servers'];
       for (final serverMap in jsonList) {
         final serverInfo = ServerInfo.fromJson(serverMap);
         if (!servers.any((s) => s.domain == serverInfo.domain)) {

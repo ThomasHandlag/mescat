@@ -248,7 +248,14 @@ class MessageBubble extends StatelessWidget {
   Widget? _buildMessageContent(BuildContext context, MCMessageEvent message) {
     final widget = switch (message.msgtype) {
       MessageTypes.Text => _buildTextMessage(context, message),
-      _ => McFile(event: message.event),
+      _ => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(message.event.body),
+          McFile(event: message.event),
+        ],
+      ),
     };
     return widget;
   }

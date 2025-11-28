@@ -88,10 +88,7 @@ class _MessageInputState extends State<MessageInput> {
       } else {
         // normal text send
         context.read<ChatBloc>().add(
-          SendMessage(
-            roomId: widget.room!.roomId,
-            content: message,
-          ),
+          SendMessage(roomId: widget.room!.roomId, content: message),
         );
         setState(() {
           _isTyping = false;
@@ -275,14 +272,16 @@ class _MessageInputState extends State<MessageInput> {
                   ),
                 ),
 
-                // Emoji button
+                IconButton(
+                  icon: const Icon(Icons.token),
+                  onPressed: () {},
+                  tooltip: 'Send Mesca Token',
+                ),
                 _buildActionButton(
                   icon: Icons.emoji_emotions_outlined,
                   onPressed: () => _showEmojiPicker(context),
                   tooltip: 'Add emoji',
                 ),
-
-                // Send button
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   child: _isTyping || _attachments.isNotEmpty
@@ -322,17 +321,14 @@ class _MessageInputState extends State<MessageInput> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: IconButton(
-        icon: Icon(icon, size: 20),
-        onPressed: onPressed,
-        tooltip: tooltip,
-        color: colorScheme.onSurface.withAlpha(200),
-        hoverColor: colorScheme.primary.withAlpha(60),
-        splashRadius: 20,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      ),
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      color: colorScheme.onSurface.withAlpha(200),
+      hoverColor: colorScheme.primary.withAlpha(60),
+      splashRadius: 20,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
     );
   }
 
@@ -359,60 +355,54 @@ class _MessageInputState extends State<MessageInput> {
     final canSend =
         _messageController.text.isNotEmpty || _attachments.isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: BlocBuilder<ChatBloc, ChatState>(
-        builder: (context, state) {
-          return IconButton(
-            icon: const Icon(Icons.send_rounded, size: 20),
-            onPressed: canSend
-                ? () {
-                    if (state is ChatLoaded &&
-                        state.inputAction.action == InputAction.edit &&
-                        state.inputAction.targetEventId != null) {
-                      _editMessage(state.inputAction.targetEventId!);
-                    } else if (state is ChatLoaded &&
-                        state.inputAction.action == InputAction.reply &&
-                        state.inputAction.targetEventId != null) {
-                      _replyToMessage(state.inputAction.targetEventId!);
-                    } else {
-                      _sendMessage();
-                    }
-                    context.read<ChatBloc>().add(
-                      const SetInputAction(action: InputAction.none),
-                    );
+    return BlocBuilder<ChatBloc, ChatState>(
+      builder: (context, state) {
+        return IconButton(
+          icon: const Icon(Icons.send_rounded, size: 20),
+          onPressed: canSend
+              ? () {
+                  if (state is ChatLoaded &&
+                      state.inputAction.action == InputAction.edit &&
+                      state.inputAction.targetEventId != null) {
+                    _editMessage(state.inputAction.targetEventId!);
+                  } else if (state is ChatLoaded &&
+                      state.inputAction.action == InputAction.reply &&
+                      state.inputAction.targetEventId != null) {
+                    _replyToMessage(state.inputAction.targetEventId!);
+                  } else {
+                    _sendMessage();
                   }
-                : null,
-            tooltip: 'Send message',
-            color: canSend
-                ? colorScheme.primary
-                : colorScheme.onSurface.withAlpha(100),
-            hoverColor: colorScheme.primary.withAlpha(60),
-            splashRadius: 20,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          );
-        },
-      ),
+                  context.read<ChatBloc>().add(
+                    const SetInputAction(action: InputAction.none),
+                  );
+                }
+              : null,
+          tooltip: 'Send message',
+          color: canSend
+              ? colorScheme.primary
+              : colorScheme.onSurface.withAlpha(100),
+          hoverColor: colorScheme.primary.withAlpha(60),
+          splashRadius: 20,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        );
+      },
     );
   }
 
   Widget _buildMicButton() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: IconButton(
-        icon: const Icon(Icons.mic, size: 20),
-        onPressed: () {
-          // Handle voice message recording
-          // HapticFeedback.lightImpact();
-        },
-        tooltip: 'Voice message',
-        color: colorScheme.onSurface.withAlpha(190),
-        hoverColor: colorScheme.primary.withAlpha(60),
-        splashRadius: 20,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      ),
+    return IconButton(
+      icon: const Icon(Icons.mic, size: 20),
+      onPressed: () {
+        // Handle voice message recording
+        // HapticFeedback.lightImpact();
+      },
+      tooltip: 'Voice message',
+      color: colorScheme.onSurface.withAlpha(190),
+      hoverColor: colorScheme.primary.withAlpha(60),
+      splashRadius: 20,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
     );
   }
 

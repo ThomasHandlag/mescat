@@ -221,6 +221,69 @@ class _ManageGeneralState extends State<ManageGeneral> {
     }
   }
 
+  void _setGuestAccess(GuestAccess? guestAccess) async {
+    if (guestAccess == null) return;
+    try {
+      await widget.room.setGuestAccess(guestAccess);
+    } catch (e, s) {
+      Logs().w('Unable to change guest access', e, s);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to change guest access: $e')),
+        );
+      }
+    }
+  }
+
+  void _setHistoryVisibility(HistoryVisibility? historyVisibility) async {
+    if (historyVisibility == null) return;
+
+    try {
+      await widget.room.setHistoryVisibility(historyVisibility);
+    } catch (e, s) {
+      Logs().w('Unable to change history visibility', e, s);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to change history visibility')),
+        );
+      }
+    }
+  }
+
+  Set<Room> get knownSpaceParents => {
+    ...widget.room.client.rooms.where(
+      (space) =>
+          space.isSpace &&
+          space.spaceChildren.any((child) => child.roomId == widget.room.id),
+    ),
+    ...widget.room.spaceParents
+        .map((parent) => widget.room.client.getRoomById(parent.roomId ?? ''))
+        .whereType<Room>(),
+  };
+
+  void _setJoinRules(JoinRules? newJoinRules) async {
+    if (newJoinRules == null) return;
+    try {
+      await widget.room.setJoinRules(
+        newJoinRules,
+        allowConditionRoomIds:
+            {
+              JoinRules.restricted,
+              JoinRules.knockRestricted,
+            }.contains(newJoinRules)
+            ? knownSpaceParents.map((parent) => parent.id).toList()
+            : null,
+      );
+    } catch (e, s) {
+      Logs().w('Unable to change join rules', e, s);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to change join rules')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     // Remove listeners before disposing
@@ -240,7 +303,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
       return;
     }
 
-    if (widget.room.canChangeStateEvent(EventTypes.Encryption)) {
+    if (!widget.room.canChangeStateEvent(EventTypes.Encryption)) {
       showOkAlertDialog(
         context: context,
         title: 'Can not Enable Encryption',
@@ -465,7 +528,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                 const ListTile(title: Text('Chats Visibility')),
                 RadioGroup(
                   groupValue: widget.room.historyVisibility,
-                  onChanged: (value) {},
+                  onChanged: _setHistoryVisibility,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -480,7 +543,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                 const ListTile(title: Text('Who can join this room?')),
                 RadioGroup(
                   groupValue: widget.room.joinRules,
-                  onChanged: (value) {},
+                  onChanged: _setJoinRules,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -510,7 +573,7 @@ class _ManageGeneralState extends State<ManageGeneral> {
                   ),
                   RadioGroup(
                     groupValue: widget.room.guestAccess,
-                    onChanged: (value) {},
+                    onChanged: _setGuestAccess,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [

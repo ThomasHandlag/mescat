@@ -150,6 +150,17 @@ final class EventPusher {
         );
       } else if (event.type == EventTypes.Redaction) {
         logger.log(Level.debug, 'Received Redaction event: ${event.toJson()}');
+        /*
+        {content: {
+        redacts: $m5voHeo7Ks0iqfgUHpDOWk3Fq9kvxW0ISRXoVtt1EZg},
+         type: m.room.redaction, 
+         event_id: $KSQ8yxZTjayoEtpqX_DKkgevYdaGDPY3Bo82i2B1Le8, 
+         room_id: !EHQGTIEVCzRGmUkFIq:matrix.org, 
+         sender: @thuongtv21:matrix.org, 
+         origin_server_ts: 1764318773214, 
+         unsigned: {membership: join, age: 722}, 
+         redacts: $m5voHeo7Ks0iqfgUHpDOWk3Fq9kvxW0ISRXoVtt1EZg, status: 1}
+      */
       } else {
         logger.log(Level.debug, "Unhandled event type: ${event.type}");
       }
