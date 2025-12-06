@@ -31,6 +31,7 @@ class _MessageInputState extends State<MessageInput> {
   bool _isTyping = false;
   final List<String> _attachments = [];
   int _lines = 1;
+  bool _viaToken = false;
 
   @override
   void initState() {
@@ -61,7 +62,7 @@ class _MessageInputState extends State<MessageInput> {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (widget.room == null) return;
     final message = _messageController.text.trim();
     if (message.isNotEmpty || _attachments.isNotEmpty) {
@@ -82,7 +83,10 @@ class _MessageInputState extends State<MessageInput> {
               bytes: File(filePath).readAsBytesSync(),
               name: filePath.split(RegExp(r'[\\/]+')).last,
             );
-            room.sendFileEvent(file, extraContent: {'body': message});
+            final eventId = await room.sendFileEvent(
+              file,
+              extraContent: {'body': message},
+            );
           }
         }
       } else {
@@ -185,6 +189,23 @@ class _MessageInputState extends State<MessageInput> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_viaToken)
+            ListTile(
+              title: const Text('This message will be sent via Mesca Token'),
+              trailing: IconButton(
+                onPressed: () {
+                  showAboutDialog(
+                    context: context,
+                    children: [
+                      const Text(
+                        'When enabled, this message will be sent using Mesca Tokens. These messages cannot be revoked or edited once sent.',
+                      ),
+                    ],
+                  );
+                },
+                icon: const Icon(Icons.info),
+              ),
+            ),
           BlocBuilder<ChatBloc, ChatState>(
             builder: (context, state) {
               if (state is ChatLoaded &&
@@ -273,8 +294,18 @@ class _MessageInputState extends State<MessageInput> {
                 ),
 
                 IconButton(
-                  icon: const Icon(Icons.token),
-                  onPressed: () {},
+                  icon: Icon(
+                    Icons.token,
+                    size: 20,
+                    color: _viaToken
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withAlpha(200),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _viaToken = !_viaToken;
+                    });
+                  },
                   tooltip: 'Send Mesca Token',
                 ),
                 _buildActionButton(

@@ -385,7 +385,6 @@ class MessageBubble extends StatelessWidget {
                     TextSpan(
                       text: message.repliedEvent!.content,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
                         color: Theme.of(
                           context,
                         ).colorScheme.onSurface.withAlpha(0xB3),

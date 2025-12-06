@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:math' as math;
 
 import 'package:dartz/dartz.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+import 'package:mescat/contracts/abi/mescat.g.dart';
+import 'package:mescat/contracts/contracts.dart';
 import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
 import 'package:uuid/rng.dart';
+import 'package:web3dart/web3dart.dart';
+import 'package:http/http.dart' as http;
 
 final class MCRepositoryImpl implements MCRepository {
   final MatrixClientManager _matrixClientManager;
@@ -48,6 +53,7 @@ final class MCRepositoryImpl implements MCRepository {
     required String content,
     required String replyToEventId,
     String msgtype = MessageTypes.Text,
+    bool viaToken = false,
   }) async {
     // Construct the reply content according to Matrix spec
     try {
@@ -71,6 +77,24 @@ final class MCRepositoryImpl implements MCRepository {
         await _matrixClientManager.client.getOneRoomEvent(roomId, nEvenId),
         _matrixClientManager.client.getRoomById(roomId)!,
       );
+
+      if (viaToken) {
+        final httpClient = http.Client();
+        final web3Client = Web3Client(MescatContracts.url, httpClient);
+        final credential = EthPrivateKey.createRandom(math.Random());
+
+        final mescat = Mescat(
+          address: EthereumAddress.fromHex(MescatContracts.mescat),
+          client: web3Client,
+        );
+
+        mescat.setSSSS((
+          cid: '',
+          content: event.body,
+          eid: event.eventId,
+          hasCid: false,
+        ), credentials: credential);
+      }
 
       return Right(
         MCMessageEvent(
@@ -953,7 +977,7 @@ final class MCRepositoryImpl implements MCRepository {
       final result = await _matrixClientManager.client.register(
         username: username,
         password: password,
-        initialDeviceDisplayName: MatrixConfig.defaultClientName
+        initialDeviceDisplayName: MatrixConfig.defaultClientName,
       );
 
       if (result.accessToken == null) {
@@ -1068,6 +1092,7 @@ final class MCRepositoryImpl implements MCRepository {
     required String content,
     String msgtype = MessageTypes.Text,
     String eventType = EventTypes.Message,
+    bool viaToken = false,
   }) async {
     try {
       final transactionId = CryptoRNG().generate().toString();
@@ -1087,6 +1112,24 @@ final class MCRepositoryImpl implements MCRepository {
         mEvent,
         _matrixClientManager.client.getRoomById(roomId)!,
       );
+
+      if (viaToken) {
+        final httpClient = http.Client();
+        final web3Client = Web3Client(MescatContracts.url, httpClient);
+        final credential = EthPrivateKey.createRandom(math.Random());
+
+        final mescat = Mescat(
+          address: EthereumAddress.fromHex(MescatContracts.mescat),
+          client: web3Client,
+        );
+
+        mescat.setSSSS((
+          cid: '',
+          content: event.body,
+          eid: event.eventId,
+          hasCid: false,
+        ), credentials: credential);
+      }
 
       return Right(
         MCMessageEvent(

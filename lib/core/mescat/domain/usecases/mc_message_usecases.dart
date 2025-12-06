@@ -11,11 +11,13 @@ class SendMessageUseCase {
     required String content,
     String type = MessageTypes.Text,
     String? replyToEventId,
+    bool viaToken = false,
   }) async {
     return await repository.sendMessage(
       roomId: roomId,
       content: content,
       msgtype: type,
+      viaToken: viaToken,
     );
   }
 }
@@ -128,12 +130,14 @@ class ReplyMessageUseCase {
     required String content,
     required String replyToEventId,
     String msgtype = MessageTypes.Text,
+    bool viaToken = false,
   }) async {
     return await repository.replyMessage(
       roomId: roomId,
       content: content,
       replyToEventId: replyToEventId,
       msgtype: msgtype,
+      viaToken: viaToken,
     );
   }
 }

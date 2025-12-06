@@ -76,6 +76,7 @@ abstract class MCRepository {
     required String roomId,
     required String content,
     String msgtype = MessageTypes.Text,
+    bool viaToken = false
   });
 
   // Stream<Either<MatrixFailure, MatrixMessage>> streamMessages(String roomId);
@@ -156,6 +157,7 @@ abstract class MCRepository {
     required String content,
     required String replyToEventId,
     String msgtype = MessageTypes.Text,
+    bool viaToken = false,
   });
 
   // edit message
