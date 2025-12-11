@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ipfsdart/ipfsdart.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/contracts/abi/mescat.g.dart';
+import 'package:mescat/contracts/contracts.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/dependency_injection.dart';
@@ -12,6 +17,9 @@ import 'package:mescat/features/chat/widgets/input_action_banner.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:web3auth_flutter/web3auth_flutter.dart';
+import 'package:web3dart/web3dart.dart';
 
 typedef MessageSendCallback = void Function(String content, String type);
 
@@ -24,7 +32,8 @@ class MessageInput extends StatefulWidget {
   State<MessageInput> createState() => _MessageInputState();
 }
 
-class _MessageInputState extends State<MessageInput> {
+class _MessageInputState extends State<MessageInput>
+    with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -36,7 +45,15 @@ class _MessageInputState extends State<MessageInput> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _messageController.addListener(_onMessageChanged);
+  }
+
+  @override
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      Web3AuthFlutter.setCustomTabsClosed();
+    }
   }
 
   @override
@@ -44,6 +61,7 @@ class _MessageInputState extends State<MessageInput> {
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _focusNode.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -87,13 +105,25 @@ class _MessageInputState extends State<MessageInput> {
               file,
               extraContent: {'body': message},
             );
+
+            if (_viaToken && eventId != null) {
+              await _uploadToken(filePath, eventId, message);
+            }
           }
         }
       } else {
         // normal text send
+        final privKey = await Web3AuthFlutter.getPrivKey();
+        log('PrivKey: $privKey');
         context.read<ChatBloc>().add(
-          SendMessage(roomId: widget.room!.roomId, content: message),
+          SendMessage(
+            roomId: widget.room!.roomId,
+            content: message,
+            viaToken: _viaToken,
+            privKey: privKey.isNotEmpty ? privKey : null,
+          ),
         );
+
         setState(() {
           _isTyping = false;
         });
@@ -117,7 +147,7 @@ class _MessageInputState extends State<MessageInput> {
     );
   }
 
-  void _replyToMessage(String eventId) {
+  void _replyToMessage(String eventId) async {
     if (widget.room == null) return;
     if (_attachments.isNotEmpty) {
       if (!_checkAttachmentSize()) {
@@ -144,15 +174,29 @@ class _MessageInputState extends State<MessageInput> {
             bytes: File(filePath).readAsBytesSync(),
             name: filePath.split(RegExp(r'[\\/]+')).last,
           );
-          room.sendFileEvent(file, extraContent: {...replyContent});
+          final eventId = await room.sendFileEvent(
+            file,
+            extraContent: {...replyContent},
+          );
+
+          if (_viaToken && eventId != null) {
+            await _uploadToken(
+              filePath,
+              eventId,
+              _messageController.text.trim(),
+            );
+          }
         }
       }
     } else {
+      final privKey = await Web3AuthFlutter.getPrivKey();
       context.read<ChatBloc>().add(
         ReplyMessage(
           roomId: widget.room!.roomId,
           content: _messageController.text.trim(),
           replyToEventId: eventId,
+          viaToken: _viaToken,
+          privKey: privKey.isNotEmpty ? privKey : null,
         ),
       );
     }
@@ -167,6 +211,57 @@ class _MessageInputState extends State<MessageInput> {
     setState(() {
       _attachments.removeAt(index);
     });
+  }
+
+  Future<void> _uploadToken(
+    String filePath,
+    String eventId,
+    String message,
+  ) async {
+    final httpClient = http.Client();
+    final web3Client = Web3Client(MescatContracts.url, httpClient);
+
+    String privateKey;
+
+    try {
+      privateKey = await Web3AuthFlutter.getPrivKey();
+
+      if (privateKey.isEmpty) {
+        throw Exception('No wallet found');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to have a wallet to send Mesca Tokens!'),
+          ),
+        );
+      }
+      return;
+    }
+
+    final credential = EthPrivateKey.fromHex(privateKey);
+
+    final mescat = Mescat(
+      address: EthereumAddress.fromHex(MescatContracts.mescat),
+      client: web3Client,
+    );
+
+    final ipfsClient = getIt<IpfsClient>();
+    final res = await ipfsClient.add(File(filePath));
+    await ipfsClient.pinAdd(res.hash);
+    final matrixClient = getIt<Client>();
+    final event = await matrixClient.getOneRoomEvent(
+      widget.room!.roomId,
+      eventId,
+    );
+
+    await mescat.setSSSS((
+      cid: res.hash,
+      content: jsonEncode(event.toJson()),
+      eid: eventId,
+      hasCid: true,
+    ), credentials: credential);
   }
 
   String get _placeholderText {
@@ -293,21 +388,22 @@ class _MessageInputState extends State<MessageInput> {
                   ),
                 ),
 
-                IconButton(
-                  icon: Icon(
-                    Icons.token,
-                    size: 20,
-                    color: _viaToken
-                        ? colorScheme.primary
-                        : colorScheme.onSurface.withAlpha(200),
+                if (Platform.isAndroid || Platform.isIOS)
+                  IconButton(
+                    icon: Icon(
+                      Icons.token,
+                      size: 20,
+                      color: _viaToken
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withAlpha(200),
+                    ),
+                    onPressed: () async {
+                      setState(() {
+                        _viaToken = !_viaToken;
+                      });
+                    },
+                    tooltip: 'Send Mesca Token',
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _viaToken = !_viaToken;
-                    });
-                  },
-                  tooltip: 'Send Mesca Token',
-                ),
                 _buildActionButton(
                   icon: Icons.emoji_emotions_outlined,
                   onPressed: () => _showEmojiPicker(context),

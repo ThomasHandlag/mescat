@@ -1055,11 +1055,9 @@ packages:
   ipfsdart:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "9b1d5baa7ec7a82375d0589dc217955c07fed3ac"
-      url: "https://github.com/ThomasHandlag/ipfsdart.git"
-    source: git
+      path: "../ipfsdart"
+      relative: true
+    source: path
     version: "0.0.1"
   js:
     dependency: transitive
@@ -1508,6 +1506,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "5a1d2586170e172b8a8c8470bbbffd5eb0cd38a66c0d77155ea138d3af3a4445"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
+  qr_flutter:
+    dependency: "direct main"
+    description:
+      name: qr_flutter
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   random_string:
     dependency: transitive
     description:
@@ -2065,6 +2079,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  web3auth_flutter:
+    dependency: "direct main"
+    description:
+      name: web3auth_flutter
+      sha256: "37690a967a5d3a8f759af71719ee87288d69010f1b0d20f8ccde75db87c983fc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.0"
   web3dart:
     dependency: "direct main"
     description:

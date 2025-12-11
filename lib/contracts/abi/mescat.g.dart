@@ -7,7 +7,7 @@
 import 'package:web3dart/web3dart.dart' as _i1;
 
 final _contractAbi = _i1.ContractAbi.fromJson(
-  '[{"inputs":[{"internalType":"string","name":"eid","type":"string"}],"name":"getSSSS","outputs":[{"internalType":"string","name":"","type":"string"},{"internalType":"string","name":"","type":"string"},{"internalType":"bool","name":"","type":"bool"},{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"eid","type":"string"},{"internalType":"string","name":"content","type":"string"},{"internalType":"bool","name":"hasCid","type":"bool"},{"internalType":"string","name":"cid","type":"string"}],"name":"setSSSS","outputs":[],"stateMutability":"nonpayable","type":"function"}]',
+  '[{"inputs":[{"internalType":"string","name":"eid","type":"string"}],"name":"getSSSS","outputs":[{"internalType":"string","name":"eventId","type":"string"},{"internalType":"string","name":"content","type":"string"},{"internalType":"bool","name":"hasCid","type":"bool"},{"internalType":"string","name":"cid","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"eid","type":"string"},{"internalType":"string","name":"content","type":"string"},{"internalType":"bool","name":"hasCid","type":"bool"},{"internalType":"string","name":"cid","type":"string"}],"name":"setSSSS","outputs":[],"stateMutability":"nonpayable","type":"function"}]',
   'Mescat',
 );
 
@@ -70,16 +70,16 @@ class Mescat extends _i1.GeneratedContract {
 
 class GetSSSS {
   GetSSSS(List<dynamic> response)
-      : var1 = (response[0] as String),
-        var2 = (response[1] as String),
-        var3 = (response[2] as bool),
-        var4 = (response[3] as String);
+      : eventId = (response[0] as String),
+        content = (response[1] as String),
+        hasCid = (response[2] as bool),
+        cid = (response[3] as String);
 
-  final String var1;
+  final String eventId;
 
-  final String var2;
+  final String content;
 
-  final bool var3;
+  final bool hasCid;
 
-  final String var4;
+  final String cid;
 }

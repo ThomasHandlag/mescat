@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
-import 'dart:math' as math;
 
 import 'package:dartz/dartz.dart';
 import 'package:logger/logger.dart';
@@ -54,6 +54,7 @@ final class MCRepositoryImpl implements MCRepository {
     required String replyToEventId,
     String msgtype = MessageTypes.Text,
     bool viaToken = false,
+    String? privKey,
   }) async {
     // Construct the reply content according to Matrix spec
     try {
@@ -81,7 +82,8 @@ final class MCRepositoryImpl implements MCRepository {
       if (viaToken) {
         final httpClient = http.Client();
         final web3Client = Web3Client(MescatContracts.url, httpClient);
-        final credential = EthPrivateKey.createRandom(math.Random());
+
+        final credential = EthPrivateKey.fromHex(privKey!);
 
         final mescat = Mescat(
           address: EthereumAddress.fromHex(MescatContracts.mescat),
@@ -90,7 +92,7 @@ final class MCRepositoryImpl implements MCRepository {
 
         mescat.setSSSS((
           cid: '',
-          content: event.body,
+          content: jsonEncode(event.toJson()),
           eid: event.eventId,
           hasCid: false,
         ), credentials: credential);
@@ -459,12 +461,76 @@ final class MCRepositoryImpl implements MCRepository {
         switch (mtEvent.type) {
           case EventTypes.Message:
             {
-              if (mtEvent.content.isEmpty || room == null) continue;
+              if (room == null) continue;
 
               final event = Event.fromMatrixEvent(mtEvent, room);
               final user = await _matrixClientManager.client.getUserProfile(
                 mtEvent.senderId,
               );
+
+              if (event.redacted) {
+                final client = Web3Client(MescatContracts.url, http.Client());
+                final address = EthereumAddress.fromHex(MescatContracts.mescat);
+                final mescat = Mescat(address: address, client: client);
+
+                try {
+                  final ssse = await mescat.getSSSS((eid: event.eventId));
+                  if (ssse.eventId.isEmpty) continue;
+                  // _matrixClientManager.logger.d(
+                  //   'fetched from blockchain: ${ssse.cid} id: ${ssse.content} hasCid: ${ssse.eventId} ${ssse.toString()}',
+                  // );
+                  final ssEvent = Event.fromJson(
+                    jsonDecode(ssse.content),
+                    room,
+                  );
+                  final user = await _matrixClientManager.client.getUserProfile(
+                    mtEvent.senderId,
+                  );
+
+                  if (ssse.hasCid && ssse.cid.isNotEmpty) {
+                    // if hasCid
+                    matrixMessages.add(
+                      MCMessageEvent(
+                        eventId: ssEvent.eventId,
+                        roomId: roomId,
+                        senderId: ssEvent.senderId,
+                        senderDisplayName: user.displayname ?? ssEvent.senderId,
+                        msgtype: ssEvent.messageType,
+                        body: ssEvent.body, // content
+                        timestamp: ssEvent.originServerTs,
+                        eventTypes: ssEvent.type,
+                        isCurrentUser:
+                            ssEvent.senderId ==
+                            _matrixClientManager.client.userID,
+                        event: ssEvent,
+                        cid: ssse.cid, // cid
+                      ),
+                    );
+                  } else {
+                    matrixMessages.add(
+                      MCMessageEvent(
+                        eventId: ssEvent.eventId,
+                        roomId: roomId,
+                        senderId: ssEvent.senderId,
+                        senderDisplayName: user.displayname ?? ssEvent.senderId,
+                        msgtype: ssEvent.messageType,
+                        body: ssEvent.body, // content
+                        timestamp: ssEvent.originServerTs,
+                        eventTypes: ssEvent.type,
+                        isCurrentUser:
+                            ssEvent.senderId ==
+                            _matrixClientManager.client.userID,
+                        event: ssEvent,
+                      ),
+                    );
+                  }
+                  continue;
+                } catch (e) {
+                  _matrixClientManager.logger.e(
+                    'Error decoding redacted event from blockchain: $e',
+                  );
+                }
+              }
 
               RepliedEventContent? repliedEventContent;
               final text = event.content['body'] as String? ?? '';
@@ -537,8 +603,6 @@ final class MCRepositoryImpl implements MCRepository {
                 }
               }
             }
-            break;
-          case EventTypes.Redaction:
             break;
           case EventTypes.Reaction:
             {
@@ -629,7 +693,6 @@ final class MCRepositoryImpl implements MCRepository {
           case EventTypes.SpaceChild:
           case EventTypes.SpaceParent:
           case EventTypes.Encrypted:
-            break;
           default:
             break;
         }
@@ -638,6 +701,7 @@ final class MCRepositoryImpl implements MCRepository {
     } catch (e, stackTrace) {
       _matrixClientManager.logger.e(
         'Error getting messages: $e',
+        error: e,
         stackTrace: stackTrace,
       );
       return Left(UnknownFailure(message: 'Failed to get messages: $e'));
@@ -1093,6 +1157,7 @@ final class MCRepositoryImpl implements MCRepository {
     String msgtype = MessageTypes.Text,
     String eventType = EventTypes.Message,
     bool viaToken = false,
+    String? privKey,
   }) async {
     try {
       final transactionId = CryptoRNG().generate().toString();
@@ -1116,7 +1181,8 @@ final class MCRepositoryImpl implements MCRepository {
       if (viaToken) {
         final httpClient = http.Client();
         final web3Client = Web3Client(MescatContracts.url, httpClient);
-        final credential = EthPrivateKey.createRandom(math.Random());
+
+        final credential = EthPrivateKey.fromHex(privKey!);
 
         final mescat = Mescat(
           address: EthereumAddress.fromHex(MescatContracts.mescat),
@@ -1125,7 +1191,7 @@ final class MCRepositoryImpl implements MCRepository {
 
         mescat.setSSSS((
           cid: '',
-          content: event.body,
+          content: jsonEncode(event.toJson()),
           eid: event.eventId,
           hasCid: false,
         ), credentials: credential);
@@ -1146,6 +1212,7 @@ final class MCRepositoryImpl implements MCRepository {
         ),
       );
     } catch (e) {
+      _matrixClientManager.logger.e('Error sending message: $e');
       return Left(UnknownFailure(message: 'Failed to send message: $e'));
     }
   }

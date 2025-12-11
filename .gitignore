@@ -56,3 +56,4 @@ app.*.map.json
 **/.github/workflows/ci-cd.yml
 
 **/contracts.dart
+**/meta_const.dart

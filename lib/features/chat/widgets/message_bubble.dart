@@ -253,7 +253,10 @@ class MessageBubble extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(message.event.body),
-          McFile(event: message.event),
+          if (message.cid != null && message.cid!.isNotEmpty) ...[
+            Image.network('https://ipfs.io/ipfs/${message.cid}'),
+          ] else
+            McFile(event: message.event),
         ],
       ),
     };

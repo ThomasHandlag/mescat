@@ -11,6 +11,9 @@ import 'package:mescat/features/notifications/pages/notification_page.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
+import 'package:mescat/features/wallet/pages/meta_login_page.dart';
+import 'package:mescat/features/wallet/pages/user_wallet_page.dart';
+import 'package:mescat/features/wallet/pages/create_wallet_page.dart';
 import 'package:mescat/shared/layouts/app_layout.dart';
 import 'package:mescat/shared/pages/home_page.dart';
 import 'package:mescat/shared/pages/loading_page.dart';
@@ -22,7 +25,6 @@ import 'package:mescat/shared/widgets/app_bloc_listener.dart';
 final class MescatRoutes {
   static const String auth = '/auth';
   static const String loading = '/';
-  static const String walletAuth = '/auth/wallet-auth';
 
   static const String space = '/space/:spaceId';
   static const String spaceSettings = '/space/:spaceId/settings';
@@ -38,6 +40,10 @@ final class MescatRoutes {
   static const String notifications = '/notifications';
   static const String verifyDevice = '/verify-device';
   static const String home = '/';
+
+  static const String walletAuth = '/auth/wallet-auth';
+  static const String wallet = '/wallet';
+  static const String createWallet = '/wallet/create';
 
   static String spaceRoute(String spaceId) => '/space/$spaceId';
   static String spaceSettingsRoute(String spaceId) =>
@@ -91,12 +97,24 @@ final class MescatRoutes {
                 const MaterialPage(child: AppLayout(child: AuthPage())),
             builder: (context, state) => const AuthPage(),
           ),
-          // GoRoute(
-          //   path: MescatRoutes.walletAuth,
-          //   name: 'wallet-auth',
-          //   pageBuilder: (context, state) =>
-          //       const MaterialPage(child: AppLayout(child: WalletAuthPage())),
-          // ),
+          GoRoute(
+            path: MescatRoutes.walletAuth,
+            name: 'wallet-auth',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AppLayout(child: MetaLoginPage())),
+          ),
+          GoRoute(
+            path: MescatRoutes.createWallet,
+            name: 'create-wallet',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AppLayout(child: CreateWalletPage())),
+          ),
+          GoRoute(
+            path: MescatRoutes.wallet,
+            name: 'wallet',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AppLayout(child: UserWalletPage())),
+          ),
           ShellRoute(
             navigatorKey: _shellNavigatorKey,
             pageBuilder: (context, state, child) {

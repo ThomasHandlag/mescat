@@ -76,7 +76,8 @@ abstract class MCRepository {
     required String roomId,
     required String content,
     String msgtype = MessageTypes.Text,
-    bool viaToken = false
+    bool viaToken = false,
+    String? privKey,
   });
 
   // Stream<Either<MatrixFailure, MatrixMessage>> streamMessages(String roomId);
@@ -158,6 +159,7 @@ abstract class MCRepository {
     required String replyToEventId,
     String msgtype = MessageTypes.Text,
     bool viaToken = false,
+    String? privKey,
   });
 
   // edit message
@@ -198,5 +200,5 @@ abstract class MCRepository {
   });
 
   // Notification management
-  Future<Either<MCFailure, Map<String ,dynamic>>> getNotifications();
+  Future<Either<MCFailure, Map<String, dynamic>>> getNotifications();
 }

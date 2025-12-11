@@ -23,16 +23,18 @@ class SendMessage extends ChatEvent {
   final String content;
   final String type;
   final bool viaToken;
+  final String? privKey;
 
   const SendMessage({
     required this.roomId,
     required this.content,
     this.type = MessageTypes.Text,
     this.viaToken = false,
+    this.privKey,
   });
 
   @override
-  List<Object?> get props => [roomId, content, type, viaToken];
+  List<Object?> get props => [roomId, content, type, viaToken, privKey];
 }
 
 class AddReaction extends ChatEvent {
@@ -98,6 +100,7 @@ class ReplyMessage extends ChatEvent {
   final String replyToEventId;
   final String type;
   final bool viaToken;
+  final String? privKey;
 
   const ReplyMessage({
     required this.roomId,
@@ -105,10 +108,18 @@ class ReplyMessage extends ChatEvent {
     required this.replyToEventId,
     this.type = MessageTypes.Text,
     this.viaToken = false,
+    this.privKey,
   });
 
   @override
-  List<Object?> get props => [roomId, content, replyToEventId, type, viaToken];
+  List<Object?> get props => [
+    roomId,
+    content,
+    replyToEventId,
+    type,
+    viaToken,
+    privKey,
+  ];
 }
 
 final class SelectRoom extends ChatEvent {
@@ -160,4 +171,3 @@ final class MessageReacted extends ChatEvent {
   @override
   List<Object?> get props => [event];
 }
-
