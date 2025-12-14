@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/dependency_injection.dart';
-import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:mescat/shared/util/extensions.dart';
 import 'dart:developer' as dev;
 
 class McImage extends StatefulWidget {

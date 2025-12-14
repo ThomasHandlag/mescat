@@ -8,12 +8,12 @@ sealed class CallEvent extends Equatable {
 }
 
 class JoinCall extends CallEvent {
-  final MatrixRoom mRoom;
+  final Room room;
 
-  const JoinCall({required this.mRoom});
+  const JoinCall({required this.room});
 
   @override
-  List<Object> get props => [mRoom];
+  List<Object> get props => [room];
 }
 
 class LeaveCall extends CallEvent {

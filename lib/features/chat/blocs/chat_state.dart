@@ -1,8 +1,7 @@
 part of 'chat_bloc.dart';
 
 abstract class ChatState extends Equatable {
-  const ChatState({this.selectedRoom});
-  final MatrixRoom? selectedRoom;
+  const ChatState();
 
   @override
   List<Object?> get props => [];
@@ -13,10 +12,7 @@ class ChatInitial extends ChatState {
 }
 
 class ChatLoading extends ChatState {
-  const ChatLoading({required super.selectedRoom});
-
-  @override
-  List<Object?> get props => [selectedRoom];
+  const ChatLoading();
 }
 
 class ChatError extends ChatState {
@@ -25,7 +21,7 @@ class ChatError extends ChatState {
   const ChatError({required this.message});
 
   @override
-  List<Object?> get props => [message, selectedRoom];
+  List<Object?> get props => [message];
 }
 
 class ChatLoaded extends ChatState {
@@ -41,7 +37,6 @@ class ChatLoaded extends ChatState {
     this.messages = const [],
     this.isLoadingMore = false,
     this.nextToken,
-    required super.selectedRoom,
   });
 
   bool get hasMoreMessages => nextToken != null;
@@ -53,7 +48,6 @@ class ChatLoaded extends ChatState {
     isLoadingMore,
     nextToken,
     selectedRoomId,
-    selectedRoom,
   ];
 
   ChatLoaded copyWith({
@@ -70,7 +64,6 @@ class ChatLoaded extends ChatState {
       inputAction: inputAction ?? this.inputAction,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       nextToken: nextToken,
-      selectedRoom: selectedRoom ?? this.selectedRoom,
     );
   }
 }

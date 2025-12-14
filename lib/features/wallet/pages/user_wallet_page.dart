@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mescat/contracts/contracts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mescat/core/routes/routes.dart';
-import 'package:mescat/shared/pages/loading_page.dart';
 import 'package:web3auth_flutter/output.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 import 'package:web3dart/web3dart.dart';
@@ -83,13 +82,15 @@ class _UserWalletPageState extends State<UserWalletPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     if (_isLoading) {
-      return const LoadingPage();
+      return const Scaffold(body: LinearProgressIndicator());
     }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('My Wallet'), centerTitle: true),
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => context.pop()),
+        title: const Text('My Wallet'),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),

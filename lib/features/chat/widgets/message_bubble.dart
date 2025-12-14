@@ -8,7 +8,7 @@ import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/message_item.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
-import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/widgets/mc_file.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:mescat/shared/widgets/youtube_webview.dart';

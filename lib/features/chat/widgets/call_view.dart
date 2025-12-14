@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
 import 'package:mescat/features/chat/widgets/call_controller.dart';
 import 'package:mescat/features/chat/widgets/member_grid.dart';
-import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 
 class CallView extends StatelessWidget {
@@ -14,8 +13,9 @@ class CallView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GestureDetector(
+    return Container(
+      color: Colors.black,
+      child: GestureDetector(
         onTap: () {
           context.read<CallControllerCubit>().toggleVisibility();
         },
@@ -88,21 +88,9 @@ class CallView extends StatelessWidget {
                             ),
                           const Icon(Icons.volume_up),
                           const SizedBox(width: 8),
-                          BlocBuilder<RoomBloc, RoomState>(
-                            builder: (context, state) {
-                              if (state is RoomLoaded) {
-                                final roomName =
-                                    state.selectedRoom?.name ?? 'Call Chat';
-                                return Text(
-                                  roomName,
-                                  style: const TextStyle(fontSize: 20),
-                                );
-                              }
-                              return const Text(
-                                'Call chat',
-                                style: TextStyle(fontSize: 20),
-                              );
-                            },
+                          const Text(
+                            'Call chat',
+                            style: TextStyle(fontSize: 20),
                           ),
                         ],
                       ),

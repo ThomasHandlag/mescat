@@ -1,30 +1,32 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:ipfsdart/ipfsdart.dart';
 import 'package:matrix/matrix.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web3auth_flutter/web3auth_flutter.dart';
+import 'package:web3dart/web3dart.dart';
+
 import 'package:mescat/contracts/abi/mescat.g.dart';
 import 'package:mescat/contracts/contracts.dart';
 import 'package:mescat/core/constants/app_constants.dart';
-import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/input_action_banner.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
-import 'package:web3auth_flutter/web3auth_flutter.dart';
-import 'package:web3dart/web3dart.dart';
 
 typedef MessageSendCallback = void Function(String content, String type);
 
 class MessageInput extends StatefulWidget {
-  final MatrixRoom? room;
+  final Room room;
 
   const MessageInput({super.key, required this.room});
 
@@ -35,17 +37,46 @@ class MessageInput extends StatefulWidget {
 class _MessageInputState extends State<MessageInput>
     with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _focusNode;
+
+  Timer? typingCoolDown;
+  Timer? typingTimeout;
+  bool currentlyTyping = false;
+
+  Room get room => widget.room;
 
   bool _isTyping = false;
   final List<String> _attachments = [];
   int _lines = 1;
   bool _viaToken = false;
 
+  void _loadDraft(String roomId) async {
+    final prefs = getIt<SharedPreferences>();
+    final draft = prefs.getString('draft_$roomId');
+    if (draft != null && draft.isNotEmpty) {
+      _messageController.text = draft;
+    }
+  }
+
+  KeyEventResult _customEnterKeyHandling(FocusNode node, KeyEvent evt) {
+    if (!HardwareKeyboard.instance.isShiftPressed &&
+        evt.logicalKey.keyLabel == 'Enter' &&
+        true) {
+      if (evt is KeyDownEvent) {
+        _sendMessage();
+      }
+      return KeyEventResult.handled;
+    } else {
+      return KeyEventResult.ignored;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _focusNode = FocusNode(onKeyEvent: _customEnterKeyHandling);
+    _loadDraft(room.id);
     _messageController.addListener(_onMessageChanged);
   }
 
@@ -81,7 +112,8 @@ class _MessageInputState extends State<MessageInput>
   }
 
   void _sendMessage() async {
-    if (widget.room == null) return;
+    final prefs = getIt<SharedPreferences>();
+    prefs.remove('draft_${room.id}');
     final message = _messageController.text.trim();
     if (message.isNotEmpty || _attachments.isNotEmpty) {
       if (_attachments.isNotEmpty) {
@@ -94,14 +126,14 @@ class _MessageInputState extends State<MessageInput>
           return;
         }
         final client = getIt<Client>();
-        final room = client.getRoomById(widget.room!.roomId);
-        if (room != null) {
+        final foundRoom = client.getRoomById(room.id);
+        if (foundRoom != null) {
           for (final filePath in _attachments) {
             final file = MatrixFile(
               bytes: File(filePath).readAsBytesSync(),
               name: filePath.split(RegExp(r'[\\/]+')).last,
             );
-            final eventId = await room.sendFileEvent(
+            final eventId = await foundRoom.sendFileEvent(
               file,
               extraContent: {'body': message},
             );
@@ -117,7 +149,7 @@ class _MessageInputState extends State<MessageInput>
         log('PrivKey: $privKey');
         context.read<ChatBloc>().add(
           SendMessage(
-            roomId: widget.room!.roomId,
+            roomId: room.id,
             content: message,
             viaToken: _viaToken,
             privKey: privKey.isNotEmpty ? privKey : null,
@@ -137,10 +169,9 @@ class _MessageInputState extends State<MessageInput>
   }
 
   void _editMessage(String eventId) {
-    if (widget.room == null) return;
     context.read<ChatBloc>().add(
       EditMessage(
-        roomId: widget.room!.roomId,
+        roomId: room.id,
         eventId: eventId,
         newContent: _messageController.text.trim(),
       ),
@@ -148,7 +179,6 @@ class _MessageInputState extends State<MessageInput>
   }
 
   void _replyToMessage(String eventId) async {
-    if (widget.room == null) return;
     if (_attachments.isNotEmpty) {
       if (!_checkAttachmentSize()) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -159,9 +189,9 @@ class _MessageInputState extends State<MessageInput>
         return;
       }
       final client = getIt<Client>();
-      final room = client.getRoomById(widget.room!.roomId);
+      final foundRoom = client.getRoomById(room.id);
 
-      if (room != null) {
+      if (foundRoom != null) {
         final replyContent = {
           'msgtype': MessageTypes.File,
           'body': _messageController.text.trim(),
@@ -174,7 +204,7 @@ class _MessageInputState extends State<MessageInput>
             bytes: File(filePath).readAsBytesSync(),
             name: filePath.split(RegExp(r'[\\/]+')).last,
           );
-          final eventId = await room.sendFileEvent(
+          final eventId = await foundRoom.sendFileEvent(
             file,
             extraContent: {...replyContent},
           );
@@ -192,7 +222,7 @@ class _MessageInputState extends State<MessageInput>
       final privKey = await Web3AuthFlutter.getPrivKey();
       context.read<ChatBloc>().add(
         ReplyMessage(
-          roomId: widget.room!.roomId,
+          roomId: room.id,
           content: _messageController.text.trim(),
           replyToEventId: eventId,
           viaToken: _viaToken,
@@ -251,10 +281,7 @@ class _MessageInputState extends State<MessageInput>
     final res = await ipfsClient.add(File(filePath));
     await ipfsClient.pinAdd(res.hash);
     final matrixClient = getIt<Client>();
-    final event = await matrixClient.getOneRoomEvent(
-      widget.room!.roomId,
-      eventId,
-    );
+    final event = await matrixClient.getOneRoomEvent(room.id, eventId);
 
     await mescat.setSSSS((
       cid: res.hash,
@@ -264,12 +291,8 @@ class _MessageInputState extends State<MessageInput>
     ), credentials: credential);
   }
 
-  String get _placeholderText {
-    if (widget.room?.name != null) {
-      return 'Message #${widget.room!.name}';
-    }
-    return 'Type a message...';
-  }
+  String get _placeholderText =>
+      'Message #${room.isDirectChat ? room.getLocalizedDisplayname() : room.name}';
 
   @override
   Widget build(BuildContext context) {
@@ -654,8 +677,6 @@ class _MessageInputState extends State<MessageInput>
       );
     }
   }
-
-  void _startVoiceRecording() {}
 
   void _pickFile() async {
     final filePickerResult = await FilePicker.platform.pickFiles();

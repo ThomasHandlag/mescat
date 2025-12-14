@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/window_scaffold.dart';
 
-class AppLayout extends StatelessWidget {
+class PlatformLayout extends StatelessWidget {
   final Widget child;
-  const AppLayout({super.key, required this.child});
+
+  const PlatformLayout({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

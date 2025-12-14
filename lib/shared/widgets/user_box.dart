@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/settings/pages/setting_page.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
@@ -15,16 +16,18 @@ class UserBox extends StatelessWidget {
     required this.stream,
     required this.voiceMuted,
     required this.videoMuted,
-    this.username,
-    this.avatarUrl,
   });
+
+  Client get client => getIt<Client>();
+
+  String get currentUserId => client.userID!;
+  String get currentDeviceId => client.deviceID!;
+
   final bool voiceMuted;
   final bool videoMuted;
 
   final bool mutedAll;
   final WrappedMediaStream? stream;
-  final String? username;
-  final Uri? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -72,33 +75,38 @@ class UserBox extends StatelessWidget {
                   ],
                 ),
               ),
-            UserBanner(
-              username: username,
-              avatarUrl: avatarUrl,
-              actions: [
-                McButton(
-                  onPressed: () {
-                    context.read<CallBloc>().add(
-                      ToggleVoice(muted: !voiceMuted),
-                    );
-                  },
-                  child: Icon(voiceMuted ? Icons.mic_off : Icons.mic),
-                ),
-                McButton(
-                  onPressed: () {
-                    context.read<CallBloc>().add(
-                      ToggleMute(isMuted: !mutedAll),
-                    );
-                  },
-                  child: Icon(mutedAll ? Icons.headset_off : Icons.headset),
-                ),
-                McButton(
-                  onPressed: () {
-                    showFullscreenDialog(context, const SettingPage());
-                  },
-                  child: const Icon(Icons.settings),
-                ),
-              ],
+            FutureBuilder(
+              future: client.getUserProfile(currentUserId),
+              builder: (_, snapshot) {
+                return UserBanner(
+                  username: snapshot.data?.displayname,
+                  avatarUrl: snapshot.data?.avatarUrl,
+                  actions: [
+                    McButton(
+                      onPressed: () {
+                        context.read<CallBloc>().add(
+                          ToggleVoice(muted: !voiceMuted),
+                        );
+                      },
+                      child: Icon(voiceMuted ? Icons.mic_off : Icons.mic),
+                    ),
+                    McButton(
+                      onPressed: () {
+                        context.read<CallBloc>().add(
+                          ToggleMute(isMuted: !mutedAll),
+                        );
+                      },
+                      child: Icon(mutedAll ? Icons.headset_off : Icons.headset),
+                    ),
+                    McButton(
+                      onPressed: () {
+                        showFullscreenDialog(context, const SettingPage());
+                      },
+                      child: const Icon(Icons.settings),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),

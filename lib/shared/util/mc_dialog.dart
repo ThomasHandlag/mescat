@@ -66,3 +66,17 @@ Future<OkCancelResult?> showOkAlertDialog({
     ],
   ),
 );
+
+Future<T?> showAdaptiveDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool useRootNavigator = true,
+}) {
+  return showDialog<T>(
+    context: context,
+    useRootNavigator: useRootNavigator,
+    builder: (context) {
+      return builder(context);
+    },
+  );
+}

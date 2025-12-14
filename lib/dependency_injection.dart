@@ -80,6 +80,7 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),
   );
+  getIt.registerSingleton<SharedPreferences>(sharedPref);
   getIt.registerSingleton<NotificationService>(notificationService);
   getIt.registerLazySingleton<CallHandler>(
     () => CallHandler(matrixClient, sharedPref),

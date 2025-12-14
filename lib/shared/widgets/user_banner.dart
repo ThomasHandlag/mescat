@@ -55,7 +55,7 @@ class UserBanner extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Text('Idle', style: TextStyle(color: Colors.white70)),
+                const Text('Idle', style: TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ),

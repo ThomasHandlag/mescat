@@ -1,40 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 
-class SpaceIcon extends StatelessWidget {
+class SidebarItem extends StatelessWidget {
   final Uri? avatarUrl;
   final IconData? icon;
-  final String label;
-  final bool isSelected;
-  final bool useGenerateColor;
-  final VoidCallback onTap;
+  final String name;
+  final String id;
+  final VoidCallback? onTap;
 
-  const SpaceIcon({
+  const SidebarItem({
     super.key,
     this.avatarUrl,
     this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.useGenerateColor = true,
+    required this.name,
+    required this.id,
+    this.onTap,
   });
+
+  bool get _useGenerateColor => avatarUrl == null && icon == null;
+  bool get _isHome => id.isEmpty;
+
+  void _handleTap(BuildContext context) {
+    if (onTap != null) {
+      onTap!();
+    } else {
+      if (_isHome) {
+        context.go(MescatRoutes.home);
+      } else {
+        context.go(MescatRoutes.spaceRoute(id));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isSelected = _isHome && onTap == null
+        ? GoRouterState.of(context).uri.path == MescatRoutes.home
+        : GoRouterState.of(context).pathParameters['spaceId'] == id;
     return Tooltip(
-      message: label,
+      message: name,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () => _handleTap(context),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: useGenerateColor
+            color: _useGenerateColor
                 ? avatarUrl != null
                       ? null
-                      : label.generateFromString()
+                      : name.generateFromString()
                 : Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(10),
             border: isSelected
@@ -56,7 +74,7 @@ class SpaceIcon extends StatelessWidget {
                   ),
                 )
               : icon != null
-              ? _buildIcon()
+              ? _buildIcon(isSelected)
               : _buildText(),
         ),
       ),
@@ -67,7 +85,7 @@ class SpaceIcon extends StatelessWidget {
     return Center(
       child: Text(
         icon == null
-            ? _getInitials(label)
+            ? _getInitials(name)
             : String.fromCharCode(icon!.codePoint),
         style: const TextStyle(fontSize: 14),
         textAlign: TextAlign.center,
@@ -75,7 +93,7 @@ class SpaceIcon extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(bool isSelected) {
     return Icon(
       icon ?? Icons.people,
       color: isSelected ? Colors.white : null,

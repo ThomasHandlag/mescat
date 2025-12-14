@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/constants/app_constants.dart';
-import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/shared/util/permission_util.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:rive/rive.dart';
 
 class LoadingPage extends StatefulWidget {
@@ -15,9 +18,22 @@ class _LoadingPageState extends State<LoadingPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MescatBloc>().add(InitialEvent());
-    });
+    requirePermissions();
+    _syncClient();
+  }
+
+  void _syncClient() async {
+    final client = getIt<Client>();
+    await Future.delayed(const Duration(seconds: 2));
+    await client.roomsLoading;
+    await client.accountDataLoading;
+    await client.userDeviceKeysLoading;
+
+    _goHome();
+  }
+
+  void _goHome() {
+    context.push(MescatRoutes.home);
   }
 
   final fileLoader = FileLoader.fromAsset(

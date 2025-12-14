@@ -20,7 +20,10 @@ class CallIdle extends MCCallState {
 
   @override
   CallIdle copyWith({bool? voiceMuted, bool? muted}) {
-    return  CallIdle(voiceMuted: voiceMuted ?? this.voiceMuted, muted: muted ?? this.muted);
+    return CallIdle(
+      voiceMuted: voiceMuted ?? this.voiceMuted,
+      muted: muted ?? this.muted,
+    );
   }
 }
 
@@ -30,7 +33,7 @@ class CallInProgress extends MCCallState {
   final List<CallParticipant> participants;
   final GroupCallSession groupSession;
   final bool videoMuted;
-  final MatrixRoom mRoom;
+  final Room room;
 
   const CallInProgress({
     required this.callId,
@@ -40,7 +43,7 @@ class CallInProgress extends MCCallState {
     this.participants = const [],
     required this.groupSession,
     this.videoMuted = false,
-    required this.mRoom,
+    required this.room,
   });
 
   @override
@@ -52,7 +55,7 @@ class CallInProgress extends MCCallState {
     participants,
     groupSession,
     videoMuted,
-    mRoom,
+    room,
   ];
 
   @override
@@ -64,7 +67,7 @@ class CallInProgress extends MCCallState {
     bool? muted,
     bool? videoMuted,
     List<CallParticipant>? participants,
-    MatrixRoom? mRoom,
+    Room? room,
     GroupCallSession? groupSession,
   }) {
     return CallInProgress(
@@ -75,7 +78,7 @@ class CallInProgress extends MCCallState {
       participants: participants ?? this.participants,
       groupSession: groupSession ?? this.groupSession,
       videoMuted: videoMuted ?? this.videoMuted,
-      mRoom: mRoom ?? this.mRoom,
+      room: room ?? this.room,
     );
   }
 }
