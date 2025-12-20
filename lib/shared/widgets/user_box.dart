@@ -40,8 +40,11 @@ class UserBox extends StatelessWidget {
       child: Container(
         height: stream != null ? 150 : UIConstraints.mMessageInputHeight,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(8.0),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(0x42),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -52,10 +55,7 @@ class UserBox extends StatelessWidget {
                 child: Row(
                   spacing: 4,
                   children: [
-                    const Text(
-                      'Voice Connected',
-                      style: TextStyle(color: Colors.white70),
-                    ),
+                    const Text('Voice Connected'),
                     McButton(
                       onPressed: () {
                         context.read<CallBloc>().add(const LeaveCall());

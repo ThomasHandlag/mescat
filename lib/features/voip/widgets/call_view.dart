@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
-import 'package:mescat/features/chat/widgets/call_controller.dart';
+import 'package:mescat/features/voip/widgets/call_controller.dart';
 import 'package:mescat/features/chat/widgets/member_grid.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 
@@ -13,8 +13,9 @@ class CallView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       child: GestureDetector(
         onTap: () {
           context.read<CallControllerCubit>().toggleVisibility();
@@ -54,9 +55,9 @@ class CallView extends StatelessWidget {
               ),
             );
           }
-          return const SizedBox.shrink();
+          return const SizedBox(height: 60);
         }
-        return const SizedBox.shrink();
+        return const SizedBox(height: 60);
       },
     );
   }
@@ -68,7 +69,7 @@ class CallView extends StatelessWidget {
           return BlocBuilder<CallControllerCubit, bool>(
             builder: (_, state) {
               if (!state) {
-                return const SizedBox(height: 60);
+                return const SizedBox.shrink();
               } else {
                 return SizedBox(
                   height: 60,

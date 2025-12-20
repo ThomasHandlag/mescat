@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/util/string_util.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 
@@ -16,20 +17,30 @@ class UserBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final badgeColor = username?.generateFromString();
     return Container(
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 70, 70, 70),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8.0),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(0x42),
+        ),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 20,
+            backgroundColor: badgeColor,
             child: avatarUrl == null
                 ? Text(
                     getInitials(username ?? 'Unknown User'),
-                    style: const TextStyle(fontSize: 14),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: badgeColor != null
+                          ? badgeColor.getContrastingTextColor()
+                          : Colors.white,
+                    ),
                   )
                 : McImage(
                     uri: avatarUrl,
@@ -50,12 +61,9 @@ class UserBanner extends StatelessWidget {
                   child: Text(
                     username ?? 'Unknown User',
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFFFFFFFF),
-                    ),
                   ),
                 ),
-                const Text('Idle', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const Text('Idle', style: TextStyle(fontSize: 12)),
               ],
             ),
           ),

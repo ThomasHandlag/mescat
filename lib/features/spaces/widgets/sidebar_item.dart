@@ -53,14 +53,17 @@ class SidebarItem extends StatelessWidget {
                 ? avatarUrl != null
                       ? null
                       : name.generateFromString()
-                : Theme.of(context).colorScheme.surfaceContainer,
+                : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(10),
             border: isSelected
                 ? Border.all(
                     color: Theme.of(context).colorScheme.primary,
                     width: 2,
                   )
-                : null,
+                : Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    width: 1,
+                  ),
           ),
           child: avatarUrl != null
               ? CircleAvatar(
@@ -74,7 +77,7 @@ class SidebarItem extends StatelessWidget {
                   ),
                 )
               : icon != null
-              ? _buildIcon(isSelected)
+              ? _buildIcon(isSelected, context)
               : _buildText(),
         ),
       ),
@@ -87,16 +90,20 @@ class SidebarItem extends StatelessWidget {
         icon == null
             ? _getInitials(name)
             : String.fromCharCode(icon!.codePoint),
-        style: const TextStyle(fontSize: 14),
+        style: TextStyle(
+          fontSize: 14,
+          color: name.generateFromString().getContrastingTextColor(),
+          fontWeight: FontWeight.bold,
+        ),
         textAlign: TextAlign.center,
       ),
     );
   }
 
-  Widget _buildIcon(bool isSelected) {
+  Widget _buildIcon(bool isSelected, BuildContext context) {
     return Icon(
       icon ?? Icons.people,
-      color: isSelected ? Colors.white : null,
+      color: isSelected ? Theme.of(context).colorScheme.onSurface : null,
       size: 18,
     );
   }

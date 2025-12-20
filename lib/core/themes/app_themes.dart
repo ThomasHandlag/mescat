@@ -8,16 +8,18 @@ class AppThemes {
   static const Color warningColor = Color(0xFFFEE75C); // Discord's yellow
 
   // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF36393F);
-  static const Color darkSurface = Color(0xFF2F3136);
+  static const Color darkSurface = Color.fromARGB(255, 20, 21, 24);
   static const Color darkCard = Color(0xFF40444B);
   static const Color darkOnBackground = Color(0xFFDCDDDE);
+  static const Color darkSurfaceContainer = Color.fromARGB(213, 44, 47, 52);
+  static const Color outlineVariantDark = Color(0xFF4F545C);
 
   // Light Theme Colors
-  static const Color lightBackground = Color(0xFFFFFFFF);
   static const Color lightSurface = Color(0xFFF2F3F5);
   static const Color lightCard = Color(0xFFFFFFFF);
   static const Color lightOnBackground = Color(0xFF2E3338);
+  static const Color lightSurfaceContainer = Color.fromARGB(214, 254, 255, 251);
+  static const Color outlineVariantLight = Color(0xFFB9BBBE);
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -29,6 +31,8 @@ class AppThemes {
         error: errorColor,
         surface: lightSurface,
         onSurface: lightOnBackground,
+        surfaceContainer: lightSurfaceContainer,
+        outlineVariant: outlineVariantLight,
       ),
       textTheme: GoogleFonts.interTextTheme(),
       appBarTheme: const AppBarTheme(
@@ -57,6 +61,8 @@ class AppThemes {
         error: errorColor,
         surface: darkSurface,
         onSurface: darkOnBackground,
+        surfaceContainer: darkSurfaceContainer,
+        outlineVariant: outlineVariantDark,
       ),
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       appBarTheme: const AppBarTheme(

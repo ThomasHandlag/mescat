@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:mescat/features/spaces/models/public_space_model.dart';
-import 'package:mescat/features/spaces/widgets/space_tag_chip.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
 
 /// Widget to display a public space card with Discord-like styling
 class PublicSpaceCard extends StatelessWidget {
-  final PublicSpaceModel space;
+  final PublishedRoomsChunk space;
   final VoidCallback? onTap;
 
-  const PublicSpaceCard({
-    super.key,
-    required this.space,
-    this.onTap,
-  });
+  const PublicSpaceCard({super.key, required this.space, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +17,7 @@ class PublicSpaceCard extends StatelessWidget {
     return Card(
       elevation: 2,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         child: Column(
@@ -31,7 +25,7 @@ class PublicSpaceCard extends StatelessWidget {
           children: [
             // Space Header with Avatar and Badges
             _buildHeader(context, colorScheme),
-            
+
             // Space Info
             Expanded(
               child: Padding(
@@ -41,23 +35,21 @@ class PublicSpaceCard extends StatelessWidget {
                   children: [
                     // Space Name
                     _buildSpaceName(context, theme),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // Description
-                    Expanded(
-                      child: _buildDescription(context, theme),
-                    ),
-                    
+                    Expanded(child: _buildDescription(context, theme)),
+
                     const SizedBox(height: 12),
-                    
+
                     // Tags
                     _buildTags(),
                   ],
                 ),
               ),
             ),
-            
+
             // Stats Footer
             _buildFooter(context, colorScheme),
           ],
@@ -74,26 +66,18 @@ class PublicSpaceCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colorScheme.primary.withOpacity(0.7),
-            colorScheme.secondary.withOpacity(0.5),
+            colorScheme.primary.withAlpha(190),
+            colorScheme.secondary.withAlpha(128),
           ],
         ),
       ),
       child: Stack(
         children: [
           // Avatar
-          Positioned(
-            left: 16,
-            bottom: -20,
-            child: _buildAvatar(colorScheme),
-          ),
-          
+          Positioned(left: 16, bottom: -20, child: _buildAvatar(colorScheme)),
+
           // Badges
-          Positioned(
-            top: 8,
-            right: 8,
-            child: _buildBadges(colorScheme),
-          ),
+          Positioned(top: 8, right: 8, child: _buildBadges(colorScheme)),
         ],
       ),
     );
@@ -106,19 +90,12 @@ class PublicSpaceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.surface,
-          width: 4,
-        ),
+        border: Border.all(color: colorScheme.surface, width: 4),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: space.avatarUrl != null
-            ? Image.network(
-                space.avatarUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
-              )
+            ? McImage(uri: space.avatarUrl!)
             : _buildDefaultAvatar(),
       ),
     );
@@ -129,7 +106,7 @@ class PublicSpaceCard extends StatelessWidget {
       color: Colors.blueGrey,
       child: Center(
         child: Text(
-          _getInitials(space.name),
+          space.name != null ? _getInitials(space.name!) : '?',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 20,
@@ -144,7 +121,7 @@ class PublicSpaceCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (space.isPartnered)
+        if (space.guestCanJoin)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -167,8 +144,8 @@ class PublicSpaceCard extends StatelessWidget {
               ],
             ),
           ),
-        if (space.isVerified) ...[
-          if (space.isPartnered) const SizedBox(width: 4),
+        if (space.worldReadable) ...[
+          if (space.guestCanJoin) const SizedBox(width: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -200,7 +177,7 @@ class PublicSpaceCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 28.0),
       child: Text(
-        space.name,
+        space.name ?? 'Unnamed Space',
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
         ),
@@ -212,9 +189,9 @@ class PublicSpaceCard extends StatelessWidget {
 
   Widget _buildDescription(BuildContext context, ThemeData theme) {
     return Text(
-      space.description,
+      space.topic ?? 'No description available.',
       style: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface.withOpacity(0.7),
+        color: theme.colorScheme.onSurface.withAlpha(179),
       ),
       maxLines: 3,
       overflow: TextOverflow.ellipsis,
@@ -222,15 +199,7 @@ class PublicSpaceCard extends StatelessWidget {
   }
 
   Widget _buildTags() {
-    if (space.tags.isEmpty) return const SizedBox.shrink();
-    
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: space.tags.take(3).map((tag) {
-        return SpaceTagChip(tag: tag, isSmall: true);
-      }).toList(),
-    );
+    return Text(space.joinRule ?? 'No Rules');
   }
 
   Widget _buildFooter(BuildContext context, ColorScheme colorScheme) {
@@ -239,40 +208,23 @@ class PublicSpaceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         border: Border(
-          top: BorderSide(
-            color: colorScheme.outline.withOpacity(0.2),
-          ),
+          top: BorderSide(color: colorScheme.outline.withAlpha(51)),
         ),
       ),
       child: Row(
         children: [
-          // Online count
-          const Icon(
-            Icons.circle,
-            size: 12,
-            color: Colors.green,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '${_formatCount(space.onlineCount)} online',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.7),
-                ),
-          ),
-          const SizedBox(width: 16),
-          
           // Member count
           Icon(
             Icons.people,
             size: 14,
-            color: colorScheme.onSurface.withOpacity(0.5),
+            color: colorScheme.onSurface.withAlpha(128),
           ),
           const SizedBox(width: 6),
           Text(
-            '${_formatCount(space.memberCount)} members',
+            '${_formatCount(space.numJoinedMembers)} members',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.7),
-                ),
+              color: colorScheme.onSurface.withAlpha(179),
+            ),
           ),
         ],
       ),

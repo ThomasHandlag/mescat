@@ -133,8 +133,11 @@ final class MescatRoutes {
           pageBuilder: (context, state) {
             final params = state.pathParameters;
             final roomId = params['roomId'];
+            final spaceId = params['spaceId'] ?? '0';
             context.read<ChatBloc>().add(SelectRoom(roomId ?? '0'));
-            return MaterialPage<void>(child: ChatPage(context: context));
+            return MaterialPage<void>(
+              child: PlatformLayout(child: ChatPage(spaceId: spaceId)),
+            );
           },
         ),
       GoRoute(
@@ -178,9 +181,10 @@ final class MescatRoutes {
                   pageBuilder: (context, state) {
                     final params = state.pathParameters;
                     final roomId = params['roomId'];
+                    final spaceId = params['spaceId'] ?? '0';
                     context.read<ChatBloc>().add(SelectRoom(roomId ?? '0'));
                     return MaterialPage<void>(
-                      child: ChatPage(context: context),
+                      child: ChatPage(spaceId: spaceId),
                     );
                   },
                 ),

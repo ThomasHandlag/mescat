@@ -69,7 +69,8 @@ class RoomList extends StatelessWidget {
         .map((r) => _Room(type: RoomType.directMessage, room: r))
         .toList();
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
@@ -127,16 +128,15 @@ class RoomList extends StatelessWidget {
                   ListTile(
                     onTap: () =>
                         showFullscreenDialog(context, const VerifyDevicePage()),
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.warning,
-                      color: Colors.amber,
+                      color: Theme.of(context).colorScheme.error,
                       size: 18,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Verify Device',
                       style: TextStyle(
-                        color: Colors.amber,
-                        decoration: TextDecoration.underline,
+                        color: Theme.of(context).colorScheme.error,
                       ),
                     ),
                     trailing: IconButton(

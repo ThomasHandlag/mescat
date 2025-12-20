@@ -57,3 +57,4 @@ app.*.map.json
 
 **/contracts.dart
 **/meta_const.dart
+**/**.puml

@@ -5,38 +5,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
-import 'package:mescat/features/chat/widgets/call_view.dart';
+import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
+import 'package:mescat/features/voip/widgets/call_view.dart';
 import 'package:mescat/features/chat/widgets/chat_view.dart';
 import 'package:mescat/features/members/widgets/space_members.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/util/widget_overlay_service.dart';
 
-class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, required this.context});
+class ChatPage extends StatelessWidget {
+  const ChatPage({super.key, required this.spaceId});
 
-  final BuildContext context;
-
-  @override
-  State<ChatPage> createState() => _ChatPageState();
-}
-
-class _ChatPageState extends State<ChatPage> {
-  bool _showMembers = true;
+  final String spaceId;
 
   Client get client => getIt<Client>();
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,57 +43,78 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
-    return Scaffold(appBar: _buildAppBar(room), body: _buildView(room));
+    return Scaffold(
+      appBar: _buildAppBar(room, context),
+      body: _buildView(room, context),
+    );
   }
 
-  Widget _buildChatHeader(BuildContext context) {
+  Widget _buildChatHeader(BuildContext context, Room room) {
     return Row(
       children: [
+        if (room.isDirectChat)
+          IconButton(onPressed: () {}, icon: const Icon(Icons.videocam))
+        else
+          IconButton(
+            onPressed: () {
+              if (Platform.isAndroid || Platform.isIOS) {
+                showFullscreenDialog(context, const SpaceMembersList());
+              }
+            },
+            icon: const Icon(Icons.group),
+            tooltip: 'Room Options',
+          ),
         IconButton(onPressed: () {}, icon: const Icon(Icons.push_pin)),
-        IconButton(
-          onPressed: () {
-            if (Platform.isAndroid || Platform.isIOS) {
-              showFullscreenDialog(context, const SpaceMembersList());
-            } else {
-              setState(() {
-                _showMembers = !_showMembers;
-              });
-            }
-          },
-          icon: const Icon(Icons.group),
-          tooltip: 'Room Options',
-        ),
-        
       ],
     );
   }
 
-  PreferredSizeWidget? _buildAppBar(Room room) {
+  PreferredSizeWidget? _buildAppBar(Room room, BuildContext context) {
     final roomType = room.getRoomType();
     if (roomType == RoomType.voiceChannel) {
       return null;
     } else {
       return AppBar(
-        backgroundColor: const Color.fromARGB(255, 35, 35, 42),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         primary: true,
         title: Row(
           children: [
             const Icon(Icons.tag, size: 16),
-            Text(room.name, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              room.isDirectChat ? room.getLocalizedDisplayname() : room.name,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ],
         ),
-        actions: [_buildChatHeader(context)],
+        actions: [_buildChatHeader(context, room)],
       );
     }
   }
 
-  Widget _buildView(Room room) {
+  Widget _buildView(Room room, BuildContext context) {
     final roomType = room.getRoomType();
     if (roomType == RoomType.voiceChannel) {
-      context.read<CallBloc>().add(JoinCall(room: room));
+      final callBloc = context.read<CallBloc>();
+      if (callBloc.state is! CallInProgress) {
+        callBloc.add(JoinCall(room: room));
+      }
       return MultiBlocProvider(
         providers: [BlocProvider(create: (_) => CallControllerCubit())],
-        child: CallView(onClose: () {}),
+        child: CallView(
+          onClose: () {
+            WidgetOverlayService.of(context).show(
+              child: const CollapseCallView(),
+              onExpand: (BuildContext appContext) {
+                if (Platform.isAndroid || Platform.isIOS) {
+                  appContext.push(MescatRoutes.roomRoute(spaceId, room.id));
+                } else {
+                  appContext.go(MescatRoutes.roomRoute(spaceId, room.id));
+                }
+                WidgetOverlayService.hide();
+              },
+            );
+          },
+        ),
       );
     } else {
       return Platform.isAndroid || Platform.isIOS

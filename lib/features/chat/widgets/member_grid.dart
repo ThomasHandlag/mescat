@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:gridexts/gridexts.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mescat/features/chat/widgets/call_video.dart';
+import 'package:mescat/features/voip/widgets/call_video.dart';
 import 'package:mescat/shared/util/string_util.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:webrtc_interface/webrtc_interface.dart';

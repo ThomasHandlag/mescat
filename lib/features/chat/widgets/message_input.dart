@@ -298,11 +298,7 @@ class _MessageInputState extends State<MessageInput>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 70, 70, 70),
-        borderRadius: BorderRadius.all(Radius.circular(10)),
-      ),
+    return SizedBox(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -351,8 +347,13 @@ class _MessageInputState extends State<MessageInput>
           // Main chat input
           Container(
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 97, 97, 97),
-              borderRadius: BorderRadius.circular(10),
+              color: colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(
+                Platform.isAndroid || Platform.isIOS ? 30 : 10,
+              ),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withAlpha(100),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -395,6 +396,10 @@ class _MessageInputState extends State<MessageInput>
                         textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
                           hintText: _placeholderText,
+                          visualDensity: const VisualDensity(
+                            horizontal: 0,
+                            vertical: -4,
+                          ),
                           hintStyle: TextStyle(
                             color: colorScheme.onSurface.withAlpha(180),
                             fontSize: 16,

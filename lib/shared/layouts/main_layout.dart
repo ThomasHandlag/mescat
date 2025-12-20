@@ -16,14 +16,14 @@ class MainLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: (Platform.isAndroid || Platform.isIOS)
-          ? _buildMobile(child: child)
-          : _buildDesktop(child: child),
+          ? _buildMobile(child: child, context: context)
+          : _buildDesktop(child: child, context: context),
     );
   }
 
-  Widget _buildMobile({required Widget child}) {
+  Widget _buildMobile({required Widget child, required BuildContext context}) {
     return Container(
-      color: const Color.fromARGB(255, 35, 35, 42),
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.max,
@@ -54,11 +54,11 @@ class MainLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildDesktop({required Widget child}) {
+  Widget _buildDesktop({required Widget child, required BuildContext context}) {
     return Row(
       children: [
         Container(
-          color: const Color.fromARGB(255, 35, 35, 42),
+          color: Theme.of(context).colorScheme.surfaceContainer,
           width: 310,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

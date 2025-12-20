@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:math' show min;
 import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/contracts/abi/mescat.g.dart';
@@ -71,8 +73,14 @@ extension ClientDownloadContentExtension on Client {
           )
         : await mxc.getDownloadUri(this);
 
+    log('Downloading Mxc from $httpUri, mxc: $mxc as thumbnail: $isThumbnail');
+
+    log('Is scheme: ${mxc.isScheme('mxc')}');
+
+    log('Homeserver: ${homeserver.toString()}');
+
     final response = await http.get(
-      httpUri,
+      Uri.parse('https:$httpUri'),
       headers: accessToken == null
           ? null
           : {'authorization': 'Bearer $accessToken'},
@@ -142,6 +150,14 @@ extension StringToColor on String {
     final g = (hash * 456) % 256;
     final b = (hash * 789) % 256;
     return Color.fromARGB(255, r, g, b);
+  }
+}
+
+extension ColorExt on Color {
+  Color getContrastingTextColor() {
+    final brightness =
+        (r * 299 + g * 587 + b * 114) / 1000; // Perceived brightness
+    return brightness > 128 ? Colors.black : Colors.white;
   }
 }
 
@@ -230,7 +246,9 @@ extension ClientExt on Client {
                         senderId: ssEvent.senderId,
                         senderDisplayName: user.displayname ?? ssEvent.senderId,
                         msgtype: ssEvent.messageType,
-                        body: ssEvent.body, // content
+                        body: ssEvent.body.isEmpty
+                            ? 'This message was redacted'
+                            : ssEvent.body, // content
                         timestamp: ssEvent.originServerTs,
                         eventTypes: ssEvent.type,
                         isCurrentUser: ssEvent.senderId == userID,
@@ -246,7 +264,9 @@ extension ClientExt on Client {
                         senderId: ssEvent.senderId,
                         senderDisplayName: user.displayname ?? ssEvent.senderId,
                         msgtype: ssEvent.messageType,
-                        body: ssEvent.body, // content
+                        body: ssEvent.body.isEmpty
+                            ? 'This message was redacted'
+                            : ssEvent.body, // content
                         timestamp: ssEvent.originServerTs,
                         eventTypes: ssEvent.type,
                         isCurrentUser: ssEvent.senderId == userID,
@@ -254,14 +274,15 @@ extension ClientExt on Client {
                       ),
                     );
                   }
-                  continue;
                 } catch (e) {
                   logger.e('Error decoding redacted event from blockchain: $e');
+                  continue;
                 }
               }
 
               RepliedEventContent? repliedEventContent;
-              final text = event.content['body'] as String? ?? '';
+              final text =
+                  event.content['body'] as String? ?? 'encrypted message';
 
               if (event.inReplyToEventId() != null) {
                 final repliedMTEvent = await getOneRoomEvent(

@@ -91,39 +91,40 @@ class RoomItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            IconButton(
-              onPressed: () {
-                if (Platform.isAndroid || Platform.isIOS) {
-                  showFullscreenDialog(context, InviteRoom(room: room));
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return Dialog(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        constraints: const BoxConstraints(maxWidth: 600),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: InviteRoom(room: room),
-                        ),
-                      );
-                    },
-                  );
-                }
-              },
-              icon: Icon(
-                Icons.group_add,
-                size: 16,
-                color: isSelected
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer.withAlpha(0x99)
-                    : Theme.of(context).colorScheme.onSurface.withAlpha(0x66),
+            if (!room.isDirectChat)
+              IconButton(
+                onPressed: () {
+                  if (Platform.isAndroid || Platform.isIOS) {
+                    showFullscreenDialog(context, InviteRoom(room: room));
+                  } else {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return Dialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: InviteRoom(room: room),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                },
+                icon: Icon(
+                  Icons.group_add,
+                  size: 16,
+                  color: isSelected
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer.withAlpha(0x99)
+                      : Theme.of(context).colorScheme.onSurface.withAlpha(0x66),
+                ),
+                tooltip: 'Invite Members',
               ),
-              tooltip: 'Invite Members',
-            ),
             IconButton(
               onPressed: () {
                 // showFullscreenDialog(context, RoomSettingPage(room: room));

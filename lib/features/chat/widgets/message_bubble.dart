@@ -111,12 +111,19 @@ class MessageBubble extends StatelessWidget {
               onTap: () => _showUserProfile(context, message.senderId),
               child: CircleAvatar(
                 radius: 20,
+                backgroundColor: message.senderDisplayName
+                    ?.generateFromString(),
                 child: message.senderAvatarUrl == null
                     ? Text(
                         _getInitials(
                           message.senderDisplayName ?? message.senderId,
                         ),
-                        style: const TextStyle(fontSize: 14),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: message.senderDisplayName
+                              ?.generateFromString()
+                              .getContrastingTextColor(),
+                        ),
                       )
                     : McImage(
                         uri: message.senderAvatarUrl,
@@ -148,7 +155,7 @@ class MessageBubble extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: message.isCurrentUser
                             ? Theme.of(context).colorScheme.primary
-                            : _generateColorFromUserId(message.senderId),
+                            : message.senderDisplayName?.generateFromString(),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -237,12 +244,6 @@ class MessageBubble extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
-  }
-
-  Color _generateColorFromUserId(String userId) {
-    final hash = userId.codeUnits.fold(0, (prev, elem) => prev + elem);
-    final hue = (hash % 360).toDouble();
-    return HSLColor.fromAHSL(1.0, hue, 0.5, 0.6).toColor();
   }
 
   Widget? _buildMessageContent(BuildContext context, MCMessageEvent message) {
