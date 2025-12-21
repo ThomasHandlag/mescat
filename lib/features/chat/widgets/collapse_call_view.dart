@@ -56,7 +56,7 @@ class CollapseCallView extends StatelessWidget {
                   else
                     CallVideo(
                       stream: state.groupSession.backend.localUserMediaStream,
-                      fit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+                      fit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                     ),
                   Align(
                     alignment: Alignment.bottomCenter,

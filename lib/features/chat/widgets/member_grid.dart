@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:gridexts/gridexts.dart';
 import 'package:matrix/matrix.dart';
@@ -39,9 +37,7 @@ class _MemberGrid extends StatelessWidget {
 
   bool get isCurrentUser => stream.isLocal();
 
-  @override
-  Widget build(BuildContext context) {
-    log('$avatarUri');
+  Widget _buildContent(BuildContext context) {
     return GestureDetector(
       child: Container(
         decoration: BoxDecoration(
@@ -145,6 +141,14 @@ class _MemberGrid extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isCurrentUser) {
+      return Hero(tag: "currentUser", child: _buildContent(context));
+    }
+    return _buildContent(context);
   }
 }
 

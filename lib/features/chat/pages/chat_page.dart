@@ -103,7 +103,7 @@ class ChatPage extends StatelessWidget {
         child: CallView(
           onClose: () {
             WidgetOverlayService.of(context).show(
-              child: const CollapseCallView(),
+              child: const Hero(tag: "currentUser", child: CollapseCallView()),
               onExpand: (BuildContext appContext) {
                 if (Platform.isAndroid || Platform.isIOS) {
                   appContext.push(MescatRoutes.roomRoute(spaceId, room.id));

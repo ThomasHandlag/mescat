@@ -42,9 +42,13 @@ class UserBox extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(8.0),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(0x42),
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.outlineVariant.withAlpha(235),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

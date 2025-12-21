@@ -14,6 +14,8 @@ import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/shared/pages/verify_device_page.dart';
 import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/widgets/input_field.dart';
+// import 'package:mescat/shared/util/mc_dialog.dart';
 
 final class _Room {
   const _Room({required this.type, required this.room});
@@ -235,125 +237,117 @@ class RoomList extends StatelessWidget {
     RoomType selectedType = roomType ?? RoomType.textChannel;
     bool isPublic = false;
 
-    showDialog(
+    showMCAdaptiveDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('Create ${title ?? 'Channel'}'),
-          content: Scaffold(
-            extendBody: Platform.isAndroid || Platform.isIOS,
-            body: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Channel Name',
-                    hintText: 'general',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: topicController,
-                  decoration: const InputDecoration(
-                    labelText: 'Topic (optional)',
-                    hintText: 'What\'s this channel about?',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  title: const Text('Public Channel'),
-                  subtitle: const Text('Anyone can join'),
-                  value: isPublic,
-                  onChanged: (value) {
-                    setState(() {
-                      isPublic = value ?? false;
-                    });
+      title: Text(
+        'Create ${title ?? 'Room'}',
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        const Spacer(),
+        ElevatedButton(
+          onPressed: () async {
+            if (nameController.text.trim().isNotEmpty) {
+              final List<String> userIds = [];
+              if (roomType != RoomType.directMessage && isPublic) {
+                userIds.addAll(
+                  (await client.getRoomById(spaceId)?.requestParticipants())!
+                      .map((member) => member.id)
+                      .toList()
+                      .where((id) => id != client.userID),
+                );
+              }
+              final id = await client.createRoom(
+                name: nameController.text.trim(),
+                creationContent: selectedType == RoomType.voiceChannel
+                    ? {'type': MatrixEventTypes.msc3417}
+                    : null,
+                initialState: [
+                  StateEvent(content: {}, type: EventTypes.GroupCallMember),
+                ],
+                topic: topicController.text.trim().isEmpty
+                    ? null
+                    : topicController.text.trim(),
+                preset: isPublic
+                    ? CreateRoomPreset.publicChat
+                    : CreateRoomPreset.privateChat,
+                invite: userIds,
+                visibility: isPublic ? Visibility.public : Visibility.private,
+              );
+
+              final roomExist = (await client.getJoinedRooms()).contains(id);
+
+              final room = client.getRoomById(id);
+
+              if (roomExist && spaceId.isNotEmpty) {
+                await client.setRoomStateWithKey(
+                  spaceId,
+                  EventTypes.SpaceChild,
+                  id,
+                  {
+                    'via': [client.homeserver?.host ?? 'matrix.org'],
+                    'order': DateTime.now().millisecondsSinceEpoch.toString(),
                   },
-                  controlAffinity: ListTileControlAffinity.leading,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.trim().isNotEmpty) {
-                  final List<String> userIds = [];
-                  if (roomType != RoomType.directMessage && isPublic) {
-                    userIds.addAll(
-                      (await client
-                              .getRoomById(spaceId)
-                              ?.requestParticipants())!
-                          .map((member) => member.id)
-                          .toList()
-                          .where((id) => id != client.userID),
-                    );
-                  }
-                  final id = await client.createRoom(
-                    name: nameController.text.trim(),
-                    creationContent: selectedType == RoomType.voiceChannel
-                        ? {'type': MatrixEventTypes.msc3417}
-                        : null,
-                    initialState: [
-                      StateEvent(content: {}, type: EventTypes.GroupCallMember),
-                    ],
-                    topic: topicController.text.trim().isEmpty
-                        ? null
-                        : topicController.text.trim(),
-                    preset: isPublic
-                        ? CreateRoomPreset.publicChat
-                        : CreateRoomPreset.privateChat,
-                    invite: userIds,
-                    visibility: isPublic
-                        ? Visibility.public
-                        : Visibility.private,
-                  );
+                );
 
-                  final roomExist = (await client.getJoinedRooms()).contains(
-                    id,
-                  );
+                // Set the space as a parent in the room using proper Matrix client API
+                await client.setRoomStateWithKey(
+                  id,
+                  EventTypes.SpaceParent,
+                  spaceId,
+                  {
+                    'via': [client.homeserver?.host ?? 'matrix.org'],
+                    'canonical': true,
+                  },
+                );
 
-                  final room = client.getRoomById(id);
-
-                  if (roomExist && spaceId.isNotEmpty) {
-                    await client.setRoomStateWithKey(
-                      spaceId,
-                      EventTypes.SpaceChild,
-                      id,
-                      {
-                        'via': [client.homeserver?.host ?? 'matrix.org'],
-                        'order': DateTime.now().millisecondsSinceEpoch
-                            .toString(),
-                      },
-                    );
-
-                    // Set the space as a parent in the room using proper Matrix client API
-                    await client.setRoomStateWithKey(
-                      id,
-                      EventTypes.SpaceParent,
-                      spaceId,
-                      {
-                        'via': [client.homeserver?.host ?? 'matrix.org'],
-                        'canonical': true,
-                      },
-                    );
-
-                    if (roomType == RoomType.voiceChannel && room != null) {
-                      await room.enableGroupCalls();
-                    }
-                  }
-
-                  Navigator.of(dialogContext).pop();
+                if (roomType == RoomType.voiceChannel && room != null) {
+                  await room.enableGroupCalls();
                 }
-              },
-              child: const Text('Create'),
+              }
+
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Create'),
+        ),
+      ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InputField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Channel Name',
+                hintText: 'general',
+              ),
             ),
+            const SizedBox(height: 16),
+            InputField(
+              controller: topicController,
+              decoration: const InputDecoration(
+                labelText: 'Topic (optional)',
+                hintText: 'What\'s this channel about?',
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 16),
+            CheckboxListTile(
+              title: const Text('Public Channel'),
+              value: isPublic,
+              onChanged: (value) {
+                setState(() {
+                  isPublic = value ?? false;
+                });
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+            const Spacer(),
           ],
         ),
       ),
