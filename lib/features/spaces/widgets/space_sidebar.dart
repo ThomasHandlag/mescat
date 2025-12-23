@@ -6,6 +6,8 @@ import 'package:matrix/matrix.dart';
 import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/spaces/widgets/sidebar_item.dart';
+import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/widgets/input_field.dart';
 
 class SpaceSidebar extends StatelessWidget {
   const SpaceSidebar({super.key});
@@ -80,52 +82,51 @@ class SpaceSidebar extends StatelessWidget {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
 
-    showDialog(
+    showMCAdaptiveDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Create Space'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Space Name',
-                hintText: 'My Awesome Space',
-              ),
+      title: const Text('Create Space'),
+      builder: (dialogContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InputField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: 'Space Name',
+              hintText: 'My Awesome Space',
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                hintText: 'What\'s this space about?',
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.trim().isNotEmpty) {
-                await client.createSpace(
-                  name: nameController.text.trim(),
-                  topic: descriptionController.text.trim().isEmpty
-                      ? null
-                      : descriptionController.text.trim(),
-                );
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Create'),
+          const SizedBox(height: 16),
+          InputField(
+            controller: descriptionController,
+            decoration: const InputDecoration(
+              labelText: 'Description (optional)',
+              hintText: 'What\'s this space about?',
+            ),
+            maxLines: 3,
           ),
         ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        const Spacer(),
+        ElevatedButton(
+          onPressed: () async {
+            if (nameController.text.trim().isNotEmpty) {
+              await client.createSpace(
+                name: nameController.text.trim(),
+                topic: descriptionController.text.trim().isEmpty
+                    ? null
+                    : descriptionController.text.trim(),
+              );
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Create'),
+        ),
+      ],
     );
   }
 }

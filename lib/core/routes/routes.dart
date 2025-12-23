@@ -8,7 +8,9 @@ import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/authentication/pages/auth_page.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
+import 'package:mescat/features/marketplace/pages/marketplace_page.dart';
 import 'package:mescat/features/notifications/pages/notification_page.dart';
+import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
 import 'package:mescat/features/spaces/pages/space_home.dart';
 import 'package:mescat/features/wallet/pages/meta_login_page.dart';
@@ -29,7 +31,7 @@ final class MescatRoutes {
   static const String space = '/space/:spaceId';
   static const String room = '/space/:spaceId/room/:roomId';
 
-  static const String roomSettings = '/settings/roomId';
+  static const String rSetting = '/settings/room/:roomId';
   static const String settings = '/settings';
   static const String profile = '/profile/:userId';
   static const String notifications = '/notifications';
@@ -39,8 +41,10 @@ final class MescatRoutes {
   static const String walletAuth = '/wallet-auth';
   static const String wallet = '/wallet';
   static const String createWallet = '/create-wallet';
+  static const String marketplace = '/marketplace';
 
   static String spaceRoute(String spaceId) => '/space/$spaceId';
+  static String roomSetting(String roomId) => '/settings/room/$roomId';
   static String roomRoute(String spaceId, String roomId) =>
       '/space/$spaceId/room/$roomId';
 
@@ -58,37 +62,44 @@ final class MescatRoutes {
 
   static final GoRouter router = GoRouter(
     navigatorKey: navigatorKey,
-    initialLocation: MescatRoutes.auth,
+    initialLocation: auth,
     refreshListenable: AuthStreams(),
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final loggedIn = MescatRoutes.loggedIn();
-      if (!loggedIn && state.path != MescatRoutes.auth) {
-        return MescatRoutes.auth;
-      } else if (loggedIn && state.path == MescatRoutes.auth) {
-        return MescatRoutes.sync;
+      if (!loggedIn && state.path != auth) {
+        return auth;
+      } else if (loggedIn && state.path == auth) {
+        return sync;
       }
       return null;
     },
     routes: [
       GoRoute(
-        path: MescatRoutes.auth,
+        path: auth,
         name: 'auth',
-        redirect: (context, state) => loggedIn() ? MescatRoutes.sync : null,
+        redirect: (context, state) => loggedIn() ? sync : null,
         pageBuilder: (context, state) =>
             const MaterialPage(child: PlatformLayout(child: AuthPage())),
       ),
       GoRoute(
-        path: MescatRoutes.wallet,
+        path: marketplace,
+        name: 'marketplace',
+        redirect: (context, state) => loggedIn() ? null : auth,
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: PlatformLayout(child: MarketplacePage())),
+      ),
+      GoRoute(
+        path: wallet,
         name: 'wallet',
-        redirect: (context, state) => loggedIn() ? null : MescatRoutes.auth,
+        redirect: (context, state) => loggedIn() ? null : auth,
         pageBuilder: (context, state) =>
             const MaterialPage(child: PlatformLayout(child: UserWalletPage())),
         routes: [
           GoRoute(
-            path: MescatRoutes.createWallet,
+            path: createWallet,
             name: 'create-wallet',
-            redirect: (context, state) => loggedIn() ? null : MescatRoutes.auth,
+            redirect: (context, state) => loggedIn() ? null : auth,
             pageBuilder: (context, state) => const MaterialPage(
               child: PlatformLayout(child: CreateWalletPage()),
             ),
@@ -96,39 +107,48 @@ final class MescatRoutes {
         ],
       ),
       GoRoute(
-        path: MescatRoutes.walletAuth,
+        path: walletAuth,
         name: 'wallet-auth',
-        redirect: (context, state) => loggedIn() ? null : MescatRoutes.auth,
+        redirect: (context, state) => loggedIn() ? null : auth,
         pageBuilder: (context, state) =>
             const MaterialPage(child: PlatformLayout(child: MetaLoginPage())),
       ),
 
       GoRoute(
-        path: MescatRoutes.notifications,
+        path: notifications,
         name: 'notifications',
-        redirect: (context, state) => loggedIn() ? null : MescatRoutes.auth,
+        redirect: (context, state) => loggedIn() ? null : auth,
         pageBuilder: (context, state) => const MaterialPage(
           child: PlatformLayout(child: NotificationPage()),
         ),
       ),
       GoRoute(
-        path: MescatRoutes.exploreSpaces,
+        path: exploreSpaces,
         name: 'explore-spaces',
-        redirect: (context, state) => loggedIn() ? null : MescatRoutes.auth,
+        redirect: (context, state) => loggedIn() ? null : auth,
         pageBuilder: (context, state) => const MaterialPage(
           child: PlatformLayout(child: ExploreSpacePage()),
         ),
       ),
       GoRoute(
-        path: MescatRoutes.settings,
+        path: rSetting,
+        name: 'room-setting',
+        redirect: (context, state) => loggedIn() ? null : auth,
+        pageBuilder: (context, state) => const MaterialPage(
+          fullscreenDialog: true,
+          child: PlatformLayout(child: RoomSettingPage()),
+        ),
+      ),
+      GoRoute(
+        path: settings,
         name: 'settings',
-        redirect: (context, state) => loggedIn() ? null : MescatRoutes.auth,
+        redirect: (context, state) => loggedIn() ? null : auth,
         pageBuilder: (context, state) =>
             const MaterialPage(child: PlatformLayout(child: SettingsPage())),
       ),
       if (Platform.isAndroid || Platform.isIOS)
         GoRoute(
-          path: MescatRoutes.room,
+          path: room,
           name: 'room',
           pageBuilder: (context, state) {
             final params = state.pathParameters;
@@ -141,12 +161,12 @@ final class MescatRoutes {
           },
         ),
       GoRoute(
-        path: MescatRoutes.sync,
+        path: sync,
         name: 'sync',
         builder: (context, state) => const LoadingPage(),
       ),
       StatefulShellRoute.indexedStack(
-        redirect: (context, state) => loggedIn() ? null : MescatRoutes.auth,
+        redirect: (context, state) => loggedIn() ? null : auth,
         builder: (context, state, child) {
           return PlatformLayout(child: MainLayout(child: child));
         },
@@ -162,7 +182,7 @@ final class MescatRoutes {
           //   ],
           // ),
           StatefulShellBranch(
-            initialLocation: MescatRoutes.home,
+            initialLocation: home,
             routes: [
               GoRoute(
                 path: home,
@@ -176,7 +196,7 @@ final class MescatRoutes {
               ),
               if (!Platform.isAndroid && !Platform.isIOS)
                 GoRoute(
-                  path: MescatRoutes.room,
+                  path: room,
                   name: 'room',
                   pageBuilder: (context, state) {
                     final params = state.pathParameters;
@@ -201,37 +221,6 @@ final class MescatRoutes {
               // ),
             ],
           ),
-          // GoRoute(
-          //   path: MescatRoutes.verifyDevice,
-          //   pageBuilder: (context, state) => const MaterialPage(
-          //     fullscreenDialog: true,
-          //     child: VerifyDevicePage(),
-          //   ),
-          // ),
-          // GoRoute(
-          //   path: exploreSpaces,
-          //   name: 'explore-spaces',
-          //   pageBuilder: (context, state) => const MaterialPage(
-          //     fullscreenDialog: true,
-          //     child: ExploreSpacePage(),
-          //   ),
-          // ),
-          // GoRoute(
-          //   path: notifications,
-          //   name: 'notifications',
-          //   pageBuilder: (context, state) => const MaterialPage(
-          //     fullscreenDialog: true,
-          //     child: NotificationPage(),
-          //   ),
-          // ),
-          // GoRoute(
-          //   path: 'settings',
-          //   name: 'settings',
-          //   pageBuilder: (context, state) => const MaterialPage(
-          //     fullscreenDialog: true,
-          //     child: SettingsPage(),
-          //   ),
-          // ),
         ],
       ),
     ],

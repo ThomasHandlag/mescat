@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
 
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
-import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/message_item.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
@@ -23,6 +23,12 @@ class MessageBubble extends StatelessWidget {
     required this.message,
     required this.showSender,
   });
+
+  Client get _client => getIt<Client>();
+
+  bool get isCurrentUser => message.isCurrentUser;
+
+  String get userId => _client.userID!;
 
   void _showUserProfile(BuildContext context, String userId) {
     final RenderBox button = context.findRenderObject() as RenderBox;
@@ -197,6 +203,12 @@ class MessageBubble extends StatelessWidget {
                     },
                   ),
                 ),
+                onPin: () {
+                  final room = _client.getRoomById(message.roomId);
+                  if (room != null) {
+                    room.setPinnedEvents([message.eventId]);
+                  }
+                },
                 onReact: () => showDialog(
                   context: context,
                   builder: (context) {
@@ -302,25 +314,19 @@ class MessageBubble extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               if (reaction.isCurrentUser) {
-                if (context.read<MescatBloc>().state is Authenticated) {
-                  final userId =
-                      (context.read<MescatBloc>().state as Authenticated)
-                          .user
-                          .userId;
-                  final existingReaction = reaction.reactEventIds.firstWhere(
-                    (entry) => entry.value == userId,
-                    orElse: () => const MapEntry('', ''),
+                final existingReaction = reaction.reactEventIds.firstWhere(
+                  (entry) => entry.value == userId,
+                  orElse: () => const MapEntry('', ''),
+                );
+                if (existingReaction.key.isNotEmpty) {
+                  context.read<ChatBloc>().add(
+                    RemoveReaction(
+                      roomId: reaction.roomId,
+                      reactEventId: existingReaction.key,
+                      eventId: message.eventId,
+                      emoji: reaction.key,
+                    ),
                   );
-                  if (existingReaction.key.isNotEmpty) {
-                    context.read<ChatBloc>().add(
-                      RemoveReaction(
-                        roomId: reaction.roomId,
-                        reactEventId: existingReaction.key,
-                        eventId: message.eventId,
-                        emoji: reaction.key,
-                      ),
-                    );
-                  }
                 }
               } else {
                 context.read<ChatBloc>().add(

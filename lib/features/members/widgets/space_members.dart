@@ -49,7 +49,7 @@ class SpaceMembersList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(4.0),
-      color: const Color.fromARGB(255, 45, 45, 52),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       width: 250,
       child: FutureBuilder(
         future: _getRoomMembers(context),
@@ -57,14 +57,14 @@ class SpaceMembersList extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          return ListView.builder(
+          return ListView.separated(
             itemCount: (snapshot.data?.length ?? 0) + 1,
+            separatorBuilder: (_, __) => const SizedBox(height: 4),
             itemBuilder: (context, index) {
               if (index == 0) {
                 return Container(
                   padding: const EdgeInsets.only(right: 10),
                   height: kToolbarHeight,
-                  width: 250,
                   child: Center(
                     child: TextField(
                       decoration: InputDecoration(

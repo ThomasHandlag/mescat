@@ -83,10 +83,12 @@ class _McFileState extends State<McFile> {
         _fileName = data.name.split(RegExp(r'[\\/]')).last;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load file: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load file: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 

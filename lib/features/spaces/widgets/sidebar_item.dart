@@ -38,7 +38,10 @@ class SidebarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = _isHome && onTap == null
-        ? GoRouterState.of(context).uri.path == MescatRoutes.home
+        ? GoRouterState.of(context).uri.path == MescatRoutes.home ||
+              GoRouterState.of(
+                context,
+              ).uri.path.contains(MescatRoutes.spaceRoute('0'))
         : GoRouterState.of(context).pathParameters['spaceId'] == id;
     return Tooltip(
       message: name,

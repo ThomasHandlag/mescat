@@ -47,7 +47,8 @@ class RoomItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = room.id == selectedRoomId;
+    final roomId = GoRouterState.of(context).pathParameters['roomId'];
+    final isSelected = room.id == roomId;
 
     return GestureDetector(
       onTap: () {
@@ -127,7 +128,7 @@ class RoomItem extends StatelessWidget {
               ),
             IconButton(
               onPressed: () {
-                // showFullscreenDialog(context, RoomSettingPage(room: room));
+                context.push(MescatRoutes.roomSetting(room.id));
               },
               icon: Icon(
                 Icons.settings,

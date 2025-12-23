@@ -51,9 +51,11 @@ class RoomList extends StatelessWidget {
     final space = spaceId != null ? getSpace(spaceId) : null;
 
     final bool isHome =
-        GoRouterState.of(context).path == MescatRoutes.home || space == null;
+        GoRouterState.of(context).path == MescatRoutes.home ||
+        space == null ||
+        spaceId == '0';
 
-    final rooms = spaceId != null
+    final rooms = (spaceId != null && spaceId != '0')
         ? getRoomsInSpace(spaceId)
         : client.rooms.where((room) => room.isDirectChat).toList();
 
@@ -121,9 +123,11 @@ class RoomList extends StatelessWidget {
               children: [
                 if (isHome) ...[
                   ListTile(
-                    onTap: () {},
+                    onTap: () {
+                      context.push(MescatRoutes.marketplace);
+                    },
                     leading: const Icon(Icons.store),
-                    title: const Text('Store'),
+                    title: const Text('Marketplace'),
                   ),
                 ],
                 if (client.isUnknownSession)
@@ -318,7 +322,6 @@ class RoomList extends StatelessWidget {
       ],
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
             InputField(
               controller: nameController,
@@ -327,7 +330,7 @@ class RoomList extends StatelessWidget {
                 hintText: 'general',
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             InputField(
               controller: topicController,
               decoration: const InputDecoration(
@@ -336,18 +339,14 @@ class RoomList extends StatelessWidget {
               ),
               maxLines: 2,
             ),
-            const SizedBox(height: 16),
-            CheckboxListTile(
-              title: const Text('Public Channel'),
+            const SizedBox(height: 8),
+            CheckboxListTile.adaptive(
               value: isPublic,
-              onChanged: (value) {
-                setState(() {
-                  isPublic = value ?? false;
-                });
-              },
-              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (val) => setState(() {
+                isPublic = val ?? false;
+              }),
+              title: const Text('Public Channel'),
             ),
-            const Spacer(),
           ],
         ),
       ),

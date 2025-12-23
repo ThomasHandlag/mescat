@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
@@ -44,19 +45,8 @@ class _LoadingPageState extends State<LoadingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: RiveWidgetBuilder(
-        fileLoader: fileLoader,
-        builder: (context, state) => switch (state) {
-          RiveLoading() => const Center(child: CircularProgressIndicator()),
-          RiveFailed() => ErrorWidget.withDetails(
-            message: state.error.toString(),
-            error: FlutterError(state.error.toString()),
-          ),
-          RiveLoaded() => RiveWidget(
-            controller: state.controller,
-            fit: Fit.none,
-          ),
-        },
+      body: Center(
+        child: LottieBuilder.asset('${Assets.riveAsset}/loader_cat.json'),
       ),
     );
   }

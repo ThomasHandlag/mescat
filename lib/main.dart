@@ -109,7 +109,7 @@ final class MescatApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.light,
           routerConfig: MescatRoutes.router,
         ),
       ),

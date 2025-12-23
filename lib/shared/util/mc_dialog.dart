@@ -102,16 +102,21 @@ Future<T?> showMCAdaptiveDialog<T>({
             ],
             borderRadius: BorderRadius.circular(UIConstraints.mDefaultPadding),
           ),
-          child: Scaffold(
-            appBar: title != null
-                ? AppBar(automaticallyImplyLeading: false, title: title)
-                : null,
-            body: Column(
-              children: [
-                Expanded(child: builder(context)),
-                if (actions != null) Row(children: actions),
+          child: Column(
+            children: [
+              if (title != null) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: DefaultTextStyle(
+                    style: Theme.of(context).textTheme.headlineMedium!,
+                    child: title,
+                  ),
+                ),
+                const SizedBox(height: 8),
               ],
-            ),
+              Expanded(child: builder(context)),
+              if (actions != null) Row(children: actions),
+            ],
           ),
         ),
       );

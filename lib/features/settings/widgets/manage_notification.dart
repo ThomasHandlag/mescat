@@ -145,7 +145,6 @@ class _ManageNotificationState extends State<ManageNotification> {
                       children: [
                         Icon(
                           _currentLevel?.icon ?? Icons.notifications,
-                          color: Theme.of(context).colorScheme.primary,
                           size: 32,
                         ),
                         const SizedBox(width: 16),
@@ -171,8 +170,8 @@ class _ManageNotificationState extends State<ManageNotification> {
                       Text(
                         _currentLevel!.description,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ],
@@ -183,13 +182,9 @@ class _ManageNotificationState extends State<ManageNotification> {
             const SizedBox(height: 24),
 
             // Notification Level Options
-            Text(
+            const Text(
               'Notification Levels',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 
@@ -226,16 +221,11 @@ class _ManageNotificationState extends State<ManageNotification> {
             }),
 
             const SizedBox(height: 24),
-            Text(
+            const Text(
               'Additional Settings',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-
             Card(
               child: Column(
                 children: [
@@ -244,7 +234,8 @@ class _ManageNotificationState extends State<ManageNotification> {
                     title: const Text('Sound'),
                     subtitle: const Text('Play sound for notifications'),
                     trailing: Switch(
-                      value: true, // This would be connected to actual sound settings
+                      value:
+                          true, // This would be connected to actual sound settings
                       onChanged: (value) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -260,7 +251,8 @@ class _ManageNotificationState extends State<ManageNotification> {
                     title: const Text('Vibration'),
                     subtitle: const Text('Vibrate for notifications'),
                     trailing: Switch(
-                      value: true, // This would be connected to actual vibration settings
+                      value:
+                          true, // This would be connected to actual vibration settings
                       onChanged: (value) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -276,7 +268,8 @@ class _ManageNotificationState extends State<ManageNotification> {
                     title: const Text('Do Not Disturb'),
                     subtitle: const Text('Respect system DND settings'),
                     trailing: Switch(
-                      value: true, // This would be connected to actual DND settings
+                      value:
+                          true, // This would be connected to actual DND settings
                       onChanged: (value) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -293,13 +286,9 @@ class _ManageNotificationState extends State<ManageNotification> {
             const SizedBox(height: 24),
 
             // Keywords Section
-            Text(
+            const Text(
               'Keywords',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 
@@ -307,7 +296,9 @@ class _ManageNotificationState extends State<ManageNotification> {
               child: ListTile(
                 leading: const Icon(Icons.tag),
                 title: const Text('Custom Keywords'),
-                subtitle: const Text('Get notified when these words are mentioned'),
+                subtitle: const Text(
+                  'Get notified when these words are mentioned',
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -339,7 +330,9 @@ class _ManageNotificationState extends State<ManageNotification> {
                         'You can change global notification settings in app settings.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
@@ -352,9 +345,7 @@ class _ManageNotificationState extends State<ManageNotification> {
         if (_isLoading)
           Container(
             color: Colors.black26,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: const Center(child: CircularProgressIndicator()),
           ),
       ],
     );

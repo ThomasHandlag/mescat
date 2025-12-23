@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/widgets/input_field.dart';
 
 class ManageGeneral extends StatefulWidget {
   final Room room;
@@ -373,32 +374,35 @@ class _ManageGeneralState extends State<ManageGeneral> {
       key: _formKey,
       onChanged: _onFormChanged,
       autovalidateMode: AutovalidateMode.onUserInteraction,
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
+      child: SizedBox(
         child: Stack(
           children: [
             ListView(
               children: [
-                TextFormField(
-                  controller: _nameController,
-                  enabled: !_isSaving,
-                  maxLines: 1,
-                  maxLength: 50,
-                  textCapitalization: TextCapitalization.words,
-                  validator: _validateRoomName,
-                  decoration: InputDecoration(
-                    labelText: 'Room Name',
-                    hintText: 'Enter room name',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: _nameController.text != _originalName
-                        ? const Icon(Icons.edit, size: 16)
-                        : null,
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: InputField(
+                    padding: const EdgeInsets.all(4),
+                    controller: _nameController,
+                    enabled: !_isSaving,
+                    maxLength: 50,
+                    validator: _validateRoomName,
+                    decoration: InputDecoration(
+                      labelText: 'Room Name',
+                      hintText: 'Enter room name',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: _nameController.text != _originalName
+                          ? const Icon(Icons.edit, size: 16)
+                          : null,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
+                Container(
                   height: 120,
-                  child: TextFormField(
+                  padding: const EdgeInsets.all(4.0),
+                  child: InputField(
+                    padding: const EdgeInsets.all(4.0),
                     controller: _topicController,
                     enabled: !_isSaving,
                     expands: true,
@@ -407,7 +411,6 @@ class _ManageGeneralState extends State<ManageGeneral> {
                     maxLength: 500,
                     textAlignVertical: TextAlignVertical.top,
                     textAlign: TextAlign.start,
-                    textCapitalization: TextCapitalization.sentences,
                     validator: _validateTopic,
                     decoration: InputDecoration(
                       labelText: 'Topic',

@@ -64,8 +64,8 @@ class CallView extends StatelessWidget {
 
   Widget _buildCallHeader(BuildContext context) {
     return BlocBuilder<CallBloc, MCCallState>(
-      builder: (context, state) {
-        if (state is CallInProgress) {
+      builder: (context, callState) {
+        if (callState is CallInProgress) {
           return BlocBuilder<CallControllerCubit, bool>(
             builder: (_, state) {
               if (!state) {
@@ -89,9 +89,9 @@ class CallView extends StatelessWidget {
                             ),
                           const Icon(Icons.volume_up),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Call chat',
-                            style: TextStyle(fontSize: 20),
+                          Text(
+                            callState.room.name,
+                            style: const TextStyle(fontSize: 20),
                           ),
                         ],
                       ),

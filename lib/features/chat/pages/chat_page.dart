@@ -9,6 +9,7 @@ import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
 import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
+import 'package:mescat/features/chat/widgets/pinned_messages.dart';
 import 'package:mescat/features/voip/widgets/call_view.dart';
 import 'package:mescat/features/chat/widgets/chat_view.dart';
 import 'package:mescat/features/members/widgets/space_members.dart';
@@ -64,7 +65,12 @@ class ChatPage extends StatelessWidget {
             icon: const Icon(Icons.group),
             tooltip: 'Room Options',
           ),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.push_pin)),
+        IconButton(
+          onPressed: () {
+            _showPinnedMessages(context, room);
+          },
+          icon: const Icon(Icons.push_pin),
+        ),
       ],
     );
   }
@@ -129,5 +135,16 @@ class ChatPage extends StatelessWidget {
 
   Widget _buildDesktop() {
     return const ChatView();
+  }
+
+  void _showPinnedMessages(BuildContext context, Room room) {
+    final pinnedIds = room.pinnedEventIds;
+
+    showMCAdaptiveDialog(
+      context: context,
+      builder: (context) {
+        return PinnedMessages(pinnedIds: pinnedIds, room: room);
+      },
+    );
   }
 }

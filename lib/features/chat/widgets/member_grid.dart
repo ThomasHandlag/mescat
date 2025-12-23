@@ -41,7 +41,7 @@ class _MemberGrid extends StatelessWidget {
     return GestureDetector(
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: Theme.of(context).colorScheme.surface,
           border: Border.all(
             color: isActiveSpeaker ? Colors.blue : Colors.grey,
             width: isActiveSpeaker ? 3 : 1,
