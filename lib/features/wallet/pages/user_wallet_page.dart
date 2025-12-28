@@ -1,9 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/contracts/contracts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
+import 'package:mescat/features/wallet/data/wallet_store.dart';
 import 'package:web3auth_flutter/output.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 import 'package:web3dart/web3dart.dart';
@@ -24,6 +31,10 @@ class _UserWalletPageState extends State<UserWalletPage>
 
   late final TorusUserInfo _userInfo;
 
+  Client get client => getIt();
+
+  WalletStore get walletStore => getIt();
+
   @override
   void initState() {
     super.initState();
@@ -31,15 +42,29 @@ class _UserWalletPageState extends State<UserWalletPage>
     _init();
   }
 
+  Future<String?> mobilePrivKey() async {
+    await Web3AuthFlutter.initialize();
+    final privateKey = await Web3AuthFlutter.getPrivKey();
+
+    if (privateKey.isEmpty) return null;
+    final user = await Web3AuthFlutter.getUserInfo();
+    _userInfo = user;
+    return privateKey;
+  }
+
+  bool get isMobile => Platform.isAndroid || Platform.isIOS;
+
   void _init() async {
     try {
+      final privateKey = isMobile
+          ? await mobilePrivKey()
+          : await walletStore.getPassword();
       // Initialize and check for existing session
-      await Web3AuthFlutter.initialize();
-      final privateKey = await Web3AuthFlutter.getPrivKey();
-      final user = await Web3AuthFlutter.getUserInfo();
-
-      if (privateKey.isEmpty) {
-        context.pushReplacement(MescatRoutes.walletAuth);
+      if (privateKey == null) {
+        if (mounted) {
+          context.go(MescatRoutes.walletAuth);
+        }
+        return;
       }
 
       if (mounted) {
@@ -47,14 +72,35 @@ class _UserWalletPageState extends State<UserWalletPage>
           _isLoading = false;
         });
       }
-      address = EthPrivateKey.fromHex(privateKey).address;
-      _userInfo = user;
+      if (isMobile) {
+        address = EthPrivateKey.fromHex(privateKey).address;
+      } else {
+        final uri = client.getUserProfile(client.userID!);
+        _userInfo = TorusUserInfo(
+          name: client.userID,
+          profileImage: uri.toString(),
+        );
+        address = (await walletStore.retrieveKey(privateKey)).address;
+        if (!mounted) return;
+        context.read<WalletCubit>().updateWalletAddress(address.hex);
+      }
     } catch (e) {
-      context.pushReplacement(MescatRoutes.walletAuth);
+      if (mounted) {
+        context.go(MescatRoutes.walletAuth);
+      }
     }
   }
 
-  Future<void> _logout() async {}
+  Future<void> _logout() async {
+    if (isMobile) {
+      await Web3AuthFlutter.logout();
+    } else {
+      await walletStore.wipe();
+    }
+    if (mounted) {
+      context.pop();
+    }
+  }
 
   void _showReceiveDialog() async {
     showDialog(
@@ -62,7 +108,7 @@ class _UserWalletPageState extends State<UserWalletPage>
       builder: (context) {
         return Dialog(
           child: Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainer,
             padding: const EdgeInsets.all(8.0),
             child: QrImageView(
               data: address.hex,
@@ -86,11 +132,7 @@ class _UserWalletPageState extends State<UserWalletPage>
       return const Scaffold(body: LinearProgressIndicator());
     }
     return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => context.pop()),
-        title: const Text('My Wallet'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('My Wallet'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -135,9 +177,7 @@ class _UserWalletPageState extends State<UserWalletPage>
                     width: 120,
                     child: Text(
                       address.hex,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: theme.textTheme.bodySmall,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -214,18 +254,11 @@ class _UserWalletPageState extends State<UserWalletPage>
         return Center(
           child: Column(
             children: [
-              Text(
-                'Total balance',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
+              Text('Total balance', style: theme.textTheme.bodyMedium),
               const SizedBox(height: 8),
               Text(
                 '${balance.getValueInUnit(EtherUnit.ether).toStringAsFixed(2)} MSC',
-                style: theme.textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: theme.textTheme.displaySmall,
               ),
               const SizedBox(height: 8),
               Container(
@@ -234,7 +267,7 @@ class _UserWalletPageState extends State<UserWalletPage>
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: theme.colorScheme.surfaceContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -243,13 +276,13 @@ class _UserWalletPageState extends State<UserWalletPage>
                     Icon(
                       Icons.arrow_upward,
                       size: 12,
-                      color: Colors.green[700],
+                      color: theme.colorScheme.secondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '+1.8%',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green[700],
+                        color: theme.colorScheme.secondary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -285,7 +318,7 @@ class _UserWalletPageState extends State<UserWalletPage>
               height: 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                color: Colors.blueGrey,
+                color: theme.colorScheme.primary,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withAlpha(13),
@@ -295,7 +328,10 @@ class _UserWalletPageState extends State<UserWalletPage>
                 ],
               ),
               child: IconButton(
-                icon: Icon(action['icon'] as IconData),
+                icon: Icon(
+                  action['icon'] as IconData,
+                  color: theme.colorScheme.onPrimary,
+                ),
                 onPressed: action['onPressed'] as void Function()?,
               ),
             ),

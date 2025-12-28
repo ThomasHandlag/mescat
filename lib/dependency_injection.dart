@@ -3,13 +3,16 @@ import 'dart:io';
 
 import 'package:app_links/app_links.dart';
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
 import 'package:ipfsdart/ipfsdart.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
 import 'package:mescat/contracts/contracts.dart';
 import 'package:mescat/core/notifications/event_pusher.dart';
+import 'package:mescat/features/marketplace/data/market_realm.dart';
 import 'package:mescat/features/notifications/data/notification_service.dart';
 import 'package:mescat/features/voip/data/call_handler.dart';
+import 'package:mescat/features/wallet/data/wallet_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mescat/core/mescat/matrix_client.dart';
 import 'package:mescat/core/mescat/data/repositories/mescat_repository_impl.dart';
@@ -17,6 +20,7 @@ import 'package:mescat/core/mescat/domain/repositories/mescat_repository.dart';
 import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:web3dart/web3dart.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -34,6 +38,10 @@ Future<Client> createMatrixClient(
       databaseFactory = databaseFactoryFfi;
     }
 
+    final storageLocation = Platform.isAndroid
+        ? await getExternalStorageDirectory()
+        : await getApplicationDocumentsDirectory();
+
     final client = Client(
       clientName,
       database: await MatrixSdkDatabase.init(
@@ -41,6 +49,7 @@ Future<Client> createMatrixClient(
         database: await databaseFactory.openDatabase(
           '${directory.path}/database.sqlite',
         ),
+        fileStorageLocation: storageLocation!.uri,
       ),
       supportedLoginTypes: {
         AuthenticationTypes.password,
@@ -71,9 +80,11 @@ Future<void> setupDependencyInjection() async {
     password: MescatContracts.ipfsBearer,
   );
   await notificationService.initialize();
-
-  matrixClient;
-
+  final web3Client = Web3Client(MescatContracts.url, http.Client());
+  final marketRealm = MarketRealm(web3Client: web3Client);
+  final desktopWallet = const WalletStore();
+  getIt.registerSingleton<MarketRealm>(marketRealm);
+  getIt.registerSingleton<WalletStore>(desktopWallet);
   getIt.registerSingleton<Client>(matrixClient);
   getIt.registerSingleton<AppLinks>(appLinks);
   getIt.registerSingleton<IpfsClient>(ipfsClient);

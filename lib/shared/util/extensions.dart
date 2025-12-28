@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:math' show min;
 import 'dart:typed_data';
 import 'dart:ui';
@@ -50,8 +49,7 @@ extension ClientDownloadContentExtension on Client {
   }) async {
     // To stay compatible with previous storeKeys:
     final cacheKey = isThumbnail
-        // ignore: deprecated_member_use
-        ? mxc.getThumbnail(
+        ? await mxc.getThumbnailUri(
             this,
             width: width,
             height: height,
@@ -73,12 +71,6 @@ extension ClientDownloadContentExtension on Client {
           )
         : await mxc.getDownloadUri(this);
 
-    log('Downloading Mxc from $httpUri, mxc: $mxc as thumbnail: $isThumbnail');
-
-    log('Is scheme: ${mxc.isScheme('mxc')}');
-
-    log('Homeserver: ${homeserver.toString()}');
-
     final response = await http.get(
       Uri.parse('https:$httpUri'),
       headers: accessToken == null
@@ -96,7 +88,6 @@ extension ClientDownloadContentExtension on Client {
         min(width ?? 64, height ?? 64).round(),
       );
     }
-
     await database.storeFile(cacheKey, imageData, 0);
 
     return imageData;
@@ -220,13 +211,13 @@ extension ClientExt on Client {
               final event = Event.fromMatrixEvent(mtEvent, room);
               final user = await getUserProfile(mtEvent.senderId);
 
-              if (event.redacted) {
-                final client = Web3Client(MescatContracts.url, http.Client());
-                final address = EthereumAddress.fromHex(MescatContracts.mescat);
-                final mescat = Mescat(address: address, client: client);
+              final client = Web3Client(MescatContracts.url, http.Client());
+              final address = EthereumAddress.fromHex(MescatContracts.mescat);
+              final mescat = Mescat(address: address, client: client);
+              final ssse = await mescat.getSSSS((eid: event.eventId));
 
+              if (event.redacted) {
                 try {
-                  final ssse = await mescat.getSSSS((eid: event.eventId));
                   if (ssse.eventId.isEmpty) continue;
                   // roomlogger.d(
                   //   'fetched from blockchain: ${ssse.cid} id: ${ssse.content} hasCid: ${ssse.eventId} ${ssse.toString()}',
@@ -254,6 +245,7 @@ extension ClientExt on Client {
                         isCurrentUser: ssEvent.senderId == userID,
                         event: ssEvent,
                         cid: ssse.cid, // cid
+                        onChain: true
                       ),
                     );
                   } else {
@@ -271,6 +263,7 @@ extension ClientExt on Client {
                         eventTypes: ssEvent.type,
                         isCurrentUser: ssEvent.senderId == userID,
                         event: ssEvent,
+                        onChain: true
                       ),
                     );
                   }
@@ -328,6 +321,7 @@ extension ClientExt on Client {
                 isCurrentUser: mtEvent.senderId == userID,
                 repliedEvent: repliedEventContent,
                 event: event,
+                onChain: ssse.eventId.isNotEmpty
               );
 
               matrixMessages.add(messageEvent);

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
-import 'package:mescat/shared/pages/verify_device_page.dart';
-import 'package:mescat/shared/util/mc_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,14 +24,14 @@ class _HomePageState extends State<HomePage> {
     if (client.encryption?.keyManager.enabled == true) {
       if (await client.encryption?.keyManager.isCached() == false ||
           await client.encryption?.crossSigning.isCached() == false ||
-          client.isUnknownSession && !mounted) {
+          client.isUnknownSession && mounted) {
         _pushVerifyDevice();
       }
     }
   }
 
   void _pushVerifyDevice() {
-    showFullscreenDialog(context, const VerifyDevicePage());
+    context.push(MescatRoutes.verifyDevice);
   }
 
   @override

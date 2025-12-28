@@ -1,22 +1,23 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/routes/routes.dart';
-import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 import 'package:mescat/features/spaces/widgets/sidebar_item.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/widgets/input_field.dart';
 
 class SpaceSidebar extends StatelessWidget {
-  const SpaceSidebar({super.key});
+  const SpaceSidebar({super.key, required this.spaces});
 
-  Client get client => getIt<Client>();
-  List<Room> get spaces => client.rooms.where((room) => room.isSpace).toList();
+  final List<Room> spaces;
 
   @override
   Widget build(BuildContext context) {
+    final tempSpaces = spaces;
     return Container(
       width: 60,
       padding: const EdgeInsets.all(8),
@@ -24,7 +25,7 @@ class SpaceSidebar extends StatelessWidget {
         children: [
           Expanded(
             child: ListView.separated(
-              itemCount: spaces.length + 1,
+              itemCount: tempSpaces.length + 1,
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 if (index == 0) {
@@ -35,7 +36,7 @@ class SpaceSidebar extends StatelessWidget {
                   );
                 }
 
-                final space = spaces[index - 1];
+                final space = tempSpaces[index - 1];
                 return SidebarItem(
                   avatarUrl: space.avatar,
                   name: space.name,
@@ -52,14 +53,8 @@ class SpaceSidebar extends StatelessWidget {
               onTap: () => context.push(MescatRoutes.notifications),
             ),
             const SizedBox(height: 8),
-            SidebarItem(
-              icon: Icons.wallet,
-              name: 'Wallet',
-              id: '',
-              onTap: () => context.push(MescatRoutes.wallet),
-            ),
-            const SizedBox(height: 8),
           ],
+          const SizedBox(height: 8),
           SidebarItem(
             icon: Icons.explore,
             name: 'Explore Spaces',
@@ -115,7 +110,7 @@ class SpaceSidebar extends StatelessWidget {
         ElevatedButton(
           onPressed: () async {
             if (nameController.text.trim().isNotEmpty) {
-              await client.createSpace(
+              context.read<SpaceCubit>().createSpace(
                 name: nameController.text.trim(),
                 topic: descriptionController.text.trim().isEmpty
                     ? null

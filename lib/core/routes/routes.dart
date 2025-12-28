@@ -8,19 +8,22 @@ import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/authentication/pages/auth_page.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/pages/chat_page.dart';
+import 'package:mescat/features/marketplace/layout/market_layout.dart';
+import 'package:mescat/features/marketplace/pages/library_page.dart';
 import 'package:mescat/features/marketplace/pages/marketplace_page.dart';
 import 'package:mescat/features/notifications/pages/notification_page.dart';
 import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
 import 'package:mescat/features/spaces/pages/space_home.dart';
+import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
 import 'package:mescat/features/wallet/pages/meta_login_page.dart';
 import 'package:mescat/features/wallet/pages/user_wallet_page.dart';
-import 'package:mescat/features/wallet/pages/create_wallet_page.dart';
 import 'package:mescat/shared/layouts/main_layout.dart';
 import 'package:mescat/shared/layouts/platform_layout.dart';
 import 'package:mescat/shared/pages/home_page.dart';
 import 'package:mescat/shared/pages/loading_page.dart';
 import 'package:mescat/shared/pages/settings_page.dart';
+import 'package:mescat/shared/pages/verify_device_page.dart';
 
 final class MescatRoutes {
   static const String auth = '/auth';
@@ -42,6 +45,7 @@ final class MescatRoutes {
   static const String wallet = '/wallet';
   static const String createWallet = '/create-wallet';
   static const String marketplace = '/marketplace';
+  static const String library = '/library';
 
   static String spaceRoute(String spaceId) => '/space/$spaceId';
   static String roomSetting(String roomId) => '/settings/room/$roomId';
@@ -59,6 +63,15 @@ final class MescatRoutes {
 
   static final GlobalKey<NavigatorState> walletNavigatorKey =
       GlobalKey<NavigatorState>(debugLabel: 'Wallet Navigator');
+
+  static String? walletLoggedIn(BuildContext context) {
+    String? next;
+    final pkey = context.read<WalletCubit>().state;
+    if (pkey.isEmpty) {
+      next = walletAuth;
+    } 
+    return next;
+  }
 
   static final GoRouter router = GoRouter(
     navigatorKey: navigatorKey,
@@ -83,35 +96,45 @@ final class MescatRoutes {
             const MaterialPage(child: PlatformLayout(child: AuthPage())),
       ),
       GoRoute(
-        path: marketplace,
-        name: 'marketplace',
+        path: verifyDevice,
+        name: 'verify-device',
         redirect: (context, state) => loggedIn() ? null : auth,
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: PlatformLayout(child: MarketplacePage())),
+        pageBuilder: (context, state) => const MaterialPage(
+          child: PlatformLayout(child: VerifyDevicePage()),
+        ),
       ),
-      GoRoute(
-        path: wallet,
-        name: 'wallet',
+      ShellRoute(
         redirect: (context, state) => loggedIn() ? null : auth,
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: PlatformLayout(child: UserWalletPage())),
+        builder: (context, state, shell) =>
+            PlatformLayout(child: MarketLayout(child: shell)),
         routes: [
           GoRoute(
-            path: createWallet,
-            name: 'create-wallet',
-            redirect: (context, state) => loggedIn() ? null : auth,
-            pageBuilder: (context, state) => const MaterialPage(
-              child: PlatformLayout(child: CreateWalletPage()),
-            ),
+            path: wallet,
+            name: 'wallet',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: UserWalletPage()),
+          ),
+          GoRoute(
+            path: walletAuth,
+            name: 'wallet-auth',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: MetaLoginPage()),
+          ),
+          GoRoute(
+            path: marketplace,
+            name: 'marketplace',
+            redirect: (context, state) => walletLoggedIn(context),
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: MarketplacePage()),
+          ),
+          GoRoute(
+            path: library,
+            redirect: (context, state) => walletLoggedIn(context),
+
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: LibraryPage()),
           ),
         ],
-      ),
-      GoRoute(
-        path: walletAuth,
-        name: 'wallet-auth',
-        redirect: (context, state) => loggedIn() ? null : auth,
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: PlatformLayout(child: MetaLoginPage())),
       ),
 
       GoRoute(
@@ -163,7 +186,7 @@ final class MescatRoutes {
       GoRoute(
         path: sync,
         name: 'sync',
-        builder: (context, state) => const LoadingPage(),
+        builder: (context, state) => const PlatformLayout(child: LoadingPage()),
       ),
       StatefulShellRoute.indexedStack(
         redirect: (context, state) => loggedIn() ? null : auth,
@@ -238,6 +261,12 @@ final class MescatRoutes {
             const SizedBox(height: 8),
             Text(state.error?.toString() ?? 'Unknown error'),
             const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                context.go(home);
+              },
+              child: const Text('Home'),
+            ),
           ],
         ),
       ),

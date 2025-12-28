@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class InputField extends StatelessWidget {
   final TextEditingController? controller;
@@ -14,6 +15,9 @@ class InputField extends StatelessWidget {
   final TextAlignVertical? textAlignVertical;
   final bool expands;
   final int? minLines;
+  final List<TextInputFormatter>? inputFormatters;
+  final TextInputType? keyboardType;
+  final bool obscureText;
 
   const InputField({
     super.key,
@@ -29,6 +33,9 @@ class InputField extends StatelessWidget {
     this.textAlignVertical,
     this.expands = false,
     this.minLines,
+    this.inputFormatters,
+    this.keyboardType,
+    this.obscureText = false,
   });
 
   @override
@@ -48,9 +55,12 @@ class InputField extends StatelessWidget {
     child: TextFormField(
       controller: controller,
       maxLines: maxLines,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
       maxLength: maxLength,
       expands: expands,
       minLines: minLines,
+      inputFormatters: inputFormatters,
       enabled: enabled,
       textAlign: textAlign ?? TextAlign.start,
       textAlignVertical: textAlignVertical ?? TextAlignVertical.center,
@@ -71,7 +81,7 @@ class InputField extends StatelessWidget {
         suffixIcon: decoration?.suffixIcon,
         counter: decoration?.counter,
         counterStyle: decoration?.counterStyle,
-        alignLabelWithHint: true
+        alignLabelWithHint: true,
       ),
     ),
   );

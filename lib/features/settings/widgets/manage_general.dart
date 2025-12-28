@@ -540,6 +540,10 @@ class _ManageGeneralState extends State<ManageGeneral> {
                           title: Text(historyVisibility.name),
                           value: historyVisibility,
                         ),
+                      const RadioListTile.adaptive(
+                        value: null,
+                        title: Text('Any one can see'),
+                      ),
                     ],
                   ),
                 ),

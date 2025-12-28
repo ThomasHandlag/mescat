@@ -1,10 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
+import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
+import 'package:mescat/features/wallet/data/wallet_store.dart';
+import 'package:mescat/shared/widgets/input_field.dart';
 import 'package:web3auth_flutter/enums.dart';
 import 'package:web3auth_flutter/input.dart';
-import 'package:web3auth_flutter/output.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 
 final class MetaLoginPage extends StatefulWidget {
@@ -15,15 +23,25 @@ final class MetaLoginPage extends StatefulWidget {
 }
 
 final class _MetaLoginPageState extends State<MetaLoginPage>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   bool _isLoading = false;
 
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _keyController = TextEditingController();
+  final TextEditingController _codeController = TextEditingController();
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  WalletStore get walletStore => getIt();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.linear);
   }
 
   @override
@@ -40,58 +58,156 @@ final class _MetaLoginPageState extends State<MetaLoginPage>
   }
 
   Future<void> _loginWithMail() async {
-    final Web3AuthResponse response = await Web3AuthFlutter.login(
+    await Web3AuthFlutter.login(
       LoginParams(
         loginProvider: Provider.email_passwordless,
-        extraLoginOptions: ExtraLoginOptions(login_hint: _emailController.text),
+        extraLoginOptions: ExtraLoginOptions(login_hint: _keyController.text),
       ),
     );
-
-    if (response.error != null) {
-      context.pushReplacementNamed(MescatRoutes.wallet);
+    if (mounted) {
+      context.pushReplacement(MescatRoutes.wallet);
     }
   }
 
+  Future<void> _createWallet(String key, String password) async {
+    await walletStore.storeKey(key, password);
+  }
+
+  List<Widget> _buildMobile() {
+    return [
+      const Text('Enter your email to login:'),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _keyController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          labelText: 'Email',
+        ),
+        inputFormatters: [
+          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._-]')),
+        ],
+        keyboardType: TextInputType.emailAddress,
+      ),
+      const SizedBox(height: 16),
+      ElevatedButton(
+        onPressed: _isLoading
+            ? null
+            : () async {
+                setState(() {
+                  _isLoading = true;
+                });
+                await _loginWithMail();
+                setState(() {
+                  _isLoading = false;
+                });
+              },
+        child: _isLoading
+            ? const CircularProgressIndicator()
+            : const Text('Send Verification Code'),
+      ),
+    ];
+  }
+
+  List<Widget> _buildDesktop() {
+    return [
+      Text(
+        'Create a new wallet',
+        style: Theme.of(context).textTheme.headlineMedium,
+      ),
+      InputField(
+        controller: _keyController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          labelText: 'Private Key (hex)',
+        ),
+        inputFormatters: [
+          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+          FilteringTextInputFormatter.allow(RegExp(r'[a-fA-F0-9]')),
+        ],
+        keyboardType: TextInputType.visiblePassword,
+      ),
+      InputField(
+        controller: _codeController,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          labelText: 'Password',
+        ),
+        obscureText: true,
+      ),
+      ElevatedButton(
+        onPressed: _isLoading
+            ? null
+            : () async {
+                setState(() {
+                  _isLoading = true;
+                });
+                await _createWallet(_keyController.text, _codeController.text);
+                setState(() {
+                  _isLoading = false;
+                });
+                if (mounted) {
+                  context.read<WalletCubit>().updateWalletAddress(
+                    _keyController.text,
+                  );
+                  context.go(MescatRoutes.wallet);
+                }
+              },
+        child: _isLoading
+            ? const CircularProgressIndicator()
+            : const Text('Create Wallet'),
+      ),
+    ];
+  }
+
+  bool get _isMobile => Platform.isAndroid || Platform.isIOS;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Privy Login')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text('Enter your email to login:'),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _emailController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Email',
+    final content = ListView.separated(
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      padding: const EdgeInsets.all(16),
+      itemCount: (_isMobile ? _buildMobile() : _buildDesktop()).length,
+      itemBuilder: (context, index) {
+        final children = _isMobile ? _buildMobile() : _buildDesktop();
+        return children[index];
+      },
+    );
+
+    if (!_isMobile) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Row(
+          children: [
+            Expanded(
+              child: LottieBuilder.asset(
+                '${Assets.riveAsset}/loader_cat.json',
+                controller: _animation,
+                fit: BoxFit.contain,
+              ),
             ),
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'\s')),
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._-]')),
-            ],
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _isLoading
-                ? null
-                : () async {
-                    setState(() {
-                      _isLoading = true;
-                    });
-                    await _loginWithMail();
-                    setState(() {
-                      _isLoading = false;
-                    });
-                  },
-            child: _isLoading
-                ? const CircularProgressIndicator()
-                : const Text('Send Verification Code'),
-          ),
-        ],
-      ),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.symmetric(
+                  vertical: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha(50),
+                    width: 1,
+                  ),
+                ),
+              ),
+              width: 400,
+              child: Center(child: content),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Wallet Login')),
+      body: content,
     );
   }
 }

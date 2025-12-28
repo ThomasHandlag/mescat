@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/dependency_injection.dart';
+import 'package:web3auth_flutter/web3auth_flutter.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -78,7 +81,10 @@ class _SettingPageState extends State<SettingPage> {
                   ListTile(
                     enabled: _client.isLogged(),
                     iconColor: Colors.red,
-                    onTap: () {
+                    onTap: () async {
+                      if (Platform.isAndroid || Platform.isIOS) {
+                        await Web3AuthFlutter.logout();
+                      }
                       _client.logout();
                     },
                     title: const Text('Log Out'),

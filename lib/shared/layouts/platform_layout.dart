@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/util/widget_overlay_service.dart';
 import 'package:mescat/window_scaffold.dart';
@@ -12,6 +14,8 @@ class PlatformLayout extends StatelessWidget {
   final Widget child;
 
   const PlatformLayout({super.key, required this.child});
+
+  Client get client => getIt();
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +29,13 @@ class PlatformLayout extends StatelessWidget {
     } else {
       return WindowScaffold(
         actions: [
-          IconButton(
-            onPressed: () {
-              context.push(MescatRoutes.notifications);
-            },
-            icon: const Icon(Icons.inbox),
-          ),
+          if (client.isLogged())
+            IconButton(
+              onPressed: () {
+                context.push(MescatRoutes.notifications);
+              },
+              icon: const Icon(Icons.inbox),
+            ),
         ],
         child: SafeArea(
           child: WidgetOverlayService(

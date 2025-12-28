@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/features/members/widgets/space_members.dart';
 import 'package:mescat/features/rooms/widgets/room_list.dart';
+import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 import 'package:mescat/features/spaces/widgets/space_sidebar.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/shared/widgets/user_box.dart';
@@ -29,11 +31,13 @@ class MainLayout extends StatelessWidget {
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Expanded(
+          Expanded(
             child: Row(
               children: [
-                SpaceSidebar(),
-                Expanded(child: RoomList()),
+                BlocBuilder<SpaceCubit, List<Room>>(
+                  builder: (_, state) => SpaceSidebar(spaces: state),
+                ),
+                const Expanded(child: RoomList()),
               ],
             ),
           ),
@@ -65,11 +69,13 @@ class MainLayout extends StatelessWidget {
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Row(
                   children: [
-                    SpaceSidebar(),
-                    SizedBox(width: 250, child: RoomList()),
+                    BlocBuilder<SpaceCubit, List<Room>>(
+                      builder: (_, state) => SpaceSidebar(spaces: state),
+                    ),
+                    const SizedBox(width: 250, child: RoomList()),
                   ],
                 ),
               ),

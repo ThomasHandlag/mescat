@@ -37,6 +37,7 @@ class MCMessageEvent extends MCEvent {
   final String body;
   final Event event;
   final String? cid;
+  final bool onChain;
 
   const MCMessageEvent({
     required super.eventId,
@@ -57,6 +58,7 @@ class MCMessageEvent extends MCEvent {
     this.status = MessageStatus.sent,
     required this.event,
     this.cid,
+    this.onChain = false,
   });
 
   @override
@@ -76,6 +78,7 @@ class MCMessageEvent extends MCEvent {
     isCurrentUser,
     event,
     cid,
+    onChain,
   ];
 
   MCMessageEvent copyWith({
@@ -98,6 +101,7 @@ class MCMessageEvent extends MCEvent {
     String? replyToContent,
     Event? event,
     String? cid,
+    bool? onChain,
   }) {
     return MCMessageEvent(
       eventId: eventId ?? this.eventId,
@@ -118,6 +122,7 @@ class MCMessageEvent extends MCEvent {
       isCurrentUser: isCurrentUser ?? this.isCurrentUser,
       event: event ?? this.event,
       cid: cid ?? this.cid,
+      onChain: onChain ?? this.onChain,
     );
   }
 }

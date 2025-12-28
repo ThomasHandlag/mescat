@@ -6,7 +6,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
+import 'package:mescat/features/marketplace/blocs/market_bloc.dart';
 import 'package:mescat/features/notifications/blocs/notification_bloc.dart';
+import 'package:mescat/features/spaces/cubits/space_cubit.dart';
+import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
 import 'package:rive/rive.dart';
 
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
@@ -59,12 +63,8 @@ void main() async {
     await initWeb3Auth();
   }
 
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>(
-    debugLabel: 'Main Navigator',
-  );
-
   // Bloc.observer = AppBlocObserver();
-  runApp(MescatApp(navigatorKey: navigatorKey));
+  runApp(const MescatApp());
   if (!Platform.isAndroid && !Platform.isIOS) {
     appWindow.show();
     doWhenWindowReady(() {
@@ -76,9 +76,7 @@ void main() async {
 }
 
 final class MescatApp extends StatelessWidget {
-  const MescatApp({super.key, required this.navigatorKey});
-
-  final GlobalKey<NavigatorState> navigatorKey;
+  const MescatApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +90,19 @@ final class MescatApp extends StatelessWidget {
               CallBloc(eventPusher: getIt(), callHandler: getIt()),
         ),
         BlocProvider(create: (context) => ServerCubit()..loadServersList()),
-
+        BlocProvider(create: (_) => SpaceCubit([], client: getIt())..load()),
+        BlocProvider(create: (context) => MarketBloc(getIt())),
+        BlocProvider(create: (_) => WalletCubit('', getIt())..init()),
+        BlocProvider(
+          create: (context) => MescatBloc(
+            loginUseCase: getIt(),
+            registerUseCase: getIt(),
+            logoutUseCase: getIt(),
+            getCurrentUserUseCase: getIt(),
+            setServerUseCase: getIt(),
+            oauthLoginUseCase: getIt(),
+          ),
+        ),
         BlocProvider(
           create: (context) => MemberBloc(getRoomMembersUseCase: getIt()),
         ),

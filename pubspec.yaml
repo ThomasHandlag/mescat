@@ -34,7 +34,7 @@ dependencies:
   app_links: ^6.4.1
   audioplayers: ^6.5.1
   bitsdojo_window: ^0.1.6
-  cached_network_image: ^3.3.1
+  cached_network_image: ^3.4.1
   connectivity_plus: ^7.0.0
   cupertino_icons: ^1.0.8
   crypto: ^3.0.7
@@ -91,6 +91,7 @@ dependencies:
   qr_flutter: ^4.1.0
   web3auth_flutter: ^6.3.0
   lottie: ^3.3.2
+  hydrated_bloc: ^10.1.1
 
 dev_dependencies:
   flutter_test:
@@ -132,7 +133,7 @@ flutter:
 msix_config:
   display_name: mescat
   msix_version: 1.0.0.0
-  protocol_activation: https, mescat # Add the protocols to activate the app
+  protocol_activation: https, mescat, http # Add the protocols to activate the app
   app_uri_handler_hosts: mescat.dev # Add the app uri handler hosts. You can't use patterns here.
 
 

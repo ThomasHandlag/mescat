@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -111,35 +112,39 @@ class MessageBubble extends StatelessWidget {
       children: [
         // Avatar
         if (showSender) ...[
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => _showUserProfile(context, message.senderId),
-              child: CircleAvatar(
-                radius: 20,
-                backgroundColor: message.senderDisplayName
-                    ?.generateFromString(),
-                child: message.senderAvatarUrl == null
-                    ? Text(
-                        _getInitials(
-                          message.senderDisplayName ?? message.senderId,
-                        ),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: message.senderDisplayName
-                              ?.generateFromString()
-                              .getContrastingTextColor(),
-                        ),
-                      )
-                    : McImage(
-                        uri: message.senderAvatarUrl,
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+          Stack(
+            children: [
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => _showUserProfile(context, message.senderId),
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: message.senderDisplayName
+                        ?.generateFromString(),
+                    child: message.senderAvatarUrl == null
+                        ? Text(
+                            _getInitials(
+                              message.senderDisplayName ?? message.senderId,
+                            ),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: message.senderDisplayName
+                                  ?.generateFromString()
+                                  .getContrastingTextColor(),
+                            ),
+                          )
+                        : McImage(
+                            uri: message.senderAvatarUrl,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           const SizedBox(width: 12),
         ] else ...[
@@ -152,8 +157,7 @@ class MessageBubble extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (showSender) ...[
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                Row(
                   children: [
                     Text(
                       message.senderDisplayName ?? message.senderId,
@@ -173,6 +177,15 @@ class MessageBubble extends StatelessWidget {
                         ).colorScheme.onSurface.withAlpha(0x60),
                       ),
                     ),
+                    const Spacer(),
+                    if (message.onChain)
+                      Tooltip(
+                        message: 'This message is on-chain',
+                        child: Icon(
+                          Icons.check_circle,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -267,7 +280,12 @@ class MessageBubble extends StatelessWidget {
         children: [
           Text(message.event.body),
           if (message.cid != null && message.cid!.isNotEmpty) ...[
-            Image.network('https://ipfs.io/ipfs/${message.cid}'),
+            CachedNetworkImage(
+              imageUrl: "https://ipfs.io/ipfs/${message.cid}",
+              progressIndicatorBuilder: (context, url, downloadProgress) =>
+                  CircularProgressIndicator(value: downloadProgress.progress),
+              errorWidget: (context, url, error) => const Icon(Icons.error),
+            ),
           ] else
             McFile(event: message.event),
         ],

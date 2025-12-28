@@ -12,6 +12,7 @@ import 'package:mescat/features/rooms/widgets/expanse_channel.dart';
 import 'package:mescat/features/settings/pages/space_setting_page.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/shared/pages/verify_device_page.dart';
+
 import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/widgets/input_field.dart';

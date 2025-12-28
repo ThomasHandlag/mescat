@@ -279,6 +279,11 @@ class _MessageInputState extends State<MessageInput>
 
     final ipfsClient = getIt<IpfsClient>();
     final res = await ipfsClient.add(File(filePath));
+    final exIndex = res.name.indexOf('.');
+    await ipfsClient.fileCp(
+      '/ipfs/${res.hash}',
+      '/${DateTime.now().millisecondsSinceEpoch}${res.name.substring(exIndex)}',
+    );
     await ipfsClient.pinAdd(res.hash);
     final matrixClient = getIt<Client>();
     final event = await matrixClient.getOneRoomEvent(room.id, eventId);

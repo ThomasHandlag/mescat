@@ -40,6 +40,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (event.roomId != currentState.selectedRoomId) return;
 
       if (event is MCMessageEvent) {
+        if (currentState.messages
+            .where((m) => m.eventId == event.eventId)
+            .isNotEmpty) {
+          return;
+        }
         add(ReceiveMessage(event));
       } else if (event is MCReactionEvent) {
         add(MessageReacted(event: event));
