@@ -1,45 +1,103 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mescat/features/members/blocs/member_bloc.dart';
-import 'package:mescat/features/spaces/blocs/space_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/shared/widgets/user_banner.dart';
 
 class SpaceMembersList extends StatelessWidget {
   const SpaceMembersList({super.key});
 
+  Client get client => getIt<Client>();
+
+  Future<List<MCUser>> _getRoomMembers(BuildContext context) async {
+    final spaceId = GoRouterState.of(context).pathParameters['spaceId'];
+
+    if (spaceId == null) {
+      log('No spaceId found in route parameters');
+      return [];
+    }
+
+    final room = client.getRoomById(spaceId);
+
+    if (room == null) {
+      log('No room found with id $spaceId');
+      return [];
+    }
+
+    final members = await room.requestParticipants();
+
+    return Future.wait(
+      members.map((member) async {
+        final user = await client.getUserProfile(member.senderId);
+
+        final presence = await client.getPresence(member.senderId);
+        final isOnline = presence.presence == PresenceType.online;
+        return MCUser(
+          displayName: user.displayname,
+          userId: member.senderId,
+          avatarUrl: user.avatarUrl,
+          isOnline: isOnline,
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(4.0),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       width: 250,
-      child: BlocListener<SpaceBloc, SpaceState>(
-        listener: (context, state) {
-          if (state is SpaceLoaded &&
-              state.selectedSpace != null) {
-            context.read<MemberBloc>().add(LoadMembers(state.selectedSpace!.spaceId));
-          }
-        },
-        child: BlocBuilder<MemberBloc, MemberState>(
-          builder: (context, state) {
-            if (state is MemberInitial) {
-              return const Center(child: Text('No members loaded'));
-            } else if (state is MemberLoaded && state.members.isEmpty) {
-              return const Center(child: Text('No members in this space'));
-            } else if (state is MemberLoaded && state.members.isNotEmpty) {
-              return ListView.builder(
-                itemCount: state.members.length,
-                itemBuilder: (context, index) {
-                  final member = state.members[index];
-                  return UserBanner(
-                    username: member.displayName ?? member.userId,
-                    avatarUrl: member.avatarUrl,
-                  );
-                },
-              );
-            }
+      child: FutureBuilder(
+        future: _getRoomMembers(context),
+        builder: (_, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          },
-        ),
+          }
+          return ListView.separated(
+            itemCount: (snapshot.data?.length ?? 0) + 1,
+            separatorBuilder: (_, __) => const SizedBox(height: 4),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Container(
+                  padding: const EdgeInsets.only(right: 10),
+                  height: kToolbarHeight,
+                  child: Center(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search',
+                        suffixIcon: const Icon(Icons.search),
+
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(20),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0,
+                          horizontal: 10,
+                        ),
+                        isDense: true,
+                      ),
+                      onSubmitted: (value) {},
+                    ),
+                  ),
+                );
+              }
+
+              final member = snapshot.data![index - 1];
+              return UserBanner(
+                username: member.displayName ?? member.userId,
+                avatarUrl: member.avatarUrl,
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -1,14 +1,15 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:matrix/matrix.dart';
 
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
-import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/chat/widgets/message_item.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
-import 'package:mescat/shared/util/extension_utils.dart';
+import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/widgets/mc_file.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:mescat/shared/widgets/youtube_webview.dart';
@@ -23,6 +24,12 @@ class MessageBubble extends StatelessWidget {
     required this.message,
     required this.showSender,
   });
+
+  Client get _client => getIt<Client>();
+
+  bool get isCurrentUser => message.isCurrentUser;
+
+  String get userId => _client.userID!;
 
   void _showUserProfile(BuildContext context, String userId) {
     final RenderBox button = context.findRenderObject() as RenderBox;
@@ -105,28 +112,39 @@ class MessageBubble extends StatelessWidget {
       children: [
         // Avatar
         if (showSender) ...[
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => _showUserProfile(context, message.senderId),
-              child: CircleAvatar(
-                radius: 20,
-                child: message.senderAvatarUrl == null
-                    ? Text(
-                        _getInitials(
-                          message.senderDisplayName ?? message.senderId,
-                        ),
-                        style: const TextStyle(fontSize: 14),
-                      )
-                    : McImage(
-                        uri: message.senderAvatarUrl,
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+          Stack(
+            children: [
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => _showUserProfile(context, message.senderId),
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: message.senderDisplayName
+                        ?.generateFromString(),
+                    child: message.senderAvatarUrl == null
+                        ? Text(
+                            _getInitials(
+                              message.senderDisplayName ?? message.senderId,
+                            ),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: message.senderDisplayName
+                                  ?.generateFromString()
+                                  .getContrastingTextColor(),
+                            ),
+                          )
+                        : McImage(
+                            uri: message.senderAvatarUrl,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           const SizedBox(width: 12),
         ] else ...[
@@ -139,8 +157,7 @@ class MessageBubble extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (showSender) ...[
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                Row(
                   children: [
                     Text(
                       message.senderDisplayName ?? message.senderId,
@@ -148,7 +165,7 @@ class MessageBubble extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: message.isCurrentUser
                             ? Theme.of(context).colorScheme.primary
-                            : _generateColorFromUserId(message.senderId),
+                            : message.senderDisplayName?.generateFromString(),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -160,6 +177,15 @@ class MessageBubble extends StatelessWidget {
                         ).colorScheme.onSurface.withAlpha(0x60),
                       ),
                     ),
+                    const Spacer(),
+                    if (message.onChain)
+                      Tooltip(
+                        message: 'This message is on-chain',
+                        child: Icon(
+                          Icons.check_circle,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -190,6 +216,12 @@ class MessageBubble extends StatelessWidget {
                     },
                   ),
                 ),
+                onPin: () {
+                  final room = _client.getRoomById(message.roomId);
+                  if (room != null) {
+                    room.setPinnedEvents([message.eventId]);
+                  }
+                },
                 onReact: () => showDialog(
                   context: context,
                   builder: (context) {
@@ -239,12 +271,6 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
-  Color _generateColorFromUserId(String userId) {
-    final hash = userId.codeUnits.fold(0, (prev, elem) => prev + elem);
-    final hue = (hash % 360).toDouble();
-    return HSLColor.fromAHSL(1.0, hue, 0.5, 0.6).toColor();
-  }
-
   Widget? _buildMessageContent(BuildContext context, MCMessageEvent message) {
     final widget = switch (message.msgtype) {
       MessageTypes.Text => _buildTextMessage(context, message),
@@ -254,7 +280,12 @@ class MessageBubble extends StatelessWidget {
         children: [
           Text(message.event.body),
           if (message.cid != null && message.cid!.isNotEmpty) ...[
-            Image.network('https://ipfs.io/ipfs/${message.cid}'),
+            CachedNetworkImage(
+              imageUrl: "https://ipfs.io/ipfs/${message.cid}",
+              progressIndicatorBuilder: (context, url, downloadProgress) =>
+                  CircularProgressIndicator(value: downloadProgress.progress),
+              errorWidget: (context, url, error) => const Icon(Icons.error),
+            ),
           ] else
             McFile(event: message.event),
         ],
@@ -301,25 +332,19 @@ class MessageBubble extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               if (reaction.isCurrentUser) {
-                if (context.read<MescatBloc>().state is Authenticated) {
-                  final userId =
-                      (context.read<MescatBloc>().state as Authenticated)
-                          .user
-                          .userId;
-                  final existingReaction = reaction.reactEventIds.firstWhere(
-                    (entry) => entry.value == userId,
-                    orElse: () => const MapEntry('', ''),
+                final existingReaction = reaction.reactEventIds.firstWhere(
+                  (entry) => entry.value == userId,
+                  orElse: () => const MapEntry('', ''),
+                );
+                if (existingReaction.key.isNotEmpty) {
+                  context.read<ChatBloc>().add(
+                    RemoveReaction(
+                      roomId: reaction.roomId,
+                      reactEventId: existingReaction.key,
+                      eventId: message.eventId,
+                      emoji: reaction.key,
+                    ),
                   );
-                  if (existingReaction.key.isNotEmpty) {
-                    context.read<ChatBloc>().add(
-                      RemoveReaction(
-                        roomId: reaction.roomId,
-                        reactEventId: existingReaction.key,
-                        eventId: message.eventId,
-                        emoji: reaction.key,
-                      ),
-                    );
-                  }
                 }
               } else {
                 context.read<ChatBloc>().add(

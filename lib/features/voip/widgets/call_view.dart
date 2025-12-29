@@ -2,9 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
-import 'package:mescat/features/chat/widgets/call_controller.dart';
+import 'package:mescat/features/voip/widgets/call_controller.dart';
 import 'package:mescat/features/chat/widgets/member_grid.dart';
-import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 
 class CallView extends StatelessWidget {
@@ -14,8 +13,10 @@ class CallView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GestureDetector(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      child: GestureDetector(
         onTap: () {
           context.read<CallControllerCubit>().toggleVisibility();
         },
@@ -54,21 +55,21 @@ class CallView extends StatelessWidget {
               ),
             );
           }
-          return const SizedBox.shrink();
+          return const SizedBox(height: 60);
         }
-        return const SizedBox.shrink();
+        return const SizedBox(height: 60);
       },
     );
   }
 
   Widget _buildCallHeader(BuildContext context) {
     return BlocBuilder<CallBloc, MCCallState>(
-      builder: (context, state) {
-        if (state is CallInProgress) {
+      builder: (context, callState) {
+        if (callState is CallInProgress) {
           return BlocBuilder<CallControllerCubit, bool>(
             builder: (_, state) {
               if (!state) {
-                return const SizedBox(height: 60);
+                return const SizedBox.shrink();
               } else {
                 return SizedBox(
                   height: 60,
@@ -88,21 +89,9 @@ class CallView extends StatelessWidget {
                             ),
                           const Icon(Icons.volume_up),
                           const SizedBox(width: 8),
-                          BlocBuilder<RoomBloc, RoomState>(
-                            builder: (context, state) {
-                              if (state is RoomLoaded) {
-                                final roomName =
-                                    state.selectedRoom?.name ?? 'Call Chat';
-                                return Text(
-                                  roomName,
-                                  style: const TextStyle(fontSize: 20),
-                                );
-                              }
-                              return const Text(
-                                'Call chat',
-                                style: TextStyle(fontSize: 20),
-                              );
-                            },
+                          Text(
+                            callState.room.name,
+                            style: const TextStyle(fontSize: 20),
                           ),
                         ],
                       ),

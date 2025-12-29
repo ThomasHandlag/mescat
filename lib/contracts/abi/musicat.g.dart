@@ -8,7 +8,7 @@ import 'package:web3dart/web3dart.dart' as _i1;
 import 'dart:typed_data' as _i2;
 
 final _contractAbi = _i1.ContractAbi.fromJson(
-  '[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},{"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"tokenId","type":"uint256"},{"indexed":false,"internalType":"string","name":"tokenURI","type":"string"},{"indexed":false,"internalType":"address","name":"marketPlaceAddress","type":"address"}],"name":"AssetMinted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"burnAsset","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getAssetById","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"getAssetOwnedBySender","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"getBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getMinterById","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"getTokenCreatedBySender","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"uri","type":"string"},{"internalType":"string","name":"preview","type":"string"},{"internalType":"address","name":"marketPlaceAddress","type":"address"}],"name":"mintAsset","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"previewURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"}]',
+  '[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},{"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"tokenId","type":"uint256"},{"indexed":false,"internalType":"string","name":"tokenURI","type":"string"},{"indexed":false,"internalType":"address","name":"marketPlaceAddress","type":"address"}],"name":"AssetMinted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"burnAsset","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"count","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"creatorOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"getAssetOwnedBySender","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"getTokenCreatedBySender","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"uri","type":"string"},{"internalType":"address","name":"marketPlaceAddress","type":"address"}],"name":"mintAsset","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"}]',
   'Musicat',
 );
 
@@ -88,11 +88,44 @@ class Musicat extends _i1.GeneratedContract {
   /// The optional [atBlock] parameter can be used to view historical data. When
   /// set, the function will be evaluated in the specified block. By default, the
   /// latest on-chain block will be used.
+  Future<BigInt> count({_i1.BlockNum? atBlock}) async {
+    final function = self.abi.functions[4];
+    assert(checkSignature(function, '06661abd'));
+    final params = [];
+    final response = await read(
+      function,
+      params,
+      atBlock,
+    );
+    return (response[0] as BigInt);
+  }
+
+  /// The optional [atBlock] parameter can be used to view historical data. When
+  /// set, the function will be evaluated in the specified block. By default, the
+  /// latest on-chain block will be used.
+  Future<_i1.EthereumAddress> creatorOf(
+    ({BigInt tokenId}) args, {
+    _i1.BlockNum? atBlock,
+  }) async {
+    final function = self.abi.functions[5];
+    assert(checkSignature(function, '589a1743'));
+    final params = [args.tokenId];
+    final response = await read(
+      function,
+      params,
+      atBlock,
+    );
+    return (response[0] as _i1.EthereumAddress);
+  }
+
+  /// The optional [atBlock] parameter can be used to view historical data. When
+  /// set, the function will be evaluated in the specified block. By default, the
+  /// latest on-chain block will be used.
   Future<_i1.EthereumAddress> getApproved(
     ({BigInt tokenId}) args, {
     _i1.BlockNum? atBlock,
   }) async {
-    final function = self.abi.functions[4];
+    final function = self.abi.functions[6];
     assert(checkSignature(function, '081812fc'));
     final params = [args.tokenId];
     final response = await read(
@@ -106,29 +139,11 @@ class Musicat extends _i1.GeneratedContract {
   /// The optional [atBlock] parameter can be used to view historical data. When
   /// set, the function will be evaluated in the specified block. By default, the
   /// latest on-chain block will be used.
-  Future<String> getAssetById(
-    ({BigInt tokenId}) args, {
-    _i1.BlockNum? atBlock,
-  }) async {
-    final function = self.abi.functions[5];
-    assert(checkSignature(function, 'b3e444a7'));
-    final params = [args.tokenId];
-    final response = await read(
-      function,
-      params,
-      atBlock,
-    );
-    return (response[0] as String);
-  }
-
-  /// The optional [atBlock] parameter can be used to view historical data. When
-  /// set, the function will be evaluated in the specified block. By default, the
-  /// latest on-chain block will be used.
   Future<List<BigInt>> getAssetOwnedBySender(
     ({_i1.EthereumAddress sender}) args, {
     _i1.BlockNum? atBlock,
   }) async {
-    final function = self.abi.functions[6];
+    final function = self.abi.functions[7];
     assert(checkSignature(function, '2e8abfe0'));
     final params = [args.sender];
     final response = await read(
@@ -142,47 +157,11 @@ class Musicat extends _i1.GeneratedContract {
   /// The optional [atBlock] parameter can be used to view historical data. When
   /// set, the function will be evaluated in the specified block. By default, the
   /// latest on-chain block will be used.
-  Future<BigInt> getBalanceOf(
-    ({_i1.EthereumAddress owner}) args, {
-    _i1.BlockNum? atBlock,
-  }) async {
-    final function = self.abi.functions[7];
-    assert(checkSignature(function, '9b96eece'));
-    final params = [args.owner];
-    final response = await read(
-      function,
-      params,
-      atBlock,
-    );
-    return (response[0] as BigInt);
-  }
-
-  /// The optional [atBlock] parameter can be used to view historical data. When
-  /// set, the function will be evaluated in the specified block. By default, the
-  /// latest on-chain block will be used.
-  Future<_i1.EthereumAddress> getMinterById(
-    ({BigInt tokenId}) args, {
-    _i1.BlockNum? atBlock,
-  }) async {
-    final function = self.abi.functions[8];
-    assert(checkSignature(function, '7b10b3c3'));
-    final params = [args.tokenId];
-    final response = await read(
-      function,
-      params,
-      atBlock,
-    );
-    return (response[0] as _i1.EthereumAddress);
-  }
-
-  /// The optional [atBlock] parameter can be used to view historical data. When
-  /// set, the function will be evaluated in the specified block. By default, the
-  /// latest on-chain block will be used.
   Future<List<BigInt>> getTokenCreatedBySender(
     ({_i1.EthereumAddress sender}) args, {
     _i1.BlockNum? atBlock,
   }) async {
-    final function = self.abi.functions[9];
+    final function = self.abi.functions[8];
     assert(checkSignature(function, '57c2119d'));
     final params = [args.sender];
     final response = await read(
@@ -200,7 +179,7 @@ class Musicat extends _i1.GeneratedContract {
     ({_i1.EthereumAddress owner, _i1.EthereumAddress operator}) args, {
     _i1.BlockNum? atBlock,
   }) async {
-    final function = self.abi.functions[10];
+    final function = self.abi.functions[9];
     assert(checkSignature(function, 'e985e9c5'));
     final params = [
       args.owner,
@@ -218,19 +197,14 @@ class Musicat extends _i1.GeneratedContract {
   /// like the gas price, nonce and max gas. The `data` and `to` fields will be
   /// set by the contract.
   Future<String> mintAsset(
-    ({
-      String uri,
-      String preview,
-      _i1.EthereumAddress marketPlaceAddress
-    }) args, {
+    ({String uri, _i1.EthereumAddress marketPlaceAddress}) args, {
     required _i1.Credentials credentials,
     _i1.Transaction? transaction,
   }) async {
-    final function = self.abi.functions[11];
-    assert(checkSignature(function, 'f14e4d66'));
+    final function = self.abi.functions[10];
+    assert(checkSignature(function, '6b865d15'));
     final params = [
       args.uri,
-      args.preview,
       args.marketPlaceAddress,
     ];
     return write(
@@ -245,7 +219,7 @@ class Musicat extends _i1.GeneratedContract {
   /// set, the function will be evaluated in the specified block. By default, the
   /// latest on-chain block will be used.
   Future<String> name({_i1.BlockNum? atBlock}) async {
-    final function = self.abi.functions[12];
+    final function = self.abi.functions[11];
     assert(checkSignature(function, '06fdde03'));
     final params = [];
     final response = await read(
@@ -263,7 +237,7 @@ class Musicat extends _i1.GeneratedContract {
     ({BigInt tokenId}) args, {
     _i1.BlockNum? atBlock,
   }) async {
-    final function = self.abi.functions[13];
+    final function = self.abi.functions[12];
     assert(checkSignature(function, '6352211e'));
     final params = [args.tokenId];
     final response = await read(
@@ -274,24 +248,6 @@ class Musicat extends _i1.GeneratedContract {
     return (response[0] as _i1.EthereumAddress);
   }
 
-  /// The optional [atBlock] parameter can be used to view historical data. When
-  /// set, the function will be evaluated in the specified block. By default, the
-  /// latest on-chain block will be used.
-  Future<String> previewURI(
-    ({BigInt tokenId}) args, {
-    _i1.BlockNum? atBlock,
-  }) async {
-    final function = self.abi.functions[14];
-    assert(checkSignature(function, '5af61300'));
-    final params = [args.tokenId];
-    final response = await read(
-      function,
-      params,
-      atBlock,
-    );
-    return (response[0] as String);
-  }
-
   /// The optional [transaction] parameter can be used to override parameters
   /// like the gas price, nonce and max gas. The `data` and `to` fields will be
   /// set by the contract.
@@ -300,7 +256,7 @@ class Musicat extends _i1.GeneratedContract {
     required _i1.Credentials credentials,
     _i1.Transaction? transaction,
   }) async {
-    final function = self.abi.functions[15];
+    final function = self.abi.functions[13];
     assert(checkSignature(function, '42842e0e'));
     final params = [
       args.from,
@@ -328,7 +284,7 @@ class Musicat extends _i1.GeneratedContract {
     required _i1.Credentials credentials,
     _i1.Transaction? transaction,
   }) async {
-    final function = self.abi.functions[16];
+    final function = self.abi.functions[14];
     assert(checkSignature(function, 'b88d4fde'));
     final params = [
       args.from,
@@ -352,7 +308,7 @@ class Musicat extends _i1.GeneratedContract {
     required _i1.Credentials credentials,
     _i1.Transaction? transaction,
   }) async {
-    final function = self.abi.functions[17];
+    final function = self.abi.functions[15];
     assert(checkSignature(function, 'a22cb465'));
     final params = [
       args.operator,
@@ -373,7 +329,7 @@ class Musicat extends _i1.GeneratedContract {
     ({_i2.Uint8List interfaceId}) args, {
     _i1.BlockNum? atBlock,
   }) async {
-    final function = self.abi.functions[18];
+    final function = self.abi.functions[16];
     assert(checkSignature(function, '01ffc9a7'));
     final params = [args.interfaceId];
     final response = await read(
@@ -388,7 +344,7 @@ class Musicat extends _i1.GeneratedContract {
   /// set, the function will be evaluated in the specified block. By default, the
   /// latest on-chain block will be used.
   Future<String> symbol({_i1.BlockNum? atBlock}) async {
-    final function = self.abi.functions[19];
+    final function = self.abi.functions[17];
     assert(checkSignature(function, '95d89b41'));
     final params = [];
     final response = await read(
@@ -406,7 +362,7 @@ class Musicat extends _i1.GeneratedContract {
     ({BigInt tokenId}) args, {
     _i1.BlockNum? atBlock,
   }) async {
-    final function = self.abi.functions[20];
+    final function = self.abi.functions[18];
     assert(checkSignature(function, 'c87b56dd'));
     final params = [args.tokenId];
     final response = await read(
@@ -425,7 +381,7 @@ class Musicat extends _i1.GeneratedContract {
     required _i1.Credentials credentials,
     _i1.Transaction? transaction,
   }) async {
-    final function = self.abi.functions[21];
+    final function = self.abi.functions[19];
     assert(checkSignature(function, '23b872dd'));
     final params = [
       args.from,

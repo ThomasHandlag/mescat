@@ -7,7 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/notifications/event_pusher.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mescat/core/utils/permission_util.dart';
+import 'package:mescat/shared/util/permission_util.dart';
 import 'package:mescat/features/voip/data/call_handler.dart';
 
 part 'call_event.dart';
@@ -37,12 +37,12 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
   Future<void> _onJoinCall(JoinCall event, Emitter<MCCallState> emit) async {
     emit(
       CallLoading(
-        callId: event.mRoom.room.id,
+        callId: event.room.id,
         voiceMuted: state.voiceMuted,
         muted: state.muted,
       ),
     );
-    final result = await callHandler.joinGroupCall(event.mRoom.room.id);
+    final result = await callHandler.joinGroupCall(event.room.id);
 
     result.fold(
       (failed) {
@@ -57,13 +57,13 @@ class CallBloc extends Bloc<CallEvent, MCCallState> {
       (session) {
         emit(
           CallInProgress(
-            callId: event.mRoom.room.id,
-            roomId: event.mRoom.room.id,
+            callId: event.room.id,
+            roomId: event.room.id,
             groupSession: session,
             participants: session.participants,
             voiceMuted: callHandler.voiceMuted,
             muted: callHandler.muteAll,
-            mRoom: event.mRoom,
+            room: event.room,
             videoMuted: true,
           ),
         );

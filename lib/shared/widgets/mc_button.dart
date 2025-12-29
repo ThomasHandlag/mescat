@@ -26,13 +26,13 @@ class McButton extends StatelessWidget {
       decoration: BoxDecoration(border: border, borderRadius: borderRadius),
       child: Material(
         color: selected
-            ? Theme.of(context).colorScheme.primary
+            ? Theme.of(context).colorScheme.surfaceContainer
             : Colors.transparent,
         borderRadius: borderRadius,
         child: InkWell(
           borderRadius: borderRadius,
           onTap: onPressed,
-          hoverColor: Colors.white.withAlpha(15),
+          hoverColor: Theme.of(context).colorScheme.primary.withAlpha(0x1A),
           child: Padding(
             padding: padding,
             child: Center(child: child),

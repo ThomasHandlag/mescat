@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
-import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
-import 'package:mescat/features/rooms/blocs/room_bloc.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/features/settings/widgets/manage_member.dart';
 import 'package:mescat/features/settings/widgets/manage_notification.dart';
@@ -12,9 +12,7 @@ import 'package:mescat/features/settings/widgets/manage_permission.dart';
 import 'package:mescat/features/settings/widgets/manage_general.dart';
 
 class RoomSettingPage extends StatefulWidget {
-  final MatrixRoom room;
-
-  const RoomSettingPage({super.key, required this.room});
+  const RoomSettingPage({super.key});
 
   @override
   State<RoomSettingPage> createState() => _RoomSettingPageState();
@@ -37,28 +35,38 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
     RoomSettingCategory.permissions,
   ];
 
+  Client get client => getIt<Client>();
+
   @override
   Widget build(BuildContext context) {
+    final roomId = GoRouterState.of(context).pathParameters['roomId']!;
+
+    final room = client.getRoomById(roomId);
+
+    if (room == null) {
+      return const Scaffold(body: Center(child: Text('Room not found')));
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.room.name} Settings')),
+      appBar: AppBar(title: Text('${room.name} Settings')),
       body: SafeArea(
         child: Platform.isAndroid || Platform.isIOS
-            ? _buildMobile()
-            : _buildDesktop(),
+            ? _buildMobile(room)
+            : _buildDesktop(room),
       ),
     );
   }
 
-  Widget _buildView(MatrixRoom room) {
+  Widget _buildView(Room room) {
     return switch (_viewCategory) {
-      RoomSettingCategory.general => ManageGeneral(room: room.room),
-      RoomSettingCategory.members => ManageMember(room: room.room),
-      RoomSettingCategory.notifications => ManageNotification(room: room.room),
-      RoomSettingCategory.permissions => ManagePermission(room: room.room),
+      RoomSettingCategory.general => ManageGeneral(room: room),
+      RoomSettingCategory.members => ManageMember(room: room),
+      RoomSettingCategory.notifications => ManageNotification(room: room),
+      RoomSettingCategory.permissions => ManagePermission(room: room),
     };
   }
 
-  Widget _buildMobile() {
+  Widget _buildMobile(Room room) {
     return Container(
       padding: const EdgeInsets.all(8.0),
       child: Column(
@@ -82,7 +90,9 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
                         _viewCategory = _categories[index];
                       });
                     },
-                    border: Border.all(color: Colors.grey),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                     selected: _categories[index] == _viewCategory,
                     child: Text(_categories[index].name.toUpperCase()),
                   );
@@ -90,13 +100,13 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
               ),
             ),
           ),
-          Expanded(child: _buildView(widget.room)),
+          Expanded(child: _buildView(room)),
         ],
       ),
     );
   }
 
-  Widget _buildDesktop() {
+  Widget _buildDesktop(Room room) {
     return Row(
       children: [
         SizedBox(
@@ -150,17 +160,10 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
                       ),
                       ListTile(
                         title: Text(
-                          widget.room.room.canKick
-                              ? 'Remove room'
-                              : 'Leave room',
+                          room.canKick ? 'Remove room' : 'Leave room',
                           style: const TextStyle(color: Colors.red),
                         ),
-                        onTap: () {
-                          context.read<RoomBloc>().add(
-                            LeaveRoom(widget.room.room.id),
-                          );
-                          Navigator.of(context).pop();
-                        },
+                        onTap: () {},
                       ),
                     ],
                   ),
@@ -172,7 +175,7 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
         Expanded(
           child: Stack(
             children: [
-              _buildView(widget.room),
+              _buildView(room),
               // Align(
               //   alignment: Alignment.bottomRight,
               //   child: Container(

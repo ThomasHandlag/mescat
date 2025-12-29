@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -86,6 +87,8 @@ class _LoginFormState extends State<LoginForm> {
       });
 
       _loginWithToken(token!);
+    } on PlatformException catch (e) {
+      _snackBar(e.message ?? 'Error');
     } catch (e) {
       log('error during oauth login: $e');
       _snackBar('Cancel authentication');

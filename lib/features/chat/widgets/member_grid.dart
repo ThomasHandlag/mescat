@@ -1,9 +1,7 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:gridexts/gridexts.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mescat/features/chat/widgets/call_video.dart';
+import 'package:mescat/features/voip/widgets/call_video.dart';
 import 'package:mescat/shared/util/string_util.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:webrtc_interface/webrtc_interface.dart';
@@ -39,13 +37,11 @@ class _MemberGrid extends StatelessWidget {
 
   bool get isCurrentUser => stream.isLocal();
 
-  @override
-  Widget build(BuildContext context) {
-    log('$avatarUri');
+  Widget _buildContent(BuildContext context) {
     return GestureDetector(
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: Theme.of(context).colorScheme.surface,
           border: Border.all(
             color: isActiveSpeaker ? Colors.blue : Colors.grey,
             width: isActiveSpeaker ? 3 : 1,
@@ -145,6 +141,14 @@ class _MemberGrid extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isCurrentUser) {
+      return Hero(tag: "currentUser", child: _buildContent(context));
+    }
+    return _buildContent(context);
   }
 }
 

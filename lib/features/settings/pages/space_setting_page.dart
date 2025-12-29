@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/features/rooms/widgets/invite_room.dart';
+import 'package:mescat/shared/util/mc_dialog.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/features/settings/widgets/manage_member.dart';
 import 'package:mescat/features/settings/widgets/manage_notification.dart';
@@ -46,21 +47,25 @@ class _SpaceSettingPageState extends State<SpaceSettingPage> {
             message: 'Invite to Space',
             child: IconButton(
               onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return Dialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      constraints: const BoxConstraints(maxWidth: 600),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: InviteRoom(room: widget.room),
-                      ),
-                    );
-                  },
-                );
+                if (Platform.isAndroid || Platform.isIOS) {
+                  showFullscreenDialog(context, InviteRoom(room: widget.room));
+                } else {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        constraints: const BoxConstraints(maxWidth: 600),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: InviteRoom(room: widget.room),
+                        ),
+                      );
+                    },
+                  );
+                }
               },
               icon: const Icon(Icons.group_add),
             ),

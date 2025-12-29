@@ -3,35 +3,20 @@ import 'dart:developer';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
-import 'package:mescat/core/mescat/domain/usecases/mescat_usecases.dart';
-import 'package:mescat/core/notifications/event_pusher.dart';
+// import 'package:mescat/core/notifications/event_pusher.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/notifications/event_pusher.dart';
+import 'package:mescat/shared/util/extensions.dart';
 
 part 'chat_event.dart';
 part 'chat_state.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  final GetMessagesUseCase getMessagesUseCase;
-  final SendMessageUseCase sendMessageUseCase;
-  final AddReactionUseCase addReactionUseCase;
-  final RemoveReactionUseCase removeReactionUseCase;
-  final DeleteMessageUseCase deleteMessageUseCase;
-  final EditMessageUseCase editMessageUseCase;
-  final ReplyMessageUseCase replyMessageUseCase;
-  final GetRoomUsecase getRoomUseCase;
+  final Client client;
   final EventPusher eventPusher;
 
-  ChatBloc({
-    required this.getMessagesUseCase,
-    required this.sendMessageUseCase,
-    required this.addReactionUseCase,
-    required this.removeReactionUseCase,
-    required this.deleteMessageUseCase,
-    required this.editMessageUseCase,
-    required this.replyMessageUseCase,
-    required this.getRoomUseCase,
-    required this.eventPusher,
-  }) : super(const ChatInitial()) {
+  ChatBloc({required this.client, required this.eventPusher})
+    : super(const ChatInitial()) {
     on<LoadMessages>(_onLoadMessages);
     on<SendMessage>(_onSendMessage);
     on<AddReaction>(_onAddReaction);
@@ -55,6 +40,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (event.roomId != currentState.selectedRoomId) return;
 
       if (event is MCMessageEvent) {
+        if (currentState.messages
+            .where((m) => m.eventId == event.eventId)
+            .isNotEmpty) {
+          return;
+        }
         add(ReceiveMessage(event));
       } else if (event is MCReactionEvent) {
         add(MessageReacted(event: event));
@@ -94,34 +84,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(currentState.copyWith(messages: updatedMessages));
   }
 
-  Future<void> _onSelectRoom(SelectRoom event, Emitter<ChatState> emit) async {
-    if (event.roomId == '0') {
-      emit(const ChatInitial());
-      return;
-    }
-
-    final roomResult = await getRoomUseCase(event.roomId);
-
-    await roomResult.fold(
-      (failure) async {
-        emit(ChatError(message: failure.toString()));
-      },
-      (room) async {
-        emit(ChatLoading(selectedRoom: room));
-        add(LoadMessages(roomId: event.roomId));
-      },
-    );
-  }
-
   Future<void> _onLoadMessages(
     LoadMessages event,
     Emitter<ChatState> emit,
   ) async {
-    final result = await getMessagesUseCase(
-      roomId: event.roomId,
-      limit: event.limit,
-    );
-
+    logger.d('Loading messages for room: ${event.roomId}');
+    final result = await client.getMessages(event.roomId, limit: event.limit);
     result.fold((failure) => emit(ChatError(message: failure.toString())), (
       data,
     ) {
@@ -136,7 +104,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           messages: messages,
           inputAction: const InputActionData(action: InputAction.none),
           nextToken: nextToken,
-          selectedRoom: state.selectedRoom,
         ),
       );
     });
@@ -146,10 +113,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     SendMessage event,
     Emitter<ChatState> emit,
   ) async {
-    final result = await sendMessageUseCase(
+    final result = await client.sendCustomMessage(
       roomId: event.roomId,
       content: event.content,
-      type: event.type,
       viaToken: event.viaToken,
       privKey: event.privKey,
     );
@@ -164,7 +130,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     AddReaction event,
     Emitter<ChatState> emit,
   ) async {
-    final result = await addReactionUseCase(
+    final result = await client.addReaction(
       roomId: event.roomId,
       eventId: event.eventId,
       emoji: event.emoji,
@@ -180,7 +146,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     RemoveReaction event,
     Emitter<ChatState> emit,
   ) async {
-    final result = await removeReactionUseCase(
+    final result = await client.removeReaction(
       roomId: event.roomId,
       eventId: event.eventId,
       emoji: event.emoji,
@@ -229,7 +195,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     DeleteMessage event,
     Emitter<ChatState> emit,
   ) async {
-    final result = await deleteMessageUseCase(
+    final result = await client.deleteMessage(
       roomId: event.roomId,
       eventId: event.eventId,
     );
@@ -251,7 +217,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     EditMessage event,
     Emitter<ChatState> emit,
   ) async {
-    final result = await editMessageUseCase(
+    final result = await client.editMessageContent(
       roomId: event.roomId,
       eventId: event.eventId,
       newContent: event.newContent,
@@ -274,7 +240,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ReplyMessage event,
     Emitter<ChatState> emit,
   ) async {
-    final result = await replyMessageUseCase(
+    final result = await client.replyMessage(
       roomId: event.roomId,
       content: event.content,
       replyToEventId: event.replyToEventId,
@@ -320,8 +286,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     emit(currentState.copyWith(isLoadingMore: true));
 
-    final result = await getMessagesUseCase(
-      roomId: currentState.selectedRoomId!,
+    final result = await client.getMessages(
+      currentState.selectedRoomId!,
       limit: event.limit,
       fromToken: currentState.nextToken,
     );
@@ -348,5 +314,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         );
       },
     );
+  }
+
+  Future<void> _onSelectRoom(SelectRoom event, Emitter<ChatState> emit) async {
+    logger.d('Selecting room: ${event.roomId}');
+    if (event.roomId == '0') {
+      emit(const ChatInitial());
+      return;
+    }
+
+    final roomResult = client.getRoomById(event.roomId);
+
+    if (roomResult == null) {
+      logger.d('Room not found: ${event.roomId}');
+      emit(const ChatError(message: 'Room not found'));
+      return;
+    }
+    emit(const ChatLoading());
+    add(LoadMessages(roomId: event.roomId));
   }
 }

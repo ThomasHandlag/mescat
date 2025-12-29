@@ -1,30 +1,81 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/material.dart' hide Visibility;
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
+
+import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
-
-import 'package:mescat/features/chat/blocs/chat_bloc.dart';
-import 'package:mescat/features/rooms/widgets/invite_room.dart';
-import 'package:mescat/features/settings/pages/room_setting_page.dart';
+import 'package:mescat/features/rooms/widgets/room_item.dart';
 import 'package:mescat/features/rooms/widgets/expanse_channel.dart';
 import 'package:mescat/features/settings/pages/space_setting_page.dart';
-import 'package:mescat/features/spaces/blocs/space_bloc.dart';
-import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/shared/pages/verify_device_page.dart';
+
+import 'package:mescat/shared/util/extensions.dart';
 import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/widgets/input_field.dart';
+// import 'package:mescat/shared/util/mc_dialog.dart';
+
+final class _Room {
+  const _Room({required this.type, required this.room});
+
+  final RoomType type;
+  final Room room;
+}
 
 class RoomList extends StatelessWidget {
   const RoomList({super.key});
 
+  Client get client => getIt<Client>();
+
+  List<Room> getRoomsInSpace(String spaceId) {
+    return client.rooms.where((room) {
+      return room.spaceParents.any((space) => space.roomId == spaceId) &&
+          !room.isSpace;
+    }).toList();
+  }
+
+  Room? getSpace(String id) {
+    try {
+      return client.rooms.firstWhere((room) => room.id == id && room.isSpace);
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final client = getIt<Client>();
-    return Container(
+    final spaceId = GoRouterState.of(context).pathParameters['spaceId'];
+
+    final space = spaceId != null ? getSpace(spaceId) : null;
+
+    final bool isHome =
+        GoRouterState.of(context).path == MescatRoutes.home ||
+        space == null ||
+        spaceId == '0';
+
+    final rooms = (spaceId != null && spaceId != '0')
+        ? getRoomsInSpace(spaceId)
+        : client.rooms.where((room) => room.isDirectChat).toList();
+
+    final textChannels = rooms
+        .where((r) => r.getRoomType() == RoomType.textChannel)
+        .map((r) => _Room(type: RoomType.textChannel, room: r))
+        .toList();
+    final voiceChannels = rooms
+        .where((r) => r.getRoomType() == RoomType.voiceChannel)
+        .map((r) => _Room(type: RoomType.voiceChannel, room: r))
+        .toList();
+
+    final directMessages = rooms
+        .where((r) => r.isDirectChat)
+        .map((r) => _Room(type: RoomType.directMessage, room: r))
+        .toList();
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
@@ -48,67 +99,20 @@ class RoomList extends StatelessWidget {
             height: kToolbarHeight,
             child: Row(
               children: [
-                BlocBuilder<SpaceBloc, SpaceState>(
-                  builder: (context, state) {
-                    if (state is SpaceLoaded) {
-                      final selectedSpace =
-                          state.spaces.indexWhere(
-                                (space) =>
-                                    space.spaceId ==
-                                    state.selectedSpace?.spaceId,
-                              ) !=
-                              -1
-                          ? state.spaces.firstWhere(
-                              (space) =>
-                                  space.spaceId == state.selectedSpace?.spaceId,
-                            )
-                          : null;
-
-                      if (selectedSpace != null) {
-                        return Text(
-                          selectedSpace.name.toUpperCase(),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        );
-                      }
-                    }
-                    return Text(
-                      'Mescat'.toUpperCase(),
-                      style: Theme.of(context).textTheme.titleMedium,
-                    );
-                  },
+                Text(
+                  space != null ? (space.name) : 'Mescat',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
-                BlocBuilder<SpaceBloc, SpaceState>(
-                  builder: (context, state) {
-                    if (state is SpaceLoaded) {
-                      final selectedSpace =
-                          state.spaces.indexWhere(
-                                (space) =>
-                                    space.spaceId ==
-                                    state.selectedSpace?.spaceId,
-                              ) !=
-                              -1
-                          ? state.spaces.firstWhere(
-                              (space) =>
-                                  space.spaceId == state.selectedSpace?.spaceId,
-                            )
-                          : null;
-
-                      if (selectedSpace == null) {
-                        return const SizedBox.shrink();
-                      }
-                      return IconButton(
-                        onPressed: () {
-                          showFullscreenDialog(
-                            context,
-                            SpaceSettingPage(room: selectedSpace.mRoom),
-                          );
-                        },
-                        icon: const Icon(Icons.chevron_right),
-                      );
-                    }
-                    return const SizedBox.shrink();
+                IconButton(
+                  onPressed: () {
+                    if (space == null) return;
+                    showFullscreenDialog(
+                      context,
+                      SpaceSettingPage(room: space),
+                    );
                   },
+                  icon: const Icon(Icons.chevron_right),
                 ),
               ],
             ),
@@ -116,148 +120,76 @@ class RoomList extends StatelessWidget {
 
           // Room list
           Expanded(
-            child: BlocConsumer<SpaceBloc, SpaceState>(
-              listener: (context, state) {
-                if (state is SpaceLoaded) {
-                  context.read<RoomBloc>().add(
-                    LoadRooms(
-                      spaceId: state.selectedSpace?.spaceId,
-                      onComplete: (room) {
-                        context.read<ChatBloc>().add(
-                          LoadMessages(roomId: room.roomId),
+            child: ListView(
+              children: [
+                if (isHome) ...[
+                  ListTile(
+                    onTap: () {
+                      context.push(MescatRoutes.marketplace);
+                    },
+                    leading: const Icon(Icons.store),
+                    title: const Text('Marketplace'),
+                  ),
+                ],
+                if (client.isUnknownSession)
+                  ListTile(
+                    onTap: () =>
+                        showFullscreenDialog(context, const VerifyDevicePage()),
+                    leading: Icon(
+                      Icons.warning,
+                      color: Theme.of(context).colorScheme.error,
+                      size: 18,
+                    ),
+                    title: Text(
+                      'Verify Device',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    trailing: IconButton(
+                      onPressed: () {
+                        showAboutDialog(
+                          context: context,
+                          children: [
+                            const Text(
+                              'Verifying your device helps keep your account secure and ensures that your communications remain private. By verifying, you confirm that this device is trusted to access your messages and data.',
+                            ),
+                          ],
                         );
                       },
+                      icon: const Icon(Icons.help, size: 18),
                     ),
-                  );
-                }
-              },
-              builder: (context, spaceState) {
-                return BlocBuilder<RoomBloc, RoomState>(
-                  builder: (context, state) {
-                    if (state is RoomLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                  ),
+                if (!isHome) ...[
+                  // Text channels
+                  _buildChannelExpansionTile(
+                    'Text Channels',
+                    textChannels,
+                    context,
+                    RoomType.textChannel,
+                    spaceId!,
+                  ),
 
-                    if (state is RoomLoaded) {
-                      // Group rooms by type
-                      final textChannels = state.rooms
-                          .where((r) => r.type == RoomType.textChannel)
-                          .toList();
-                      final voiceChannels = state.rooms
-                          .where((r) => r.type == RoomType.voiceChannel)
-                          .toList();
-                      final directMessages = state.rooms
-                          .where((r) => r.type == RoomType.directMessage)
-                          .toList();
+                  // Voice channels
+                  _buildChannelExpansionTile(
+                    'Voice Channels',
+                    voiceChannels,
+                    context,
+                    RoomType.voiceChannel,
+                    spaceId,
+                  ),
+                ],
 
-                      return ListView(
-                        children: [
-                          if (spaceState is SpaceLoaded &&
-                              spaceState.selectedSpace == null) ...[
-                            ListTile(
-                              onTap: () {},
-                              leading: const Icon(Icons.store),
-                              title: const Text('Store'),
-                            ),
-                          ],
-                          if (client.isUnknownSession)
-                            ListTile(
-                              onTap: () => showFullscreenDialog(
-                                context,
-                                const VerifyDevicePage(),
-                              ),
-                              leading: const Icon(
-                                Icons.warning,
-                                color: Colors.amber,
-                                size: 18,
-                              ),
-                              title: const Text(
-                                'Verify Device',
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                              trailing: IconButton(
-                                onPressed: () {
-                                  showAboutDialog(
-                                    context: context,
-                                    children: [
-                                      const Text(
-                                        'Verifying your device helps keep your account secure and ensures that your communications remain private. By verifying, you confirm that this device is trusted to access your messages and data.',
-                                      ),
-                                    ],
-                                  );
-                                },
-                                icon: const Icon(Icons.help, size: 18),
-                              ),
-                            ),
-                          if (spaceState is SpaceLoaded &&
-                              spaceState.selectedSpace != null) ...[
-                            // Text channels
-                            _buildChannelExpansionTile(
-                              'Text Channels',
-                              textChannels,
-                              state.selectedRoomId,
-                              context,
-                              RoomType.textChannel,
-                            ),
-
-                            // Voice channels
-                            _buildChannelExpansionTile(
-                              'Voice Channels',
-                              voiceChannels,
-                              state.selectedRoomId,
-                              context,
-                              RoomType.voiceChannel,
-                            ),
-                          ],
-
-                          // Direct messages
-                          if (directMessages.isNotEmpty)
-                            _buildChannelExpansionTile(
-                              'Direct Messages',
-                              directMessages,
-                              state.selectedRoomId,
-                              context,
-                              RoomType.directMessage,
-                            ),
-                        ],
-                      );
-                    }
-
-                    if (state is RoomError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Error loading channels',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                context.read<RoomBloc>().add(const LoadRooms());
-                              },
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                );
-              },
+                // Direct messages
+                if (directMessages.isNotEmpty)
+                  _buildChannelExpansionTile(
+                    'Direct Messages',
+                    directMessages,
+                    context,
+                    RoomType.directMessage,
+                    '',
+                  ),
+              ],
             ),
           ),
         ],
@@ -267,18 +199,22 @@ class RoomList extends StatelessWidget {
 
   Widget _buildChannelExpansionTile(
     String title,
-    List<MatrixRoom> rooms,
-    String? selectedRoomId,
+    List<_Room> rooms,
     BuildContext context,
     RoomType roomType,
+    String spaceID,
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       child: ExpanseChannel(
         title: title,
         trailing: IconButton(
-          onPressed: () =>
-              _showCreateRoomDialog(context, roomType: roomType, title: title),
+          onPressed: () => _showCreateRoomDialog(
+            context,
+            roomType: roomType,
+            title: title,
+            spaceId: spaceID,
+          ),
           tooltip: 'Create $title',
           icon: Icon(
             Icons.add,
@@ -286,215 +222,131 @@ class RoomList extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurface.withAlpha(0x99),
           ),
         ),
-        children: rooms
-            .map((room) => _buildRoomTile(context, room, selectedRoomId))
-            .toList(),
+        children: rooms.map((room) => _buildRoomTile(context, room)).toList(),
       ),
     );
   }
 
-  void _onSelectRoom(MatrixRoom room, BuildContext context) {
-    context.read<RoomBloc>().add(SelectedRoom(room));
-    if (Platform.isAndroid || Platform.isIOS) {
-      context.read<ChatBloc>().add(SelectRoom(room.roomId));
-    } else {
-      context.go(MescatRoutes.roomRoute(room.roomId));
-    }
-  }
-
-  Widget _buildRoomTile(
-    BuildContext context,
-    MatrixRoom room,
-    String? selectedRoomId,
-  ) {
-    final isSelected = room.roomId == selectedRoomId;
-
-    return GestureDetector(
-      onTap: () {
-        _onSelectRoom(room, context);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer
-              : null,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              _getRoomIcon(room.type),
-              size: 18,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.onPrimaryContainer
-                  : Theme.of(context).colorScheme.onSurface.withAlpha(0xCC),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Tooltip(
-                message: room.name,
-                child: Text(
-                  room.name ?? 'Unnamed Room',
-                  style: TextStyle(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimaryContainer
-                        : null,
-                    fontWeight: isSelected ? FontWeight.w600 : null,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            IconButton(
-              onPressed: () {
-                if (Platform.isAndroid || Platform.isIOS) {
-                  showFullscreenDialog(context, InviteRoom(room: room.room));
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return Dialog(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        constraints: const BoxConstraints(maxWidth: 600),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: InviteRoom(room: room.room),
-                        ),
-                      );
-                    },
-                  );
-                }
-              },
-              icon: Icon(
-                Icons.group_add,
-                size: 16,
-                color: isSelected
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer.withAlpha(0x99)
-                    : Theme.of(context).colorScheme.onSurface.withAlpha(0x66),
-              ),
-              tooltip: 'Invite Members',
-            ),
-            IconButton(
-              onPressed: () {
-                showFullscreenDialog(context, RoomSettingPage(room: room));
-              },
-              icon: Icon(
-                Icons.settings,
-                size: 16,
-                color: isSelected
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer.withAlpha(0x99)
-                    : Theme.of(context).colorScheme.onSurface.withAlpha(0x66),
-              ),
-              tooltip: 'Channel Settings',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getRoomIcon(RoomType type) {
-    switch (type) {
-      case RoomType.textChannel:
-        return Icons.tag;
-      case RoomType.voiceChannel:
-        return Icons.volume_up;
-      case RoomType.directMessage:
-        return Icons.person;
-      case RoomType.space:
-        return Icons.folder;
-      case RoomType.category:
-        return Icons.folder_open;
-    }
+  Widget _buildRoomTile(BuildContext context, _Room room) {
+    return RoomItem(room: room.room, roomType: room.type);
   }
 
   void _showCreateRoomDialog(
     BuildContext context, {
     RoomType? roomType,
     String? title,
+    required String spaceId,
   }) {
     final nameController = TextEditingController();
     final topicController = TextEditingController();
     RoomType selectedType = roomType ?? RoomType.textChannel;
     bool isPublic = false;
 
-    showDialog(
+    showMCAdaptiveDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('Create ${title ?? 'Channel'}'),
-          content: Scaffold(
-            extendBody: Platform.isAndroid || Platform.isIOS,
-            body: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Channel Name',
-                    hintText: 'general',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: topicController,
-                  decoration: const InputDecoration(
-                    labelText: 'Topic (optional)',
-                    hintText: 'What\'s this channel about?',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  title: const Text('Public Channel'),
-                  subtitle: const Text('Anyone can join'),
-                  value: isPublic,
-                  onChanged: (value) {
-                    setState(() {
-                      isPublic = value ?? false;
-                    });
+      title: Text(
+        'Create ${title ?? 'Room'}',
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        const Spacer(),
+        ElevatedButton(
+          onPressed: () async {
+            if (nameController.text.trim().isNotEmpty) {
+              final List<String> userIds = [];
+              if (roomType != RoomType.directMessage && isPublic) {
+                userIds.addAll(
+                  (await client.getRoomById(spaceId)?.requestParticipants())!
+                      .map((member) => member.id)
+                      .toList()
+                      .where((id) => id != client.userID),
+                );
+              }
+              final id = await client.createRoom(
+                name: nameController.text.trim(),
+                creationContent: selectedType == RoomType.voiceChannel
+                    ? {'type': MatrixEventTypes.msc3417}
+                    : null,
+                initialState: [
+                  StateEvent(content: {}, type: EventTypes.GroupCallMember),
+                ],
+                topic: topicController.text.trim().isEmpty
+                    ? null
+                    : topicController.text.trim(),
+                preset: isPublic
+                    ? CreateRoomPreset.publicChat
+                    : CreateRoomPreset.privateChat,
+                invite: userIds,
+                visibility: isPublic ? Visibility.public : Visibility.private,
+              );
+
+              final roomExist = (await client.getJoinedRooms()).contains(id);
+
+              final room = client.getRoomById(id);
+
+              if (roomExist && spaceId.isNotEmpty) {
+                await client.setRoomStateWithKey(
+                  spaceId,
+                  EventTypes.SpaceChild,
+                  id,
+                  {
+                    'via': [client.homeserver?.host ?? 'matrix.org'],
+                    'order': DateTime.now().millisecondsSinceEpoch.toString(),
                   },
-                  controlAffinity: ListTileControlAffinity.leading,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.trim().isNotEmpty) {
-                  final selectedSpace =
-                      context.read<SpaceBloc>().state is SpaceLoaded
-                      ? (context.read<SpaceBloc>().state as SpaceLoaded)
-                            .selectedSpace
-                      : null;
-                  context.read<RoomBloc>().add(
-                    CreateRoom(
-                      name: nameController.text.trim(),
-                      topic: topicController.text.trim().isEmpty
-                          ? null
-                          : topicController.text.trim(),
-                      type: selectedType,
-                      isPublic: isPublic,
-                      parentSpaceId: selectedSpace?.spaceId,
-                    ),
-                  );
-                  Navigator.of(dialogContext).pop();
+                );
+
+                // Set the space as a parent in the room using proper Matrix client API
+                await client.setRoomStateWithKey(
+                  id,
+                  EventTypes.SpaceParent,
+                  spaceId,
+                  {
+                    'via': [client.homeserver?.host ?? 'matrix.org'],
+                    'canonical': true,
+                  },
+                );
+
+                if (roomType == RoomType.voiceChannel && room != null) {
+                  await room.enableGroupCalls();
                 }
-              },
-              child: const Text('Create'),
+              }
+
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Create'),
+        ),
+      ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => Column(
+          children: [
+            InputField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Channel Name',
+                hintText: 'general',
+              ),
+            ),
+            const SizedBox(height: 8),
+            InputField(
+              controller: topicController,
+              decoration: const InputDecoration(
+                labelText: 'Topic (optional)',
+                hintText: 'What\'s this channel about?',
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 8),
+            CheckboxListTile.adaptive(
+              value: isPublic,
+              onChanged: (val) => setState(() {
+                isPublic = val ?? false;
+              }),
+              title: const Text('Public Channel'),
             ),
           ],
         ),

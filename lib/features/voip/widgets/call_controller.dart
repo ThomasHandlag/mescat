@@ -54,7 +54,7 @@ class CallController extends StatelessWidget {
           return Container(
             margin: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.grey[900],
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(10),
             ),
             height: 40,

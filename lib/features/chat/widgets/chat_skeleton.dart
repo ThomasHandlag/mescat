@@ -12,10 +12,10 @@ class ChatSkeleton extends StatelessWidget {
       effect: ShimmerEffect(
         baseColor: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withAlpha(0x33),
+        ).colorScheme.surfaceContainerHighest.withAlpha(0xF3),
         highlightColor: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withAlpha(0x66),
+        ).colorScheme.surfaceContainerHighest.withAlpha(0xF6),
         duration: const Duration(milliseconds: 1800),
       ),
       child: ListView.builder(
@@ -34,7 +34,9 @@ class ChatSkeleton extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade900,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha(0x33),
                     shape: BoxShape.circle,
                   ),
                 ),

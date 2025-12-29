@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'package:mescat/core/constants/app_constants.dart';
 
 /// Custom window scaffold for desktop platforms (Windows, macOS, Linux)
 /// Provides a custom title bar with window controls and draggable area
@@ -40,23 +41,19 @@ class WindowScaffold extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    // final effectiveTitleBarColor = titleBarColor ?? theme.primaryColor;
     final effectiveTitleBarTextColor =
-        titleBarTextColor ??
-        theme.primaryTextTheme.titleLarge?.color ??
-        Colors.white;
-    final effectiveButtonColor = buttonColor ?? Colors.white.withAlpha(204);
+        titleBarTextColor ?? theme.colorScheme.onSurface;
+    final effectiveButtonColor = buttonColor ?? theme.colorScheme.onSurface;
     final effectiveButtonHoverColor =
-        buttonHoverColor ?? Colors.white.withAlpha(51);
+        buttonHoverColor ?? theme.colorScheme.surfaceContainer;
     final effectiveCloseButtonHoverColor = closeButtonHoverColor ?? Colors.red;
 
     return Column(
       children: [
         WindowTitleBar(
           height: titleBarHeight,
-          backgroundColor:
-              titleBarColor ?? const Color.fromARGB(255, 34, 33, 37),
-          title: title,
+          backgroundColor: titleBarColor ?? theme.colorScheme.surfaceContainer.withAlpha(255),
+          title: 'Mescat',
           titleColor: effectiveTitleBarTextColor,
           showTitle: showTitle,
           leading: leading,
@@ -113,15 +110,15 @@ class WindowTitleBar extends StatelessWidget {
             child: MoveWindow(
               child: Container(
                 alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: UIConstraints.mDefaultPadding,
+                ),
                 child: showTitle && title != null
                     ? Text(
                         title!,
-                        style: TextStyle(
-                          color: titleColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(color: titleColor),
                       )
                     : const SizedBox.shrink(),
               ),

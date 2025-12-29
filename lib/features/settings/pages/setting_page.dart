@@ -1,7 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
-import 'package:mescat/features/voip/blocs/call_bloc.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/dependency_injection.dart';
+import 'package:web3auth_flutter/web3auth_flutter.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -19,6 +21,8 @@ class _SettingPageState extends State<SettingPage> {
     const Text('Privacy Settings'),
     const Text('About Settings'),
   ];
+
+  Client get _client => getIt<Client>();
 
   @override
   Widget build(BuildContext context) {
@@ -74,23 +78,17 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                   ),
                   const Spacer(),
-                  BlocBuilder<MescatBloc, MescatStatus>(
-                    builder: (context, state) {
-                      final enabled = state is Authenticated;
-                      return ListTile(
-                        enabled: enabled,
-                        iconColor: Colors.red,
-                        onTap: () {
-                          context.read<CallBloc>().add(const LeaveCall());
-                          context.read<MescatBloc>().add(LogoutRequested());
-                          if (Navigator.canPop(context)) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                        title: const Text('Log Out'),
-                        trailing: const Icon(Icons.logout),
-                      );
+                  ListTile(
+                    enabled: _client.isLogged(),
+                    iconColor: Colors.red,
+                    onTap: () async {
+                      if (Platform.isAndroid || Platform.isIOS) {
+                        await Web3AuthFlutter.logout();
+                      }
+                      _client.logout();
                     },
+                    title: const Text('Log Out'),
+                    trailing: const Icon(Icons.logout),
                   ),
                 ],
               ),

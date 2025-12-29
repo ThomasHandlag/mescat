@@ -31,7 +31,23 @@ class MessageActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
+    if (message.onChain) {
+      return Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withAlpha(0x1A),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child:const Center(child:  Text('Actions cannot perform with onchain type'),),
+      );
+    }
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(

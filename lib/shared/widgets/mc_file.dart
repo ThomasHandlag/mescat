@@ -83,10 +83,12 @@ class _McFileState extends State<McFile> {
         _fileName = data.name.split(RegExp(r'[\\/]')).last;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load file: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load file: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -121,11 +123,11 @@ class _McFileState extends State<McFile> {
     if (_fileData == null) return;
 
     try {
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await getDownloadsDirectory();
       final fileName = _fileName;
       final fileExtension = widget.event.attachmentMimetype.split('/').last;
       final filePath =
-          '${directory.path}/${_fileName?.split(RegExp(r'[\\/]')).last ?? '$fileName.$fileExtension'}';
+          '${directory!.path}/${_fileName?.split(RegExp(r'[\\/]')).last ?? '$fileName.$fileExtension'}';
       final file = File(filePath);
       await file.writeAsBytes(_fileData!);
 

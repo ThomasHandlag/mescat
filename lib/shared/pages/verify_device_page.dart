@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:matrix/encryption.dart';
@@ -18,7 +18,9 @@ class _VerifyDevicePageState extends State<VerifyDevicePage> {
   final TextEditingController _sssStorageKeyController =
       TextEditingController();
 
-  late Bootstrap bootstrap;
+  Bootstrap? bootstrap;
+
+  Client get client => getIt();
 
   String? _error;
 
@@ -29,7 +31,9 @@ class _VerifyDevicePageState extends State<VerifyDevicePage> {
   }
 
   void _createBootstrap() async {
-    final client = getIt<Client>();
+    await client.roomsLoading;
+    await client.accountDataLoading;
+    await client.userDeviceKeysLoading;
     bootstrap = client.encryption!.bootstrap(onUpdate: (_) => setState(() {}));
   }
 
@@ -50,14 +54,14 @@ class _VerifyDevicePageState extends State<VerifyDevicePage> {
     try {
       final key = _codeController.text.trim();
       if (key.isEmpty) return;
-      if (bootstrap.newSsssKey == null) return;
-      await bootstrap.newSsssKey!.unlock(keyOrPassphrase: key);
-      await bootstrap.openExistingSsss();
+      if (bootstrap!.newSsssKey == null) return;
+      await bootstrap!.newSsssKey!.unlock(keyOrPassphrase: key);
+      await bootstrap!.openExistingSsss();
       Logs().d('SSSS unlocked');
-      if (bootstrap.encryption.crossSigning.enabled) {
+      if (bootstrap!.encryption.crossSigning.enabled) {
         Logs().v('Cross signing is already enabled. Try to self-sign');
         try {
-          await bootstrap.client.encryption!.crossSigning.selfSign(
+          await bootstrap!.client.encryption!.crossSigning.selfSign(
             recoveryKey: key,
           );
           Logs().d('Successful selfsigned');
@@ -85,6 +89,8 @@ class _VerifyDevicePageState extends State<VerifyDevicePage> {
     }
   }
 
+  bool keyStored = false;
+
   String? titleText;
 
   @override
@@ -92,7 +98,25 @@ class _VerifyDevicePageState extends State<VerifyDevicePage> {
     final buttons = <Widget>[];
     Widget body = const LinearProgressIndicator();
 
-    if (bootstrap.newSsssKey?.recoveryKey != null) {
+    final bootstrap = this.bootstrap;
+
+    log('The bootstrap state: ${bootstrap?.state}');
+
+    if (bootstrap == null) {
+      return Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: Navigator.of(context).pop,
+          ),
+          title: const Text('Verify Device'),
+        ),
+        body: body,
+      );
+    }
+
+    if (bootstrap.newSsssKey?.recoveryKey != null && keyStored == false) {
       final key = bootstrap.newSsssKey!.recoveryKey;
       return Scaffold(
         appBar: AppBar(
@@ -135,22 +159,25 @@ class _VerifyDevicePageState extends State<VerifyDevicePage> {
                     suffix: IconButton(
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: key ?? ''));
+                        setState(() {
+                          keyStored = true;
+                        });
                       },
                       icon: const Icon(Icons.copy),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _sssStorageKeyController,
-                  decoration: const InputDecoration(
-                    labelText: 'Storage Key',
-                    hintText: 'Enter a storage key',
-                    suffixIcon: Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                ),
+                // const SizedBox(height: 16),
+                // TextField(
+                //   controller: _sssStorageKeyController,
+                //   decoration: const InputDecoration(
+                //     labelText: 'Storage Key',
+                //     hintText: 'Enter a storage key',
+                //     suffixIcon: Icon(Icons.lock_outline),
+                //     border: OutlineInputBorder(),
+                //   ),
+                //   obscureText: true,
+                // ),
               ],
             ),
           ),

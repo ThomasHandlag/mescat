@@ -6,8 +6,9 @@ import 'package:mescat/features/chat/widgets/message_bubble.dart';
 
 class MessageList extends StatefulWidget {
   final List<MCMessageEvent> messages;
+  final String? initEventId;
 
-  const MessageList({super.key, required this.messages});
+  const MessageList({super.key, required this.messages, this.initEventId});
 
   @override
   State<MessageList> createState() => _MessageListState();

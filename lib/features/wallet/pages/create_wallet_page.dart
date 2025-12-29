@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 
 class CreateWalletPage extends StatefulWidget {
@@ -24,9 +22,7 @@ class _CreateWalletPageState extends State<CreateWalletPage> {
     });
 
     try {
-      if (mounted) {
-        context.go(MescatRoutes.wallet);
-      }
+     
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

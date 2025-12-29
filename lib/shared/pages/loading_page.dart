@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mescat/core/constants/app_constants.dart';
-import 'package:mescat/features/authentication/blocs/auth_bloc.dart';
-import 'package:rive/rive.dart';
+import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/shared/util/permission_util.dart';
+import 'package:mescat/dependency_injection.dart';
 
 class LoadingPage extends StatefulWidget {
   const LoadingPage({super.key});
@@ -11,36 +14,54 @@ class LoadingPage extends StatefulWidget {
   State<LoadingPage> createState() => _LoadingPageState();
 }
 
-class _LoadingPageState extends State<LoadingPage> {
+class _LoadingPageState extends State<LoadingPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  final _duration = const Duration(seconds: 2);
+
+  Client get client => getIt<Client>();
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MescatBloc>().add(InitialEvent());
-    });
+
+    _controller = AnimationController(vsync: this, duration: _duration);
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.linear);
+    _controller.repeat();
+
+    requirePermissions();
+    _syncClient();
   }
 
-  final fileLoader = FileLoader.fromAsset(
-    '${Assets.riveAsset}/cat.riv',
-    riveFactory: Factory.rive,
-  );
+  void _syncClient() async {
+    await Future.delayed(const Duration(seconds: 2));
+    await client.roomsLoading;
+    await client.accountDataLoading;
+    await client.userDeviceKeysLoading;
+    _goHome();
+  }
+
+  void _goHome() {
+    _controller.stop();
+    context.push(MescatRoutes.home);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: RiveWidgetBuilder(
-        fileLoader: fileLoader,
-        builder: (context, state) => switch (state) {
-          RiveLoading() => const Center(child: CircularProgressIndicator()),
-          RiveFailed() => ErrorWidget.withDetails(
-            message: state.error.toString(),
-            error: FlutterError(state.error.toString()),
-          ),
-          RiveLoaded() => RiveWidget(
-            controller: state.controller,
-            fit: Fit.none,
-          ),
-        },
+      body: Center(
+        child: LottieBuilder.asset(
+          '${Assets.riveAsset}/loader_cat.json',
+          controller: _animation,
+        ),
       ),
     );
   }

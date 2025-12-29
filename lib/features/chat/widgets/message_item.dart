@@ -88,7 +88,9 @@ class _MessageItemState extends State<MessageItem>
           child: Container(
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
-              color: _isHovered ? const Color.fromARGB(255, 79, 79, 79) : null,
+              color: _isHovered
+                  ? Theme.of(context).colorScheme.surfaceContainer
+                  : null,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Stack(

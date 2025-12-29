@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:mescat/core/utils/app_config.dart';
+import 'package:mescat/core/constants/app_config.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
