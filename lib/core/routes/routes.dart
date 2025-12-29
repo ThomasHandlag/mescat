@@ -11,6 +11,9 @@ import 'package:mescat/features/notifications/pages/notification_page.dart';
 import 'package:mescat/features/rooms/blocs/room_bloc.dart';
 import 'package:mescat/features/settings/pages/room_setting_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
+import 'package:mescat/features/wallet/pages/meta_login_page.dart';
+import 'package:mescat/features/wallet/pages/user_wallet_page.dart';
+import 'package:mescat/features/wallet/pages/create_wallet_page.dart';
 import 'package:mescat/shared/layouts/app_layout.dart';
 import 'package:mescat/shared/pages/home_page.dart';
 import 'package:mescat/shared/pages/loading_page.dart';
@@ -38,6 +41,10 @@ final class MescatRoutes {
   static const String verifyDevice = '/verify-device';
   static const String home = '/';
 
+  static const String walletAuth = '/auth/wallet-auth';
+  static const String wallet = '/wallet';
+  static const String createWallet = '/wallet/create';
+
   static String spaceRoute(String spaceId) => '/space/$spaceId';
   static String spaceSettingsRoute(String spaceId) =>
       '/space/$spaceId/settings';
@@ -52,7 +59,7 @@ final class MescatRoutes {
   MescatRoutes({required this.bloc, required this.roomBloc})
     : goRouter = GoRouter(
         navigatorKey: _rootNavigatorKey,
-        initialLocation: MescatRoutes.loading,
+        initialLocation: MescatRoutes.auth,
         redirect: (context, state) {
           final authState = bloc.state;
 
@@ -63,21 +70,22 @@ final class MescatRoutes {
             if (isLoggingIn || isLoading) {
               final roomState = roomBloc.state;
               if (roomState is RoomLoaded && roomState.selectedRoom != null) {
-                return MescatRoutes.roomRoute(
-                  roomState.selectedRoom!.roomId,
-                );
+                return MescatRoutes.roomRoute(roomState.selectedRoom!.roomId);
               } else {
                 return MescatRoutes.roomRoute('0');
               }
             }
             return null;
           } else if (authState is Unauthenticated) {
-            if (state.matchedLocation == MescatRoutes.auth) {
+            if ([
+              MescatRoutes.auth,
+              MescatRoutes.walletAuth,
+            ].contains(state.matchedLocation)) {
               return null;
             }
             return MescatRoutes.auth;
           } else {
-            return MescatRoutes.loading;
+            return MescatRoutes.auth;
           }
         },
         refreshListenable: StreamRouting([bloc.stream]),
@@ -88,6 +96,24 @@ final class MescatRoutes {
             pageBuilder: (context, state) =>
                 const MaterialPage(child: AppLayout(child: AuthPage())),
             builder: (context, state) => const AuthPage(),
+          ),
+          GoRoute(
+            path: MescatRoutes.walletAuth,
+            name: 'wallet-auth',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AppLayout(child: MetaLoginPage())),
+          ),
+          GoRoute(
+            path: MescatRoutes.createWallet,
+            name: 'create-wallet',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AppLayout(child: CreateWalletPage())),
+          ),
+          GoRoute(
+            path: MescatRoutes.wallet,
+            name: 'wallet',
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AppLayout(child: UserWalletPage())),
           ),
           ShellRoute(
             navigatorKey: _shellNavigatorKey,
@@ -219,4 +245,3 @@ final class MescatRoutes {
 
   final GoRouter goRouter;
 }
-

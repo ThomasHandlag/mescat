@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -22,6 +21,30 @@ import 'package:mescat/features/spaces/blocs/space_bloc.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/l10n/mescat_localizations.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'package:web3auth_flutter/enums.dart';
+import 'package:web3auth_flutter/input.dart';
+import 'package:web3auth_flutter/web3auth_flutter.dart';
+import 'package:mescat/meta_const.dart';
+
+Future<void> initWeb3Auth() async {
+  late final Uri redirectUrl;
+
+  if (Platform.isAndroid) {
+    redirectUrl = Uri.parse('mescat://chat');
+    // w3a://com.example.w3aflutter/auth
+  } else {
+    redirectUrl = Uri.parse('com.example.mescat://chat');
+    // com.example.w3aflutter://auth
+  }
+
+  await Web3AuthFlutter.init(
+    Web3AuthOptions(
+      clientId: MetaConst.appClientId,
+      network: Network.sapphire_devnet,
+      redirectUrl: redirectUrl,
+    ),
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +57,10 @@ void main() async {
   );
 
   await RiveNative.init();
+
+  if (Platform.isAndroid || Platform.isIOS) {
+    await initWeb3Auth();
+  }
   // Bloc.observer = AppBlocObserver();
   runApp(const MescatBlocProvider());
   if (!Platform.isAndroid && !Platform.isIOS) {

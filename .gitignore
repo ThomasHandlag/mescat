@@ -54,3 +54,6 @@ app.*.map.json
 **/firebase**
 
 **/.github/workflows/ci-cd.yml
+
+**/contracts.dart
+**/meta_const.dart

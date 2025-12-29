@@ -33,7 +33,7 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckAuthStatus>(_onCheckAuthStatus);
-    on<OAuthLoginRequested>(_onOAuthLoginRequested);
+    on<SSOLoginRequested>(_onOAuthLoginRequested);
     Connectivity().onConnectivityChanged.listen((
       List<ConnectivityResult> result,
     ) {
@@ -93,23 +93,14 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
       success,
     ) async {
       final userResult = await getCurrentUserUseCase();
-      userResult.fold(
-        (failure) => emit(AuthError(failure.message)),
-        (user) => emit(
-          Authenticated(
-            user.copyWith(
-              accessToken: success.accessToken,
-              refreshToken: success.refreshToken,
-              avatarUrl: success.avatarUrl,
-            ),
-          ),
-        ),
-      );
+      userResult.fold((failure) => emit(AuthError(failure.message)), (user) {
+        add(CheckAuthStatus());
+      });
     });
   }
 
   Future<void> _onOAuthLoginRequested(
-    OAuthLoginRequested event,
+    SSOLoginRequested event,
     Emitter<MescatStatus> emit,
   ) async {
     emit(Loading());
@@ -160,10 +151,9 @@ class MescatBloc extends Bloc<MescatEvent, MescatStatus> {
     result.fold((failure) => emit(AuthError(failure.message)), (success) async {
       if (success) {
         final userResult = await getCurrentUserUseCase();
-        userResult.fold(
-          (failure) => emit(AuthError(failure.message)),
-          (user) => emit(Authenticated(user)),
-        );
+        userResult.fold((failure) => emit(AuthError(failure.message)), (user) {
+          add(CheckAuthStatus());
+        });
       } else {
         emit(const AuthError('Registration failed'));
       }

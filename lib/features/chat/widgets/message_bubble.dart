@@ -248,7 +248,17 @@ class MessageBubble extends StatelessWidget {
   Widget? _buildMessageContent(BuildContext context, MCMessageEvent message) {
     final widget = switch (message.msgtype) {
       MessageTypes.Text => _buildTextMessage(context, message),
-      _ => McFile(event: message.event),
+      _ => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(message.event.body),
+          if (message.cid != null && message.cid!.isNotEmpty) ...[
+            Image.network('https://ipfs.io/ipfs/${message.cid}'),
+          ] else
+            McFile(event: message.event),
+        ],
+      ),
     };
     return widget;
   }
@@ -378,7 +388,6 @@ class MessageBubble extends StatelessWidget {
                     TextSpan(
                       text: message.repliedEvent!.content,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
                         color: Theme.of(
                           context,
                         ).colorScheme.onSurface.withAlpha(0xB3),

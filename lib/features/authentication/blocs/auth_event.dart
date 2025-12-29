@@ -39,12 +39,10 @@ class RegisterRequested extends MescatEvent {
   List<Object?> get props => [username, password, email];
 }
 
-class OAuthLoginRequested extends MescatEvent {
+class SSOLoginRequested extends MescatEvent {
   final String loginToken;
 
-  const OAuthLoginRequested({
-    required this.loginToken,
-  });
+  const SSOLoginRequested({required this.loginToken});
 
   @override
   List<Object?> get props => [loginToken];
@@ -53,6 +51,15 @@ class OAuthLoginRequested extends MescatEvent {
 class LogoutRequested extends MescatEvent {}
 
 class CheckAuthStatus extends MescatEvent {}
+
+class WalletLoginRequested extends MescatEvent {
+  final String walletAddress;
+
+  const WalletLoginRequested({required this.walletAddress});
+
+  @override
+  List<Object?> get props => [walletAddress];
+}
 
 class SetServer extends MescatEvent {
   final String serverUrl;

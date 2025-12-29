@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ipfsdart/ipfsdart.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/contracts/abi/mescat.g.dart';
+import 'package:mescat/contracts/contracts.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/dependency_injection.dart';
@@ -12,6 +17,9 @@ import 'package:mescat/features/chat/widgets/input_action_banner.dart';
 import 'package:mescat/features/chat/widgets/reaction_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:web3auth_flutter/web3auth_flutter.dart';
+import 'package:web3dart/web3dart.dart';
 
 typedef MessageSendCallback = void Function(String content, String type);
 
@@ -24,18 +32,28 @@ class MessageInput extends StatefulWidget {
   State<MessageInput> createState() => _MessageInputState();
 }
 
-class _MessageInputState extends State<MessageInput> {
+class _MessageInputState extends State<MessageInput>
+    with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
   bool _isTyping = false;
   final List<String> _attachments = [];
   int _lines = 1;
+  bool _viaToken = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _messageController.addListener(_onMessageChanged);
+  }
+
+  @override
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      Web3AuthFlutter.setCustomTabsClosed();
+    }
   }
 
   @override
@@ -43,6 +61,7 @@ class _MessageInputState extends State<MessageInput> {
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _focusNode.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -61,7 +80,7 @@ class _MessageInputState extends State<MessageInput> {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (widget.room == null) return;
     final message = _messageController.text.trim();
     if (message.isNotEmpty || _attachments.isNotEmpty) {
@@ -82,17 +101,29 @@ class _MessageInputState extends State<MessageInput> {
               bytes: File(filePath).readAsBytesSync(),
               name: filePath.split(RegExp(r'[\\/]+')).last,
             );
-            room.sendFileEvent(file, extraContent: {'body': message});
+            final eventId = await room.sendFileEvent(
+              file,
+              extraContent: {'body': message},
+            );
+
+            if (_viaToken && eventId != null) {
+              await _uploadToken(filePath, eventId, message);
+            }
           }
         }
       } else {
         // normal text send
+        final privKey = await Web3AuthFlutter.getPrivKey();
+        log('PrivKey: $privKey');
         context.read<ChatBloc>().add(
           SendMessage(
             roomId: widget.room!.roomId,
             content: message,
+            viaToken: _viaToken,
+            privKey: privKey.isNotEmpty ? privKey : null,
           ),
         );
+
         setState(() {
           _isTyping = false;
         });
@@ -116,7 +147,7 @@ class _MessageInputState extends State<MessageInput> {
     );
   }
 
-  void _replyToMessage(String eventId) {
+  void _replyToMessage(String eventId) async {
     if (widget.room == null) return;
     if (_attachments.isNotEmpty) {
       if (!_checkAttachmentSize()) {
@@ -143,15 +174,29 @@ class _MessageInputState extends State<MessageInput> {
             bytes: File(filePath).readAsBytesSync(),
             name: filePath.split(RegExp(r'[\\/]+')).last,
           );
-          room.sendFileEvent(file, extraContent: {...replyContent});
+          final eventId = await room.sendFileEvent(
+            file,
+            extraContent: {...replyContent},
+          );
+
+          if (_viaToken && eventId != null) {
+            await _uploadToken(
+              filePath,
+              eventId,
+              _messageController.text.trim(),
+            );
+          }
         }
       }
     } else {
+      final privKey = await Web3AuthFlutter.getPrivKey();
       context.read<ChatBloc>().add(
         ReplyMessage(
           roomId: widget.room!.roomId,
           content: _messageController.text.trim(),
           replyToEventId: eventId,
+          viaToken: _viaToken,
+          privKey: privKey.isNotEmpty ? privKey : null,
         ),
       );
     }
@@ -166,6 +211,57 @@ class _MessageInputState extends State<MessageInput> {
     setState(() {
       _attachments.removeAt(index);
     });
+  }
+
+  Future<void> _uploadToken(
+    String filePath,
+    String eventId,
+    String message,
+  ) async {
+    final httpClient = http.Client();
+    final web3Client = Web3Client(MescatContracts.url, httpClient);
+
+    String privateKey;
+
+    try {
+      privateKey = await Web3AuthFlutter.getPrivKey();
+
+      if (privateKey.isEmpty) {
+        throw Exception('No wallet found');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to have a wallet to send Mesca Tokens!'),
+          ),
+        );
+      }
+      return;
+    }
+
+    final credential = EthPrivateKey.fromHex(privateKey);
+
+    final mescat = Mescat(
+      address: EthereumAddress.fromHex(MescatContracts.mescat),
+      client: web3Client,
+    );
+
+    final ipfsClient = getIt<IpfsClient>();
+    final res = await ipfsClient.add(File(filePath));
+    await ipfsClient.pinAdd(res.hash);
+    final matrixClient = getIt<Client>();
+    final event = await matrixClient.getOneRoomEvent(
+      widget.room!.roomId,
+      eventId,
+    );
+
+    await mescat.setSSSS((
+      cid: res.hash,
+      content: jsonEncode(event.toJson()),
+      eid: eventId,
+      hasCid: true,
+    ), credentials: credential);
   }
 
   String get _placeholderText {
@@ -188,6 +284,23 @@ class _MessageInputState extends State<MessageInput> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_viaToken)
+            ListTile(
+              title: const Text('This message will be sent via Mesca Token'),
+              trailing: IconButton(
+                onPressed: () {
+                  showAboutDialog(
+                    context: context,
+                    children: [
+                      const Text(
+                        'When enabled, this message will be sent using Mesca Tokens. These messages cannot be revoked or edited once sent.',
+                      ),
+                    ],
+                  );
+                },
+                icon: const Icon(Icons.info),
+              ),
+            ),
           BlocBuilder<ChatBloc, ChatState>(
             builder: (context, state) {
               if (state is ChatLoaded &&
@@ -275,14 +388,27 @@ class _MessageInputState extends State<MessageInput> {
                   ),
                 ),
 
-                // Emoji button
+                if (Platform.isAndroid || Platform.isIOS)
+                  IconButton(
+                    icon: Icon(
+                      Icons.token,
+                      size: 20,
+                      color: _viaToken
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withAlpha(200),
+                    ),
+                    onPressed: () async {
+                      setState(() {
+                        _viaToken = !_viaToken;
+                      });
+                    },
+                    tooltip: 'Send Mesca Token',
+                  ),
                 _buildActionButton(
                   icon: Icons.emoji_emotions_outlined,
                   onPressed: () => _showEmojiPicker(context),
                   tooltip: 'Add emoji',
                 ),
-
-                // Send button
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   child: _isTyping || _attachments.isNotEmpty
@@ -322,17 +448,14 @@ class _MessageInputState extends State<MessageInput> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: IconButton(
-        icon: Icon(icon, size: 20),
-        onPressed: onPressed,
-        tooltip: tooltip,
-        color: colorScheme.onSurface.withAlpha(200),
-        hoverColor: colorScheme.primary.withAlpha(60),
-        splashRadius: 20,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      ),
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      color: colorScheme.onSurface.withAlpha(200),
+      hoverColor: colorScheme.primary.withAlpha(60),
+      splashRadius: 20,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
     );
   }
 
@@ -359,60 +482,54 @@ class _MessageInputState extends State<MessageInput> {
     final canSend =
         _messageController.text.isNotEmpty || _attachments.isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: BlocBuilder<ChatBloc, ChatState>(
-        builder: (context, state) {
-          return IconButton(
-            icon: const Icon(Icons.send_rounded, size: 20),
-            onPressed: canSend
-                ? () {
-                    if (state is ChatLoaded &&
-                        state.inputAction.action == InputAction.edit &&
-                        state.inputAction.targetEventId != null) {
-                      _editMessage(state.inputAction.targetEventId!);
-                    } else if (state is ChatLoaded &&
-                        state.inputAction.action == InputAction.reply &&
-                        state.inputAction.targetEventId != null) {
-                      _replyToMessage(state.inputAction.targetEventId!);
-                    } else {
-                      _sendMessage();
-                    }
-                    context.read<ChatBloc>().add(
-                      const SetInputAction(action: InputAction.none),
-                    );
+    return BlocBuilder<ChatBloc, ChatState>(
+      builder: (context, state) {
+        return IconButton(
+          icon: const Icon(Icons.send_rounded, size: 20),
+          onPressed: canSend
+              ? () {
+                  if (state is ChatLoaded &&
+                      state.inputAction.action == InputAction.edit &&
+                      state.inputAction.targetEventId != null) {
+                    _editMessage(state.inputAction.targetEventId!);
+                  } else if (state is ChatLoaded &&
+                      state.inputAction.action == InputAction.reply &&
+                      state.inputAction.targetEventId != null) {
+                    _replyToMessage(state.inputAction.targetEventId!);
+                  } else {
+                    _sendMessage();
                   }
-                : null,
-            tooltip: 'Send message',
-            color: canSend
-                ? colorScheme.primary
-                : colorScheme.onSurface.withAlpha(100),
-            hoverColor: colorScheme.primary.withAlpha(60),
-            splashRadius: 20,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          );
-        },
-      ),
+                  context.read<ChatBloc>().add(
+                    const SetInputAction(action: InputAction.none),
+                  );
+                }
+              : null,
+          tooltip: 'Send message',
+          color: canSend
+              ? colorScheme.primary
+              : colorScheme.onSurface.withAlpha(100),
+          hoverColor: colorScheme.primary.withAlpha(60),
+          splashRadius: 20,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        );
+      },
     );
   }
 
   Widget _buildMicButton() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: IconButton(
-        icon: const Icon(Icons.mic, size: 20),
-        onPressed: () {
-          // Handle voice message recording
-          // HapticFeedback.lightImpact();
-        },
-        tooltip: 'Voice message',
-        color: colorScheme.onSurface.withAlpha(190),
-        hoverColor: colorScheme.primary.withAlpha(60),
-        splashRadius: 20,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      ),
+    return IconButton(
+      icon: const Icon(Icons.mic, size: 20),
+      onPressed: () {
+        // Handle voice message recording
+        // HapticFeedback.lightImpact();
+      },
+      tooltip: 'Voice message',
+      color: colorScheme.onSurface.withAlpha(190),
+      hoverColor: colorScheme.primary.withAlpha(60),
+      splashRadius: 20,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
     );
   }
 

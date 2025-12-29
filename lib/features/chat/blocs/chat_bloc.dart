@@ -150,6 +150,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       roomId: event.roomId,
       content: event.content,
       type: event.type,
+      viaToken: event.viaToken,
+      privKey: event.privKey,
     );
 
     result.fold(
@@ -276,6 +278,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       roomId: event.roomId,
       content: event.content,
       replyToEventId: event.replyToEventId,
+      viaToken: event.viaToken,
+      privKey: event.privKey,
     );
 
     result.fold(

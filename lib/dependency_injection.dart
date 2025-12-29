@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:app_links/app_links.dart';
 import 'package:get_it/get_it.dart';
+import 'package:ipfsdart/ipfsdart.dart';
 import 'package:logger/logger.dart';
 import 'package:matrix/matrix.dart' hide Level;
+import 'package:mescat/contracts/contracts.dart';
 import 'package:mescat/core/notifications/event_pusher.dart';
 import 'package:mescat/features/notifications/data/notification_service.dart';
 import 'package:mescat/features/voip/data/call_handler.dart';
@@ -63,10 +65,18 @@ Future<void> setupDependencyInjection() async {
   final sharedPref = await SharedPreferences.getInstance();
   final appLinks = AppLinks();
   final notificationService = NotificationService();
+  final ipfsClient = IpfsClient.init(
+    uri: Uri.parse(MescatContracts.ipfsApiUrl),
+    authMethod: AuthMethod.bearer,
+    password: MescatContracts.ipfsBearer,
+  );
   await notificationService.initialize();
+
+  matrixClient;
 
   getIt.registerSingleton<Client>(matrixClient);
   getIt.registerSingleton<AppLinks>(appLinks);
+  getIt.registerSingleton<IpfsClient>(ipfsClient);
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),
   );

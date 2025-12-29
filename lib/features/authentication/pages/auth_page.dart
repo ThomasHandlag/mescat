@@ -39,10 +39,11 @@ class _AuthPageState extends State<AuthPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text(
-          "Login to Mescat",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        title: Text(
+          _tabController.index == 0 ? 'Login' : 'Register',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
       body: Container(
@@ -102,10 +103,38 @@ class _AuthPageState extends State<AuthPage>
                     }
                   },
                 ),
+                TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withAlpha(50),
+                  ),
+                  dividerHeight: 0,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  labelColor: Theme.of(context).colorScheme.onSurface,
+                  tabs: const [
+                    Tab(text: 'Login'),
+                    Tab(text: 'Register'),
+                  ],
+                  onTap: (index) {
+                    setState(() {});
+                  },
+                ),
+                const SizedBox(height: 16),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
-                    children: const [LoginForm(), RegisterForm()],
+                    children: [
+                      LoginForm(
+                        onSwitchToRegister: () => _tabController.animateTo(1),
+                      ),
+                      RegisterForm(
+                        onSwitchToLogin: () => _tabController.animateTo(0),
+                      ),
+                    ],
                   ),
                 ),
               ],

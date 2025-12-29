@@ -1,7 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:gridexts/extensions/pin_grid/pin_grid_view.dart';
+import 'package:gridexts/gridexts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/features/chat/widgets/call_video.dart';
 import 'package:mescat/shared/util/string_util.dart';
@@ -10,19 +10,16 @@ import 'package:webrtc_interface/webrtc_interface.dart';
 
 class _MemberGrid extends StatelessWidget {
   const _MemberGrid({
-    super.key,
     this.mainGrid = false,
     required this.stream,
     required this.groupCallSession,
     required this.isActiveSpeaker,
-    required this.onTogglePin,
   });
 
   final bool mainGrid;
   final WrappedMediaStream stream;
   final GroupCallSession groupCallSession;
   final bool isActiveSpeaker;
-  final VoidCallback? onTogglePin;
 
   Uri? get avatarUri => stream.avatarUrl;
 
@@ -46,7 +43,6 @@ class _MemberGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     log('$avatarUri');
     return GestureDetector(
-      onDoubleTap: onTogglePin,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.grey[900],
@@ -176,18 +172,19 @@ class MemberGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PinGridView<String>(
-      maxPinnedItems: 2,
-      dimension: 150,
-      items: participantStreams.keys.map((e) => e.id).toList(),
-      itemBuilder: (context, key, index, isPinned, togglePin) {
-        final stream = participantStreams.keys.firstWhere((s) => s.id == key);
+    return PinGrid(
+      crossAxisCount: 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.5,
+      padding: const EdgeInsets.all(10),
+      itemCount: participantStreams.length,
+      itemBuilder: (context, index) {
+        final stream = participantStreams.keys.elementAt(index);
         return _MemberGrid(
-          key: Key(key),
           groupCallSession: participantStreams[stream]!,
           stream: stream,
           mainGrid: index == 0,
-          onTogglePin: togglePin,
           isActiveSpeaker:
               participantStreams[stream]!.backend.activeSpeaker?.userId ==
               stream.participant.userId,

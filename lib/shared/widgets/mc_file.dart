@@ -63,6 +63,7 @@ class _McFileState extends State<McFile> {
   bool _isLoading = true;
   String? _error;
   McFileType _fileType = McFileType.other;
+  String? _fileName;
 
   @override
   void initState() {
@@ -79,6 +80,7 @@ class _McFileState extends State<McFile> {
         _fileData = data.bytes;
         _fileType = _determineFileType(mimeType);
         _isLoading = false;
+        _fileName = data.name.split(RegExp(r'[\\/]')).last;
       });
     } catch (e) {
       setState(() {
@@ -107,15 +109,12 @@ class _McFileState extends State<McFile> {
     );
   }
 
-  String get _fileName {
-    // Try to get filename from event body or generate one
-    final body = widget.event.body;
-    if (body.isNotEmpty && !body.startsWith('http')) {
-      return body;
-    }
-    // Generate filename based on type and timestamp
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'file_$timestamp';
+  String get fileName {
+    if (_fileName != null) return _fileName!;
+
+    _fileName = widget.event.eventId;
+
+    return _fileName!;
   }
 
   Future<void> _downloadFile() async {
@@ -124,7 +123,9 @@ class _McFileState extends State<McFile> {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final fileName = _fileName;
-      final filePath = '${directory.path}/$fileName';
+      final fileExtension = widget.event.attachmentMimetype.split('/').last;
+      final filePath =
+          '${directory.path}/${_fileName?.split(RegExp(r'[\\/]')).last ?? '$fileName.$fileExtension'}';
       final file = File(filePath);
       await file.writeAsBytes(_fileData!);
 
@@ -221,7 +222,7 @@ class _McFileState extends State<McFile> {
       ),
       McFileType.audio => _McAudioPlayerWidget(
         data: _fileData!,
-        fileName: _fileName,
+        fileName: fileName,
         mimeType: widget.event.attachmentMimetype,
         eventId: widget.event.eventId,
       ),
@@ -249,7 +250,7 @@ class _McFileState extends State<McFile> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _fileName,
+                    fileName,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -431,7 +432,9 @@ class _McAudioPlayerWidgetState extends State<_McAudioPlayerWidget> {
                     _audioPlayer.pause();
                   } else {
                     if (_cachedFilePath != null) {
-                      _audioPlayer.play(audio.DeviceFileSource(_cachedFilePath!));
+                      _audioPlayer.play(
+                        audio.DeviceFileSource(_cachedFilePath!),
+                      );
                     } else {
                       _audioPlayer.play(audio.BytesSource(widget.data));
                     }

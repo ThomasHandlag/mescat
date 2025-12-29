@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/features/chat/blocs/chat_bloc.dart';
 import 'package:mescat/features/notifications/pages/notification_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
@@ -84,6 +86,16 @@ class SpaceSidebar extends StatelessWidget {
               useGenerateColor: false,
               onTap: () {
                 showFullscreenDialog(context, const NotificationPage());
+              },
+            ),
+            const SizedBox(height: 8),
+            SpaceIcon(
+              icon: Icons.wallet,
+              label: 'Wallet',
+              isSelected: false,
+              useGenerateColor: false,
+              onTap: () {
+                context.push(MescatRoutes.wallet);
               },
             ),
             const SizedBox(height: 8),
