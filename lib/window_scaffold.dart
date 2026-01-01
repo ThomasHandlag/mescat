@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
-import 'package:mescat/core/constants/app_constants.dart';
 
 /// Custom window scaffold for desktop platforms (Windows, macOS, Linux)
 /// Provides a custom title bar with window controls and draggable area
@@ -30,7 +29,7 @@ class WindowScaffold extends StatelessWidget {
     this.showTitle = true,
     this.leading,
     this.actions,
-    this.titleBarHeight = 40,
+    this.titleBarHeight = 30,
   });
 
   @override
@@ -52,7 +51,9 @@ class WindowScaffold extends StatelessWidget {
       children: [
         WindowTitleBar(
           height: titleBarHeight,
-          backgroundColor: titleBarColor ?? theme.colorScheme.surfaceContainer.withAlpha(255),
+          backgroundColor:
+              titleBarColor ??
+              theme.colorScheme.surfaceContainer.withAlpha(255),
           title: 'Mescat',
           titleColor: effectiveTitleBarTextColor,
           showTitle: showTitle,
@@ -102,23 +103,19 @@ class WindowTitleBar extends StatelessWidget {
       color: backgroundColor,
       child: Row(
         children: [
-          // Leading widget (e.g., app icon)
           if (leading != null) leading!,
-
-          // Draggable area with title
           Expanded(
             child: MoveWindow(
               child: Container(
                 alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: UIConstraints.mDefaultPadding,
-                ),
                 child: showTitle && title != null
-                    ? Text(
-                        title!,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleMedium?.copyWith(color: titleColor),
+                    ? Center(
+                        child: Text(
+                          title!,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(color: titleColor),
+                        ),
                       )
                     : const SizedBox.shrink(),
               ),
@@ -264,7 +261,7 @@ class _WindowButtonState extends State<WindowButton> {
       child: GestureDetector(
         onTap: widget.onPressed,
         child: Container(
-          width: 46,
+          width: 30,
           height: double.infinity,
           color: _isHovering ? widget.colors.mouseOver : widget.colors.normal,
           child: widget.iconBuilder(

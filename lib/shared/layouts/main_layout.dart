@@ -1,10 +1,16 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/constants/app_constants.dart';
+import 'package:mescat/features/marketplace/pages/library_page.dart';
 import 'package:mescat/features/members/widgets/space_members.dart';
 import 'package:mescat/features/rooms/widgets/room_list.dart';
+import 'package:mescat/features/settings/cubits/nft_usage_cubit.dart';
 import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 import 'package:mescat/features/spaces/widgets/space_sidebar.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
@@ -13,6 +19,12 @@ import 'package:mescat/shared/widgets/user_box.dart';
 class MainLayout extends StatelessWidget {
   final Widget child;
   const MainLayout({super.key, required this.child});
+
+  Uint8List _getBytesFromString(String stringBytes) {
+    final intList = jsonDecode(stringBytes).map<int>((e) => e as int).toList();
+    final Uint8List bytes = Uint8List.fromList(intList);
+    return bytes;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +49,50 @@ class MainLayout extends StatelessWidget {
                 BlocBuilder<SpaceCubit, List<Room>>(
                   builder: (_, state) => SpaceSidebar(spaces: state),
                 ),
-                const Expanded(child: RoomList()),
+                Expanded(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(UIConstraints.mDefaultPadding),
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        BlocBuilder<
+                          NftUsageCubit,
+                          Map<ApplyType, NftUsageItem>
+                        >(
+                          builder: (context, state) {
+                            final setting = state[ApplyType.roomlist];
+
+                            if (setting == null) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return switch (setting.itemType) {
+                              ItemType.meta => Positioned.fill(
+                                child: Image.memory(
+                                  _getBytesFromString(
+                                    File(setting.path).readAsStringSync(),
+                                  ),
+                                  opacity: const AlwaysStoppedAnimation(0.6),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              ItemType.lottie => Positioned.fill(
+                                child: Lottie.file(
+                                  File(setting.path),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            };
+                          },
+                        ),
+                        const RoomList(),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -75,7 +130,55 @@ class MainLayout extends StatelessWidget {
                     BlocBuilder<SpaceCubit, List<Room>>(
                       builder: (_, state) => SpaceSidebar(spaces: state),
                     ),
-                    const SizedBox(width: 250, child: RoomList()),
+                    Container(
+                      width: 250,
+                      clipBehavior: Clip.hardEdge,
+                      padding: const EdgeInsets.only(
+                        right: UIConstraints.mSmallPadding,
+                      ),
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(
+                            UIConstraints.mDefaultPadding,
+                          ),
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          BlocBuilder<
+                            NftUsageCubit,
+                            Map<ApplyType, NftUsageItem>
+                          >(
+                            builder: (context, state) {
+                              final setting = state[ApplyType.roomlist];
+
+                              if (setting == null) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return switch (setting.itemType) {
+                                ItemType.meta => Positioned.fill(
+                                  child: Image.memory(
+                                    _getBytesFromString(
+                                      File(setting.path).readAsStringSync(),
+                                    ),
+                                    opacity: const AlwaysStoppedAnimation(0.6),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                ItemType.lottie => Positioned.fill(
+                                  child: Lottie.file(
+                                    File(setting.path),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              };
+                            },
+                          ),
+                          const RoomList(),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

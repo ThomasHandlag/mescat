@@ -33,7 +33,7 @@ void main() {
       
       // Set up default bloc state
       when(() => mockChatBloc.state).thenReturn(
-        ChatLoaded(
+        ChatState(
           messages: testMessages,
           selectedRoomId: 'test_room',
           isLoadingMore: false,
@@ -43,7 +43,7 @@ void main() {
       
       when(() => mockChatBloc.stream).thenAnswer(
         (_) => Stream.value(
-          ChatLoaded(
+          ChatState(
             messages: testMessages,
             selectedRoomId: 'test_room',
             isLoadingMore: false,
@@ -217,7 +217,7 @@ void main() {
       
       // Update bloc state before measuring
       when(() => mockChatBloc.state).thenReturn(
-        ChatLoaded(
+        ChatState(
           messages: updatedMessages,
           selectedRoomId: 'test_room',
           isLoadingMore: false,
@@ -227,7 +227,7 @@ void main() {
       
       when(() => mockChatBloc.stream).thenAnswer(
         (_) => Stream.value(
-          ChatLoaded(
+          ChatState(
             messages: updatedMessages,
             selectedRoomId: 'test_room',
             isLoadingMore: false,
@@ -271,7 +271,7 @@ void main() {
       final largeMessageList = _generateTestMessages(1000, mockEvent);
       
       when(() => mockChatBloc.state).thenReturn(
-        ChatLoaded(
+        ChatState(
           messages: largeMessageList,
           selectedRoomId: 'test_room',
           isLoadingMore: false,
@@ -312,7 +312,7 @@ void main() {
     testWidgets('should efficiently handle empty state', 
       (WidgetTester tester) async {
       when(() => mockChatBloc.state).thenReturn(
-        const ChatLoaded(
+        const ChatState(
           messages: [],
           selectedRoomId: 'test_room',
           isLoadingMore: false,
@@ -391,7 +391,7 @@ void main() {
       final targetMessage = messages[targetMessageIndex];
       
       when(() => mockChatBloc.state).thenReturn(
-        ChatLoaded(
+        ChatState(
           messages: messages,
           selectedRoomId: 'test_room',
           isLoadingMore: false,
@@ -456,7 +456,7 @@ void main() {
       final targetMessageIndex = 75;
       
       when(() => mockChatBloc.state).thenReturn(
-        ChatLoaded(
+        ChatState(
           messages: messages,
           selectedRoomId: 'test_room',
           isLoadingMore: false,
@@ -526,7 +526,7 @@ void main() {
       final targetEventId = 'event_42';
       
       when(() => mockChatBloc.state).thenReturn(
-        ChatLoaded(
+        ChatState(
           messages: messages,
           selectedRoomId: 'test_room',
           isLoadingMore: false,

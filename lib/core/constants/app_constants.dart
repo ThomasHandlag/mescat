@@ -1,6 +1,6 @@
 // Core constants for the application
 final class UIConstraints {
-  static const double mDefaultPadding = 16.0;
+  static const double mDefaultPadding = 10.0;
   static const double mSmallPadding = 8.0;
   static const double mLargePadding = 24.0;
   static const double mMessageInputHeight = 60;

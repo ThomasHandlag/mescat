@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -11,8 +12,8 @@ import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/marketplace/data/market_realm.dart';
 import 'package:mescat/features/marketplace/data/nft.dart';
+import 'package:mescat/features/settings/cubits/nft_usage_cubit.dart';
 import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
-import 'package:mescat/shared/util/apply_config.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 import 'package:web3dart/crypto.dart';
@@ -181,30 +182,44 @@ final class ItemBloc extends Bloc<ItemEvent, ItemState> {
         ? await getExternalStorageDirectory()
         : await getApplicationDocumentsDirectory();
 
-    final tempFile = File("${path?.path}/MescatTemp/$uri.json");
-    await tempFile.create(recursive: true);
-
     final jsonData = await jsonDecode(content);
 
-    log("Content is store in: ${tempFile.path}");
+    final applyType = switch (jsonData['applyType']) {
+      'chatlist' => ApplyType.chatlist,
+      'chatinput' => ApplyType.chatinput,
+      'roomlist' => ApplyType.roomlist,
+      'userbox' => ApplyType.userbox,
+      _ => ApplyType.none,
+    };
 
     if (jsonData['name'] == 'lottie') {
-      await tempFile.writeAsString(content);
+      final tempFile = File("${path?.path}/MescatTemp/lib/$uri.json");
+      if (!await tempFile.exists()) {
+        await tempFile.create(recursive: true);
+        await tempFile.writeAsString(content);
+      }
       emit(
         state.copyWith(
           loading: false,
           itemType: ItemType.lottie,
           bytes: tempFile.path,
+          applyType: applyType,
         ),
       );
     } else {
+      final tempFile = File("${path?.path}/MescatTemp/lib/$uri");
+      if (!await tempFile.exists()) {
+        await tempFile.create(recursive: true);
+        await tempFile.writeAsString(content);
+      }
       final bytes = jsonData['bytes'];
-      await tempFile.writeAsBytes(bytes);
+      await tempFile.writeAsString(bytes.toString());
       emit(
         state.copyWith(
           loading: false,
           itemType: ItemType.meta,
           bytes: tempFile.path,
+          applyType: applyType,
         ),
       );
     }
@@ -222,14 +237,14 @@ final class LoadItem extends ItemEvent {
 
 final class ItemState extends Equatable {
   final ItemType? itemType;
-  final String? bytes;
+  final String? path;
   final bool loading;
   final ApplyType applyType;
 
   const ItemState({
     this.itemType,
     this.loading = false,
-    this.bytes,
+    this.path,
     required this.applyType,
   });
 
@@ -242,13 +257,13 @@ final class ItemState extends Equatable {
     return ItemState(
       itemType: itemType ?? this.itemType,
       loading: loading ?? this.loading,
-      bytes: bytes ?? this.bytes,
+      path: bytes ?? this.path,
       applyType: applyType ?? this.applyType,
     );
   }
 
   @override
-  List<Object?> get props => [itemType, bytes, loading, applyType];
+  List<Object?> get props => [itemType, path, loading, applyType];
 }
 
 enum ItemType { meta, lottie }
@@ -284,6 +299,14 @@ class _NftItem extends State<NftItem> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Uint8List _getBytesFromString(String stringBytes) {
+    final intList = jsonDecode(stringBytes).map<int>((e) => e as int).toList();
+
+    final Uint8List bytes = Uint8List.fromList(intList);
+
+    return bytes;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ItemBloc, ItemState>(
@@ -303,14 +326,22 @@ class _NftItem extends State<NftItem> with TickerProviderStateMixin {
             Expanded(
               child: switch (state.itemType) {
                 null => const Text('Item cannot be loaded'),
-                ItemType.lottie => _builLottie(state.bytes!),
-                ItemType.meta => Image.file(File(state.bytes!)),
+                ItemType.lottie => _builLottie(state.path!),
+                ItemType.meta => Image.memory(
+                  _getBytesFromString(File(state.path!).readAsStringSync()),
+                  fit: BoxFit.contain,
+                ),
               },
             ),
             if (state.applyType != ApplyType.none)
               ElevatedButton(
                 onPressed: () {
-                  _apply(context, state.bytes!, state.applyType);
+                  _apply(
+                    context,
+                    state.path!,
+                    state.applyType,
+                    state.itemType!,
+                  );
                 },
                 child: const Text('Apply'),
               ),
@@ -320,14 +351,18 @@ class _NftItem extends State<NftItem> with TickerProviderStateMixin {
     );
   }
 
-  void _apply(BuildContext context, String path, ApplyType? applyType) async {
-    final void _ = switch (applyType) {
-      null || ApplyType.none => null,
-      ApplyType.chatlist => ApplyConfig.setChatList(path),
-      ApplyType.chatinput => ApplyConfig.setChatInput(path),
-      ApplyType.roomlist => ApplyConfig.setRoomList(path),
-      ApplyType.userbox => ApplyConfig.setUserBox(path),
-    };
+  void _apply(
+    BuildContext context,
+    String path,
+    ApplyType? applyType,
+    ItemType itemType,
+  ) async {
+    final nftCubit = context.read<NftUsageCubit>();
+
+    nftCubit.setNftUsage(
+      applyType ?? ApplyType.none,
+      NftUsageItem(itemType: itemType, path: path),
+    );
   }
 
   Widget _builLottie(String path) {

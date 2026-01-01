@@ -92,6 +92,7 @@ dependencies:
   web3auth_flutter: ^6.3.0
   lottie: ^3.3.2
   hydrated_bloc: ^10.1.1
+  bloc_concurrency: ^0.3.0
 
 dev_dependencies:
   flutter_test:

@@ -50,8 +50,8 @@ class _LoadingPageState extends State<LoadingPage>
 
   @override
   void dispose() {
-    super.dispose();
     _controller.dispose();
+    super.dispose();
   }
 
   @override

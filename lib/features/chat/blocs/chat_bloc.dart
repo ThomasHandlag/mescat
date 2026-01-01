@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
@@ -17,7 +18,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   ChatBloc({required this.client, required this.eventPusher})
     : super(const ChatInitial()) {
-    on<LoadMessages>(_onLoadMessages);
+    on<LoadMessages>(_onLoadMessages, transformer: restartable());
     on<SendMessage>(_onSendMessage);
     on<AddReaction>(_onAddReaction);
     on<RemoveReaction>(_onRemoveReaction);
@@ -28,7 +29,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<LoadMoreMessages>(_onLoadMoreMessages);
     on<ReceiveMessage>(_onReceiveMessage);
     on<MessageReacted>(_onMessageReacted);
-    on<SelectRoom>(_onSelectRoom);
+    on<SelectRoom>(_onSelectRoom, transformer: restartable());
     _eventSubscription();
   }
 
@@ -303,6 +304,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         if (newMessages.isEmpty) {
           emit(currentState.copyWith(isLoadingMore: false, nextToken: null));
           return;
+        }
+
+        List<MCMessageEvent> editedMessages = currentState.messages
+            .where(
+              (msg) => msg.event.relationshipType == RelationshipTypes.edit,
+            )
+            .toList();
+
+        for (var editEvent in editedMessages) {
+          final originalIndex = newMessages.indexWhere(
+            (msg) => msg.eventId == editEvent.event.relationshipEventId,
+          );
+
+          if (originalIndex == -1) continue;
+
+          final originalMessage = newMessages[originalIndex];
+          final updatedMessage = originalMessage.copyWith(
+            body: editEvent.body,
+            isEdited: true,
+            editedTimestamp: editEvent.timestamp,
+          );
+
+          newMessages[originalIndex] = updatedMessage;
         }
 
         emit(

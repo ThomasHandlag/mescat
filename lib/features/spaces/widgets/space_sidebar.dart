@@ -54,7 +54,6 @@ class SpaceSidebar extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          const SizedBox(height: 8),
           SidebarItem(
             icon: Icons.explore,
             name: 'Explore Spaces',

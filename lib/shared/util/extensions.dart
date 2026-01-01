@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:math' show min;
 import 'dart:typed_data';
 import 'dart:ui';
@@ -207,10 +208,8 @@ extension ClientExt on Client {
           case EventTypes.Message:
             {
               if (room == null) continue;
-
               final event = Event.fromMatrixEvent(mtEvent, room);
               final user = await getUserProfile(mtEvent.senderId);
-
               final client = Web3Client(MescatContracts.url, http.Client());
               final address = EthereumAddress.fromHex(MescatContracts.mescat);
               final mescat = Mescat(address: address, client: client);
@@ -245,7 +244,7 @@ extension ClientExt on Client {
                         isCurrentUser: ssEvent.senderId == userID,
                         event: ssEvent,
                         cid: ssse.cid, // cid
-                        onChain: true
+                        onChain: true,
                       ),
                     );
                   } else {
@@ -263,7 +262,7 @@ extension ClientExt on Client {
                         eventTypes: ssEvent.type,
                         isCurrentUser: ssEvent.senderId == userID,
                         event: ssEvent,
-                        onChain: true
+                        onChain: true,
                       ),
                     );
                   }
@@ -321,29 +320,31 @@ extension ClientExt on Client {
                 isCurrentUser: mtEvent.senderId == userID,
                 repliedEvent: repliedEventContent,
                 event: event,
-                onChain: ssse.eventId.isNotEmpty
+                onChain: ssse.eventId.isNotEmpty,
               );
-
-              matrixMessages.add(messageEvent);
 
               if (event.relationshipType == RelationshipTypes.edit) {
                 final oIndex = matrixMessages.indexWhere(
                   (msg) => msg.eventId == event.relationshipEventId,
                 );
 
+                log(
+                  'A Editing message with new content: ${messageEvent.body}',
+                );
+
                 if (oIndex == -1) continue;
 
                 final originMessage = matrixMessages[oIndex];
 
-                if (originMessage.eventId.isNotEmpty) {
-                  final updatedMessage = originMessage.copyWith(
-                    body: messageEvent.body,
-                    isEdited: true,
-                    editedTimestamp: messageEvent.timestamp,
-                  );
-                  final index = matrixMessages.indexOf(originMessage);
-                  matrixMessages[index] = updatedMessage;
-                }
+                
+                final updatedMessage = originMessage.copyWith(
+                  body: messageEvent.body,
+                  isEdited: true,
+                  editedTimestamp: messageEvent.timestamp,
+                );
+                matrixMessages[oIndex] = updatedMessage;
+              } else {
+                matrixMessages.add(messageEvent);
               }
             }
             break;

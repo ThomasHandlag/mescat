@@ -66,14 +66,10 @@ class _UserWalletPageState extends State<UserWalletPage>
         }
         return;
       }
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
       if (isMobile) {
         address = EthPrivateKey.fromHex(privateKey).address;
+        if (!mounted) return;
+        context.read<WalletCubit>().updateWalletAddress(address.hex);
       } else {
         final uri = client.getUserProfile(client.userID!);
         _userInfo = TorusUserInfo(
@@ -83,6 +79,12 @@ class _UserWalletPageState extends State<UserWalletPage>
         address = (await walletStore.retrieveKey(privateKey)).address;
         if (!mounted) return;
         context.read<WalletCubit>().updateWalletAddress(address.hex);
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {

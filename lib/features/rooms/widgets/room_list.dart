@@ -1,12 +1,15 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/constants/app_constants.dart';
 
 import 'package:mescat/core/constants/matrix_constants.dart';
 import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
+
 import 'package:mescat/features/rooms/widgets/room_item.dart';
 import 'package:mescat/features/rooms/widgets/expanse_channel.dart';
 import 'package:mescat/features/settings/pages/space_setting_page.dart';
@@ -76,6 +79,7 @@ class RoomList extends StatelessWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
@@ -89,7 +93,9 @@ class RoomList extends StatelessWidget {
           right: BorderSide.none,
         ),
         borderRadius: Platform.isWindows
-            ? const BorderRadius.only(topLeft: Radius.circular(8))
+            ? const BorderRadius.only(
+                topLeft: Radius.circular(UIConstraints.mDefaultPadding),
+              )
             : null,
       ),
       child: Column(
@@ -125,7 +131,7 @@ class RoomList extends StatelessWidget {
                 if (isHome) ...[
                   ListTile(
                     onTap: () {
-                      context.push(MescatRoutes.marketplace);
+                      context.push(MescatRoutes.wallet);
                     },
                     leading: const Icon(Icons.store),
                     title: const Text('Marketplace'),

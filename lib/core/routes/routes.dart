@@ -13,6 +13,7 @@ import 'package:mescat/features/marketplace/pages/library_page.dart';
 import 'package:mescat/features/marketplace/pages/marketplace_page.dart';
 import 'package:mescat/features/notifications/pages/notification_page.dart';
 import 'package:mescat/features/settings/pages/room_setting_page.dart';
+import 'package:mescat/features/settings/pages/setting_page.dart';
 import 'package:mescat/features/spaces/pages/explore_space_page.dart';
 import 'package:mescat/features/spaces/pages/space_home.dart';
 import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
@@ -20,6 +21,7 @@ import 'package:mescat/features/wallet/pages/meta_login_page.dart';
 import 'package:mescat/features/wallet/pages/user_wallet_page.dart';
 import 'package:mescat/shared/layouts/main_layout.dart';
 import 'package:mescat/shared/layouts/platform_layout.dart';
+import 'package:mescat/shared/layouts/setting_layout.dart';
 import 'package:mescat/shared/pages/home_page.dart';
 import 'package:mescat/shared/pages/loading_page.dart';
 import 'package:mescat/shared/pages/settings_page.dart';
@@ -35,7 +37,6 @@ final class MescatRoutes {
   static const String room = '/space/:spaceId/room/:roomId';
 
   static const String rSetting = '/settings/room/:roomId';
-  static const String settings = '/settings';
   static const String profile = '/profile/:userId';
   static const String notifications = '/notifications';
   static const String verifyDevice = '/verify-device';
@@ -47,12 +48,17 @@ final class MescatRoutes {
   static const String marketplace = '/marketplace';
   static const String library = '/library';
 
+  static const String settings = '/settings';
+  static const String settingGeneral = '/settings/general';
+  static const String settingAccount = '/settings/account';
+  static const String settingNotifications = '/settings/notifications';
+  static const String settingPrivacy = '/settings/privacy';
+  static const String settingAbout = '/settings/about';
+
   static String spaceRoute(String spaceId) => '/space/$spaceId';
   static String roomSetting(String roomId) => '/settings/room/$roomId';
   static String roomRoute(String spaceId, String roomId) =>
       '/space/$spaceId/room/$roomId';
-
-  static String profileRoute(String userId) => '/profile/$userId';
 
   static bool loggedIn() => client.isLogged();
 
@@ -69,7 +75,7 @@ final class MescatRoutes {
     final pkey = context.read<WalletCubit>().state;
     if (pkey.isEmpty) {
       next = walletAuth;
-    } 
+    }
     return next;
   }
 
@@ -162,12 +168,49 @@ final class MescatRoutes {
           child: PlatformLayout(child: RoomSettingPage()),
         ),
       ),
-      GoRoute(
-        path: settings,
-        name: 'settings',
-        redirect: (context, state) => loggedIn() ? null : auth,
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: PlatformLayout(child: SettingsPage())),
+      ShellRoute(
+        builder: (context, state, child) => PlatformLayout(
+          child: (Platform.isAndroid || Platform.isIOS)
+              ? child
+              : SettingLayout(child: child),
+        ),
+        routes: [
+          GoRoute(
+            path: settings,
+            name: 'settings',
+            redirect: (context, state) => loggedIn() ? null : auth,
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: SettingsPage()),
+          ),
+          GoRoute(
+            path: settingGeneral,
+            name: 'settings-general',
+            redirect: (context, state) => loggedIn() ? null : auth,
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: GeneralSettingsPage()),
+          ),
+          GoRoute(
+            path: settingAbout,
+            name: 'settings-about',
+            redirect: (context, state) => loggedIn() ? null : auth,
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AboutSettingsPage()),
+          ),
+          GoRoute(
+            path: settingAccount,
+            name: 'settings-account',
+            redirect: (context, state) => loggedIn() ? null : auth,
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: AccountSettingsPage()),
+          ),
+          GoRoute(
+            path: settingNotifications,
+            name: 'settings-notifications',
+            redirect: (context, state) => loggedIn() ? null : auth,
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: NotificationSettingsPage()),
+          ),
+        ],
       ),
       if (Platform.isAndroid || Platform.isIOS)
         GoRoute(
@@ -186,66 +229,86 @@ final class MescatRoutes {
       GoRoute(
         path: sync,
         name: 'sync',
+        redirect: (context, state) => loggedIn() ? null : auth,
         builder: (context, state) => const PlatformLayout(child: LoadingPage()),
       ),
-      StatefulShellRoute.indexedStack(
+      ShellRoute(
         redirect: (context, state) => loggedIn() ? null : auth,
-        builder: (context, state, child) {
-          return PlatformLayout(child: MainLayout(child: child));
-        },
-        branches: [
-          // StatefulShellBranch(
-          //   initialLocation: MescatRoutes.sync,
-          //   routes: [
-          //     GoRoute(
-          //       path: MescatRoutes.sync,
-          //       name: 'sync',
-          //       builder: (context, state) => const LoadingPage(),
-          //     ),
-          //   ],
-          // ),
-          StatefulShellBranch(
-            initialLocation: home,
-            routes: [
-              GoRoute(
-                path: home,
-                name: 'home',
-                builder: (context, state) => const HomePage(),
-              ),
-              GoRoute(
-                path: space,
-                name: 'space',
-                builder: (context, state) => const SpaceHome(),
-              ),
-              if (!Platform.isAndroid && !Platform.isIOS)
-                GoRoute(
-                  path: room,
-                  name: 'room',
-                  pageBuilder: (context, state) {
-                    final params = state.pathParameters;
-                    final roomId = params['roomId'];
-                    final spaceId = params['spaceId'] ?? '0';
-                    context.read<ChatBloc>().add(SelectRoom(roomId ?? '0'));
-                    return MaterialPage<void>(
-                      child: ChatPage(spaceId: spaceId),
-                    );
-                  },
-                ),
-              // GoRoute(
-              //   path: 'profile/:userId',
-              //   name: 'profile',
-              //   pageBuilder: (context, state) {
-              //     final userId = state.pathParameters['userId']!;
-              //     return MaterialPage(
-              //       fullscreenDialog: true,
-              //       child: ProfilePage(userId: userId),
-              //     );
-              //   },
-              // ),
-            ],
+        builder: (context, state, child) =>
+            PlatformLayout(child: MainLayout(child: child)),
+        routes: [
+          GoRoute(
+            path: home,
+            name: 'home',
+            builder: (context, state) => const HomePage(),
           ),
+          GoRoute(
+            path: space,
+            name: 'space',
+            builder: (context, state) => const SpaceHome(),
+          ),
+          if (!Platform.isAndroid && !Platform.isIOS)
+            GoRoute(
+              path: room,
+              name: 'room',
+              pageBuilder: (context, state) {
+                final params = state.pathParameters;
+                final roomId = params['roomId'];
+                final spaceId = params['spaceId'] ?? '0';
+                context.read<ChatBloc>().add(SelectRoom(roomId ?? '0'));
+                return MaterialPage<void>(child: ChatPage(spaceId: spaceId));
+              },
+            ),
         ],
       ),
+      // StatefulShellRoute.indexedStack(
+      //   redirect: (context, state) => loggedIn() ? null : auth,
+      //   builder: (context, state, child) {
+      //     return PlatformLayout(child: MainLayout(child: child));
+      //   },
+      //   branches: [
+      //     StatefulShellBranch(
+      //       initialLocation: home,
+      //       routes: [
+      //         GoRoute(
+      //           path: home,
+      //           name: 'home',
+      //           builder: (context, state) => const HomePage(),
+      //         ),
+      //         GoRoute(
+      //           path: space,
+      //           name: 'space',
+      //           builder: (context, state) => const SpaceHome(),
+      //         ),
+      //         if (!Platform.isAndroid && !Platform.isIOS)
+      //           GoRoute(
+      //             path: room,
+      //             name: 'room',
+      //             pageBuilder: (context, state) {
+      //               final params = state.pathParameters;
+      //               final roomId = params['roomId'];
+      //               final spaceId = params['spaceId'] ?? '0';
+      //               context.read<ChatBloc>().add(SelectRoom(roomId ?? '0'));
+      //               return MaterialPage<void>(
+      //                 child: ChatPage(spaceId: spaceId),
+      //               );
+      //             },
+      //           ),
+      //         // GoRoute(
+      //         //   path: 'profile/:userId',
+      //         //   name: 'profile',
+      //         //   pageBuilder: (context, state) {
+      //         //     final userId = state.pathParameters['userId']!;
+      //         //     return MaterialPage(
+      //         //       fullscreenDialog: true,
+      //         //       child: ProfilePage(userId: userId),
+      //         //     );
+      //         //   },
+      //         // ),
+      //       ],
+      //     ),
+      //   ],
+      // ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

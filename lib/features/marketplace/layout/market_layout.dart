@@ -53,9 +53,12 @@ class MarketLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: (Platform.isAndroid || Platform.isIOS)
+      body: Platform.isAndroid || Platform.isIOS
           ? child
           : _buildDesktop(context: context),
+      bottomNavigationBar: Platform.isAndroid || Platform.isIOS
+          ? _buildNavbar()
+          : null,
     );
   }
 
@@ -105,22 +108,22 @@ class MarketNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = GoRouterState.of(context).matchedLocation == route;
 
-    return Container(
-      width: 45,
-      height: 45,
-      padding: const EdgeInsets.all(4.0),
-      decoration: BoxDecoration(
-        border: active
-            ? Border.all(color: Theme.of(context).colorScheme.primary)
-            : null,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () {
-            context.go(route);
-          },
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          context.go(route);
+        },
+        child: Container(
+          width: 45,
+          height: 45,
+          padding: const EdgeInsets.all(4.0),
+          decoration: BoxDecoration(
+            border: active
+                ? Border.all(color: Theme.of(context).colorScheme.primary)
+                : null,
+            borderRadius: BorderRadius.circular(8.0),
+          ),
           child: Icon(
             iconData,
             color: active

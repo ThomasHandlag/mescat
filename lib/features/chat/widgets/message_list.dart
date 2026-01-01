@@ -15,82 +15,25 @@ class MessageList extends StatefulWidget {
 }
 
 class _MessageListState extends State<MessageList> {
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController(
+    initialScrollOffset: 100,
+  );
 
-  bool _isTop = false;
-  DateTime? _lastLoadTime;
-  static const _loadDebounceMs = 500;
   static const _scrollThreshold = 100.0;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_handleScroll);
+    _scrollToBottom();
   }
 
   void _handleScroll() {
     if (!_scrollController.hasClients) return;
-
     final position = _scrollController.position;
-
-    // Check if near top for showing load more button
     final isNearTop = position.pixels <= _scrollThreshold;
-    if (isNearTop != _isTop) {
-      setState(() {
-        _isTop = isNearTop;
-      });
-    }
-
-    // Auto-load when scrolling near top (if not already loading)
-    if (position.pixels == 0 && _canLoadMore()) {
+    if (isNearTop) {
       _loadMoreMessages();
-    }
-  }
-
-  bool _canLoadMore() {
-    if (_lastLoadTime == null) return true;
-    return DateTime.now().difference(_lastLoadTime!).inMilliseconds >
-        _loadDebounceMs;
-  }
-
-  @override
-  void didUpdateWidget(MessageList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Only auto-scroll to bottom for new messages (not when loading old ones)
-    if (widget.messages.length > oldWidget.messages.length) {
-      final oldCount = oldWidget.messages.length;
-      final newCount = widget.messages.length;
-
-      // Check if new messages were added at the end (not prepended)
-      if (oldCount > 0 && newCount > 0) {
-        final oldLastMsg = oldWidget.messages.last;
-        final newLastMsg = widget.messages.last;
-
-        if (oldLastMsg.eventId != newLastMsg.eventId) {
-          // New message at the end, scroll to bottom
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
-        } else if (_scrollController.hasClients &&
-            _scrollController.position.pixels < _scrollThreshold) {
-          // Messages prepended while near top, maintain relative position
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final itemsAdded = newCount - oldCount;
-            if (itemsAdded > 0 && _scrollController.hasClients) {
-              // Adjust scroll to maintain visual position
-              _scrollController.jumpTo(
-                _scrollController.position.pixels + (itemsAdded * 80.0),
-              );
-            }
-          });
-        }
-      } else if (oldCount == 0 && newCount > 0) {
-        // First messages loaded, scroll to bottom
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
-        });
-      }
     }
   }
 
@@ -104,22 +47,15 @@ class _MessageListState extends State<MessageList> {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 0),
+        curve: Curves.linear,
       );
     }
   }
 
   void _loadMoreMessages() {
-    if (!_canLoadMore()) return;
-
     final state = context.read<ChatBloc>().state;
     if (state is ChatLoaded && state.isLoadingMore) return;
-
-    setState(() {
-      _lastLoadTime = DateTime.now();
-    });
-
     context.read<ChatBloc>().add(const LoadMoreMessages());
   }
 
@@ -156,16 +92,21 @@ class _MessageListState extends State<MessageList> {
           );
         }
 
+        final loadMore = state is ChatLoaded && state.isLoadingMore ? const CircularProgressIndicator() : const SizedBox.shrink();
+
         return Stack(
           children: [
             ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: widget.messages.length,
+              itemCount: widget.messages.length + 1,
               itemBuilder: (context, index) {
-                final message = widget.messages[index];
-                final previousMessage = index > 0
-                    ? widget.messages[index - 1]
+                if (index == 0) {
+                  return Center(child: loadMore);
+                }
+                final message = widget.messages[index - 1];
+                final previousMessage = index > 1
+                    ? widget.messages[index - 2]
                     : null;
                 final showSender =
                     previousMessage?.senderId != message.senderId ||
@@ -180,73 +121,6 @@ class _MessageListState extends State<MessageList> {
                 return MessageBubble(message: message, showSender: showSender);
               },
             ),
-            if (_isTop && state is ChatLoaded && state.nextToken != null)
-              Positioned(
-                top: 8,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: !state.hasMoreMessages
-                      ? const SizedBox.shrink()
-                      : state.isLoadingMore
-                      ? Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surface.withAlpha(0xF0),
-                            shape: BoxShape.circle,
-                          ),
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        )
-                      : GestureDetector(
-                          onTap: _loadMoreMessages,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.arrow_upward,
-                                  size: 14,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Load more',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimaryContainer,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                ),
-              ),
           ],
         );
       },

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -78,14 +79,7 @@ final class ItemBloc extends Bloc<ItemEvent, ItemState> {
         ? await getExternalStorageDirectory()
         : await getApplicationDocumentsDirectory();
 
-    final tempFile = File("${path?.path}/MescatTemp/$uri.json");
-
-    await tempFile.create(recursive: true);
-
     final jsonData = await jsonDecode(content);
-
-    log("Content is store in: ${tempFile.path}");
-
     final applyType = jsonData['applyType'] != null
         ? ApplyType.values.firstWhere(
             (e) => e.name == jsonData['applyType'],
@@ -94,24 +88,32 @@ final class ItemBloc extends Bloc<ItemEvent, ItemState> {
         : ApplyType.none;
 
     if (jsonData['name'] == 'lottie') {
-      await tempFile.writeAsString(content);
+      final file = File("${path?.path}/MescatTemp/$uri.json");
+      if (!file.existsSync()) {
+        await file.create(recursive: true);
+        await file.writeAsString(content);
+      }
 
       emit(
         state.copyWith(
           loading: false,
           itemType: ItemType.lottie,
-          bytes: tempFile.path,
+          path: file.path,
           applyType: applyType,
         ),
       );
     } else {
-      final bytes = jsonData['bytes'];
-      await tempFile.writeAsBytes(bytes);
+      final file = File("${path?.path}/MescatTemp/$uri");
+      if (!file.existsSync()) {
+        await file.create(recursive: true);
+        final bytes = jsonData['bytes'];
+        await file.writeAsString(bytes.toString());
+      }
       emit(
         state.copyWith(
           loading: false,
           itemType: ItemType.meta,
-          bytes: tempFile.path,
+          path: file.path,
           applyType: applyType,
         ),
       );
@@ -130,33 +132,33 @@ final class LoadItem extends ItemEvent {
 
 final class ItemState extends Equatable {
   final ItemType? itemType;
-  final String? bytes;
+  final String? path;
   final bool loading;
   final ApplyType applyType;
 
   const ItemState({
     this.itemType,
     this.loading = false,
-    this.bytes,
+    this.path,
     required this.applyType,
   });
 
   ItemState copyWith({
     ItemType? itemType,
     bool? loading,
-    String? bytes,
+    String? path,
     ApplyType? applyType,
   }) {
     return ItemState(
       itemType: itemType ?? this.itemType,
       loading: loading ?? this.loading,
-      bytes: bytes ?? this.bytes,
+      path: path ?? this.path,
       applyType: applyType ?? this.applyType,
     );
   }
 
   @override
-  List<Object?> get props => [itemType, bytes, loading, applyType];
+  List<Object?> get props => [itemType, path, loading, applyType];
 }
 
 enum ItemType { meta, lottie }
@@ -198,6 +200,14 @@ class _NftItem extends State<NftItem> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Uint8List _getBytesFromString(String stringBytes) {
+    final intList = jsonDecode(stringBytes).map<int>((e) => e as int).toList();
+
+    final Uint8List bytes = Uint8List.fromList(intList);
+
+    return bytes;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -207,65 +217,72 @@ class _NftItem extends State<NftItem> with TickerProviderStateMixin {
           Expanded(
             child: BlocBuilder<ItemBloc, ItemState>(
               builder: (context, state) {
+                if (state.applyType != ApplyType.none) {
+                  log('Apply type: ${state.toString()}');
+                }
                 if (state.loading) {
-                  return const CircularProgressIndicator(
-                    constraints: BoxConstraints(maxWidth: 40),
-                  );
+                  return const LinearProgressIndicator();
                 }
 
                 if (state.itemType == null) {
                   return const Text('Item cannot be loaded');
                 }
 
-                return Column(
+                return Stack(
                   children: [
-                    Stack(
-                      children: [
-                        switch (state.itemType) {
-                          null => const Text('Item cannot be loaded'),
-                          ItemType.lottie => _builLottie(state.bytes!),
-                          ItemType.meta => Image.file(File(state.bytes!)),
-                        },
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: IconButton(
-                            icon: const Icon(Icons.fullscreen),
-                            onPressed: () {
-                              _fullScreen(switch (state.itemType) {
-                                null => const Text('Item cannot be loaded'),
-                                ItemType.lottie => _builLottie(state.bytes!),
-                                ItemType.meta => Image.file(File(state.bytes!)),
-                              }, context);
-                            },
-                          ),
+                    switch (state.itemType) {
+                      null => const Text('Item cannot be loaded'),
+                      ItemType.lottie => _builLottie(state.path!),
+                      ItemType.meta => Image.memory(
+                        _getBytesFromString(
+                          File(state.path!).readAsStringSync(),
                         ),
-                      ],
-                    ),
+                        fit: BoxFit.contain,
+                      ),
+                    },
                     Align(
-                      alignment: Alignment.centerLeft,
-                      child: switch (state.applyType) {
-                        ApplyType.none => Chip(
-                          avatar: CircleAvatar(
-                            backgroundColor: state.applyType.name
-                                .generateFromString(),
-                            child: Text(state.applyType.name[0]),
-                          ),
-                          label: Text(state.applyType.name.toUpperCase()),
-                          elevation: 1,
-                        ),
-                        _ => Chip(
-                          avatar: CircleAvatar(
-                            backgroundColor: state.applyType.name
-                                .generateFromString(),
-                            child: Text(state.applyType.name[0]),
-                          ),
-                          label: Text(state.applyType.name.toUpperCase()),
-                          elevation: 1,
-                        ),
-                      },
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: const Icon(Icons.fullscreen),
+                        onPressed: () {
+                          _fullScreen(switch (state.itemType) {
+                            null => const Text('Item cannot be loaded'),
+                            ItemType.lottie => _builLottie(state.path!),
+                            ItemType.meta => Image.memory(
+                              _getBytesFromString(
+                                File(state.path!).readAsStringSync(),
+                              ),
+                              fit: BoxFit.contain,
+                            ),
+                          }, context);
+                        },
+                      ),
                     ),
                   ],
                 );
+              },
+            ),
+          ),
+          BlocBuilder<ItemBloc, ItemState>(
+            builder: (context, state) => Align(
+              alignment: Alignment.centerLeft,
+              child: switch (state.applyType) {
+                ApplyType.none => Chip(
+                  avatar: CircleAvatar(
+                    backgroundColor: state.applyType.name.generateFromString(),
+                    child: Text(state.applyType.name[0]),
+                  ),
+                  label: Text(state.applyType.name.toUpperCase()),
+                  elevation: 1,
+                ),
+                _ => Chip(
+                  avatar: CircleAvatar(
+                    backgroundColor: state.applyType.name.generateFromString(),
+                    child: Text(state.applyType.name[0]),
+                  ),
+                  label: Text(state.applyType.name.toUpperCase()),
+                  elevation: 1,
+                ),
               },
             ),
           ),
@@ -314,7 +331,7 @@ class _NftItem extends State<NftItem> with TickerProviderStateMixin {
       context,
       Scaffold(
         appBar: AppBar(title: const Text('NFT Item')),
-        body: content,
+        body: Center(child: content),
       ),
     );
   }

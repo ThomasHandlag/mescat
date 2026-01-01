@@ -30,11 +30,17 @@ class PlatformLayout extends StatelessWidget {
       return WindowScaffold(
         actions: [
           if (client.isLogged())
-            IconButton(
-              onPressed: () {
-                context.push(MescatRoutes.notifications);
-              },
-              icon: const Icon(Icons.inbox),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: SizedBox(
+                width: 30,
+                child: GestureDetector(
+                  onTap: () {
+                    context.push(MescatRoutes.notifications);
+                  },
+                  child: const Icon(Icons.inbox),
+                ),
+              ),
             ),
         ],
         child: SafeArea(

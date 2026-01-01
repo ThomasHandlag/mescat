@@ -9,10 +9,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:ipfsdart/ipfsdart.dart';
+import 'package:lottie/lottie.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/features/marketplace/pages/library_page.dart';
+import 'package:mescat/features/settings/cubits/nft_usage_cubit.dart';
+import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
+import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
 
 import 'package:mescat/contracts/abi/mescat.g.dart';
@@ -145,14 +150,20 @@ class _MessageInputState extends State<MessageInput>
         }
       } else {
         // normal text send
-        final privKey = await Web3AuthFlutter.getPrivKey();
-        log('PrivKey: $privKey');
+        String? privKey = await _getPrivKey();
+
+        if (_viaToken && (privKey == null || privKey.isEmpty)) {
+          return;
+        }
+
+        if (!mounted) return;
+
         context.read<ChatBloc>().add(
           SendMessage(
             roomId: room.id,
             content: message,
             viaToken: _viaToken,
-            privKey: privKey.isNotEmpty ? privKey : null,
+            privKey: privKey,
           ),
         );
 
@@ -176,6 +187,44 @@ class _MessageInputState extends State<MessageInput>
         newContent: _messageController.text.trim(),
       ),
     );
+  }
+
+  Future<String?> _getPrivKey() async {
+    String privateKey = '';
+
+    try {
+      if (Platform.isAndroid || Platform.isIOS) {
+        privateKey = await Web3AuthFlutter.getPrivKey();
+      } else {
+        final prevKey = await context.read<WalletCubit>().tryGetkey();
+        if (prevKey != null) {
+          privateKey = bytesToHex(prevKey.privateKey);
+        } else {
+          if (!mounted) return null;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You need to have a wallet to send Mesca Tokens!'),
+            ),
+          );
+          return null;
+        }
+      }
+
+      if (privateKey.isEmpty) {
+        throw Exception('No wallet found');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to have a wallet to send Mesca Tokens!'),
+          ),
+        );
+      }
+      return null;
+    }
+
+    return privateKey;
   }
 
   void _replyToMessage(String eventId) async {
@@ -251,24 +300,9 @@ class _MessageInputState extends State<MessageInput>
     final httpClient = http.Client();
     final web3Client = Web3Client(MescatContracts.url, httpClient);
 
-    String privateKey;
+    String? privateKey = await _getPrivKey();
 
-    try {
-      privateKey = await Web3AuthFlutter.getPrivKey();
-
-      if (privateKey.isEmpty) {
-        throw Exception('No wallet found');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You need to have a wallet to send Mesca Tokens!'),
-          ),
-        );
-      }
-      return;
-    }
+    if (privateKey == null || privateKey.isEmpty) return;
 
     final credential = EthPrivateKey.fromHex(privateKey);
 
@@ -298,6 +332,12 @@ class _MessageInputState extends State<MessageInput>
 
   String get _placeholderText =>
       'Message #${room.isDirectChat ? room.getLocalizedDisplayname() : room.name}';
+
+  Uint8List _getBytesFromString(String stringBytes) {
+    final intList = jsonDecode(stringBytes).map<int>((e) => e as int).toList();
+    final Uint8List bytes = Uint8List.fromList(intList);
+    return bytes;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -360,93 +400,124 @@ class _MessageInputState extends State<MessageInput>
                 color: colorScheme.outlineVariant.withAlpha(100),
               ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Stack(
               children: [
-                // Attach file button
-                _buildActionButton(
-                  icon: Icons.attach_file_outlined,
-                  onPressed: () => _pickFile(),
-                  tooltip: 'Attach file',
-                ),
-                // Text input
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      maxHeight: UIConstraints.mMessageInputHeight + (10 * 16),
-                    ),
-                    height:
-                        (_lines > 1 ? (_lines * 16) : 0) +
-                        UIConstraints.mMessageInputHeight,
-                    child: BlocListener<ChatBloc, ChatState>(
-                      listener: (context, state) {
-                        if (state is ChatLoaded &&
-                            state.inputAction.action != InputAction.none) {
-                          if (state.inputAction.action == InputAction.edit) {
-                            _messageController.text =
-                                state.inputAction.initialContent ?? '';
-                          }
-                          _focusNode.requestFocus();
-                        }
-                      },
-                      child: TextField(
-                        controller: _messageController,
-                        expands: true,
-                        focusNode: _focusNode,
-                        maxLines: null,
-                        maxLength: 500,
-                        textInputAction: TextInputAction.newline,
-                        keyboardType: TextInputType.multiline,
-                        onSubmitted: (_) => _sendMessage(),
-                        textAlignVertical: TextAlignVertical.center,
-                        decoration: InputDecoration(
-                          hintText: _placeholderText,
-                          visualDensity: const VisualDensity(
-                            horizontal: 0,
-                            vertical: -4,
+                BlocBuilder<NftUsageCubit, Map<ApplyType, NftUsageItem>>(
+                  builder: (context, state) {
+                    final setting = state[ApplyType.chatinput];
+
+                    if (setting == null) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return switch (setting.itemType) {
+                      ItemType.meta => Positioned.fill(
+                        child: Image.memory(
+                          _getBytesFromString(
+                            File(setting.path).readAsStringSync(),
                           ),
-                          hintStyle: TextStyle(
-                            color: colorScheme.onSurface.withAlpha(180),
-                            fontSize: 16,
-                          ),
-                          border: InputBorder.none,
-                          counterText: '', // Hide character counter
+                          opacity: const AlwaysStoppedAnimation(0.6),
+                          fit: BoxFit.cover,
                         ),
-                        style: const TextStyle(fontSize: 16),
-                        onChanged: (text) {
-                          // Handle typing indicator here if needed
-                        },
+                      ),
+                      ItemType.lottie => Positioned.fill(
+                        child: Lottie.file(
+                          File(setting.path),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    };
+                  },
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Attach file button
+                    _buildActionButton(
+                      icon: Icons.attach_file_outlined,
+                      onPressed: () => _pickFile(),
+                      tooltip: 'Attach file',
+                    ),
+                    // Text input
+                    Expanded(
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          maxHeight:
+                              UIConstraints.mMessageInputHeight + (10 * 16),
+                        ),
+                        height:
+                            (_lines > 1 ? (_lines * 16) : 0) +
+                            UIConstraints.mMessageInputHeight,
+                        child: BlocListener<ChatBloc, ChatState>(
+                          listener: (context, state) {
+                            if (state is ChatLoaded &&
+                                state.inputAction.action != InputAction.none) {
+                              if (state.inputAction.action ==
+                                  InputAction.edit) {
+                                _messageController.text =
+                                    state.inputAction.initialContent ?? '';
+                              }
+                              _focusNode.requestFocus();
+                            }
+                          },
+                          child: TextField(
+                            controller: _messageController,
+                            expands: true,
+                            focusNode: _focusNode,
+                            maxLines: null,
+                            maxLength: 500,
+                            textInputAction: TextInputAction.newline,
+                            keyboardType: TextInputType.multiline,
+                            onSubmitted: (_) => _sendMessage(),
+                            textAlignVertical: TextAlignVertical.center,
+                            decoration: InputDecoration(
+                              hintText: _placeholderText,
+                              visualDensity: const VisualDensity(
+                                horizontal: 0,
+                                vertical: -4,
+                              ),
+                              hintStyle: TextStyle(
+                                color: colorScheme.onSurface.withAlpha(180),
+                                fontSize: 16,
+                              ),
+                              border: InputBorder.none,
+                              counterText: '', // Hide character counter
+                            ),
+                            style: const TextStyle(fontSize: 16),
+                            onChanged: (text) {
+                              // Handle typing indicator here if needed
+                            },
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-
-                if (Platform.isAndroid || Platform.isIOS)
-                  IconButton(
-                    icon: Icon(
-                      Icons.token,
-                      size: 20,
-                      color: _viaToken
-                          ? colorScheme.primary
-                          : colorScheme.onSurface.withAlpha(200),
+                    IconButton(
+                      icon: Icon(
+                        Icons.token,
+                        size: 20,
+                        color: _viaToken
+                            ? colorScheme.primary
+                            : colorScheme.onSurface.withAlpha(200),
+                      ),
+                      onPressed: () async {
+                        setState(() {
+                          _viaToken = !_viaToken;
+                        });
+                      },
+                      tooltip: 'Send Mesca Token',
                     ),
-                    onPressed: () async {
-                      setState(() {
-                        _viaToken = !_viaToken;
-                      });
-                    },
-                    tooltip: 'Send Mesca Token',
-                  ),
-                _buildActionButton(
-                  icon: Icons.emoji_emotions_outlined,
-                  onPressed: () => _showEmojiPicker(context),
-                  tooltip: 'Add emoji',
-                ),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  child: _isTyping || _attachments.isNotEmpty
-                      ? _buildSendButton()
-                      : _buildMicButton(),
+                    _buildActionButton(
+                      icon: Icons.emoji_emotions_outlined,
+                      onPressed: () => _showEmojiPicker(context),
+                      tooltip: 'Add emoji',
+                    ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: _isTyping || _attachments.isNotEmpty
+                          ? _buildSendButton()
+                          : _buildMicButton(),
+                    ),
+                  ],
                 ),
               ],
             ),

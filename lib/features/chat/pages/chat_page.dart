@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/mescat/domain/entities/mescat_entities.dart';
 import 'package:mescat/core/routes/routes.dart';
@@ -10,6 +13,8 @@ import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
 import 'package:mescat/features/chat/widgets/collapse_call_view.dart';
 import 'package:mescat/features/chat/widgets/pinned_messages.dart';
+import 'package:mescat/features/marketplace/pages/library_page.dart';
+import 'package:mescat/features/settings/cubits/nft_usage_cubit.dart';
 import 'package:mescat/features/voip/widgets/call_view.dart';
 import 'package:mescat/features/chat/widgets/chat_view.dart';
 import 'package:mescat/features/members/widgets/space_members.dart';
@@ -24,6 +29,12 @@ class ChatPage extends StatelessWidget {
   final String spaceId;
 
   Client get client => getIt<Client>();
+
+  Uint8List _getBytesFromString(String stringBytes) {
+    final intList = jsonDecode(stringBytes).map<int>((e) => e as int).toList();
+    final Uint8List bytes = Uint8List.fromList(intList);
+    return bytes;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +56,38 @@ class ChatPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: _buildAppBar(room, context),
-      body: _buildView(room, context),
+      body: Stack(
+        children: [
+          BlocBuilder<NftUsageCubit, Map<ApplyType, NftUsageItem>>(
+            builder: (context, state) {
+              final setting = state[ApplyType.chatlist];
+
+              if (setting == null) {
+                return const SizedBox.shrink();
+              }
+
+              return switch (setting.itemType) {
+                ItemType.meta => Positioned.fill(
+                  child: Image.memory(
+                    _getBytesFromString(File(setting.path).readAsStringSync()),
+                    opacity: const AlwaysStoppedAnimation(0.6),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                ItemType.lottie => Positioned.fill(
+                  child: Lottie.file(File(setting.path), fit: BoxFit.cover),
+                ),
+              };
+            },
+          ),
+          Column(
+            children: [
+              ?_buildAppBar(room, context),
+              Expanded(child: _buildView(room, context)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -75,24 +116,21 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget? _buildAppBar(Room room, BuildContext context) {
+  Widget? _buildAppBar(Room room, BuildContext context) {
     final roomType = room.getRoomType();
     if (roomType == RoomType.voiceChannel) {
       return null;
     } else {
-      return AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        primary: true,
-        title: Row(
-          children: [
-            const Icon(Icons.tag, size: 16),
-            Text(
-              room.isDirectChat ? room.getLocalizedDisplayname() : room.name,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-        actions: [_buildChatHeader(context, room)],
+      return Row(
+        children: [
+          const Icon(Icons.tag, size: 16),
+          Text(
+            room.isDirectChat ? room.getLocalizedDisplayname() : room.name,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const Spacer(),
+          _buildChatHeader(context, room),
+        ],
       );
     }
   }

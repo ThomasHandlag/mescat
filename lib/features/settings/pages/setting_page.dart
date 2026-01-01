@@ -1,103 +1,149 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:mescat/dependency_injection.dart';
-import 'package:web3auth_flutter/web3auth_flutter.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/features/settings/cubits/setting_cubit.dart';
+import 'package:mescat/l10n/mescat_localizations.dart';
 
-class SettingPage extends StatefulWidget {
+class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
 
-  @override
-  State<SettingPage> createState() => _SettingPageState();
-}
-
-class _SettingPageState extends State<SettingPage> {
-  int _viewIndex = 0;
-
-  final List<Widget> _views = [
-    const Text('Account Settings'),
-    const Text('Notification Settings'),
-    const Text('Privacy Settings'),
-    const Text('About Settings'),
-  ];
-
-  Client get _client => getIt<Client>();
+  final Map<String, String> items = const {
+    'general': MescatRoutes.settingGeneral,
+    'account': MescatRoutes.settingAccount,
+    'notifications': MescatRoutes.settingNotifications,
+    'about': MescatRoutes.settingAbout,
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
-        child: Row(
-          children: [
-            SizedBox(
-              width: 200,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        ListTile(
-                          title: const Text('Account'),
-                          selected: _viewIndex == 0,
-                          onTap: () {
-                            setState(() {
-                              _viewIndex = 0;
-                            });
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Notifications'),
-                          selected: _viewIndex == 1,
-                          onTap: () {
-                            setState(() {
-                              _viewIndex = 1;
-                            });
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('Privacy'),
-                          selected: _viewIndex == 2,
-                          onTap: () {
-                            setState(() {
-                              _viewIndex = 2;
-                            });
-                          },
-                        ),
-                        ListTile(
-                          title: const Text('About'),
-                          selected: _viewIndex == 3,
-                          onTap: () {
-                            setState(() {
-                              _viewIndex = 3;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  ListTile(
-                    enabled: _client.isLogged(),
-                    iconColor: Colors.red,
-                    onTap: () async {
-                      if (Platform.isAndroid || Platform.isIOS) {
-                        await Web3AuthFlutter.logout();
-                      }
-                      _client.logout();
-                    },
-                    title: const Text('Log Out'),
-                    trailing: const Icon(Icons.logout),
-                  ),
-                ],
-              ),
-            ),
-            _views[_viewIndex],
-          ],
+        child: ListView.builder(
+          itemBuilder: (context, index) {
+            final key = items.keys.elementAt(index);
+            final value = items.values.elementAt(index);
+            final selected = GoRouterState.of(context).matchedLocation == value;
+            return ListTile(
+              selected: selected,
+              title: Text(key[0].toUpperCase() + key.substring(1)),
+              onTap: () {
+                context.pushReplacement(value);
+              },
+            );
+          },
+          itemCount: items.length,
         ),
       ),
     );
+  }
+}
+
+class GeneralSettingsPage extends StatelessWidget {
+  const GeneralSettingsPage({super.key});
+
+  String _generateLanguageLabel(String code) {
+    return switch (code) {
+      'en' => 'English',
+      'es' => 'Spanish',
+      'fr' => 'French',
+      'vi' => 'Vietnamese',
+      'de' => 'German',
+      'zh' => 'Chinese',
+      _ => 'Unknown',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ListView(
+        children: [
+          ListTile(
+            title: const Text('Language'),
+            subtitle: BlocBuilder<SettingCubit, SettingState>(
+              builder: (context, state) {
+                final languageCode = state.languageCode;
+                return Text(_generateLanguageLabel(languageCode));
+              },
+            ),
+            trailing: DropdownMenu(
+              initialSelection: context.read<SettingCubit>().state.languageCode,
+              dropdownMenuEntries: [
+                ...AppLocalizations.supportedLocales.map(
+                  (locale) => DropdownMenuEntry<String>(
+                    value: locale.languageCode,
+                    label: _generateLanguageLabel(locale.languageCode),
+                  ),
+                ),
+              ],
+              onSelected: (String? value) {
+                if (value != null) {
+                  context.read<SettingCubit>().setLanguageCode(value);
+                }
+              },
+            ),
+          ),
+
+          ListTile(
+            title: const Text('Theme Mode'),
+            subtitle: BlocBuilder<SettingCubit, SettingState>(
+              builder: (context, state) {
+                final themeMode = state.themeMode;
+                return Text(
+                  themeMode.name[0].toUpperCase() + themeMode.name.substring(1),
+                );
+              },
+            ),
+            trailing: DropdownMenu(
+              initialSelection: context.read<SettingCubit>().state.themeMode,
+              dropdownMenuEntries: MescatThemeMode.values
+                  .map(
+                    (mode) => DropdownMenuEntry<MescatThemeMode>(
+                      value: mode,
+                      label:
+                          mode.name[0].toUpperCase() + mode.name.substring(1),
+                    ),
+                  )
+                  .toList(),
+              onSelected: (MescatThemeMode? value) {
+                if (value != null) {
+                  context.read<SettingCubit>().setThemeMode(value);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AccountSettingsPage extends StatelessWidget {
+  const AccountSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('Account Settings')));
+  }
+}
+
+class NotificationSettingsPage extends StatelessWidget {
+  const NotificationSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('Notification Settings')));
+  }
+}
+
+class AboutSettingsPage extends StatelessWidget {
+  const AboutSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('About Settings')));
   }
 }
 
