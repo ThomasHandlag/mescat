@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/features/chat/cubits/call_controller_cubit.dart';
 import 'package:mescat/features/voip/blocs/call_bloc.dart';
 import 'package:mescat/features/voip/widgets/screen_select_dialog.dart';
@@ -82,7 +84,12 @@ class CallController extends StatelessWidget {
                   onPressed: () {
                     context.read<CallBloc>().add(const LeaveCall());
                     if (Platform.isAndroid || Platform.isIOS) {
-                      Navigator.of(context).pop();
+                      context.pop();
+                    } else {
+                      final spaceId =
+                          GoRouterState.of(context).pathParameters['spaceId'] ??
+                          MescatRoutes.home;
+                      context.go(MescatRoutes.spaceRoute(spaceId));
                     }
                   },
                 ),

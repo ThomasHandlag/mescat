@@ -44,27 +44,30 @@ class WindowScaffold extends StatelessWidget {
         titleBarTextColor ?? theme.colorScheme.onSurface;
     final effectiveButtonColor = buttonColor ?? theme.colorScheme.onSurface;
     final effectiveButtonHoverColor =
-        buttonHoverColor ?? theme.colorScheme.surfaceContainer;
+        buttonHoverColor ?? const Color(0xFFAAAAAA);
     final effectiveCloseButtonHoverColor = closeButtonHoverColor ?? Colors.red;
 
-    return Column(
-      children: [
-        WindowTitleBar(
-          height: titleBarHeight,
-          backgroundColor:
-              titleBarColor ??
-              theme.colorScheme.surfaceContainer.withAlpha(255),
-          title: 'Mescat',
-          titleColor: effectiveTitleBarTextColor,
-          showTitle: showTitle,
-          leading: leading,
-          actions: actions,
-          buttonColor: effectiveButtonColor,
-          buttonHoverColor: effectiveButtonHoverColor,
-          closeButtonHoverColor: effectiveCloseButtonHoverColor,
-        ),
-        Expanded(child: child),
-      ],
+    return Container(
+      color: theme.colorScheme.surfaceContainer.withAlpha(255),
+      child: Column(
+        children: [
+          WindowTitleBar(
+            height: titleBarHeight,
+            backgroundColor:
+                titleBarColor ??
+                theme.colorScheme.surfaceContainer.withAlpha(255),
+            title: 'Mescat',
+            titleColor: effectiveTitleBarTextColor,
+            showTitle: showTitle,
+            leading: leading,
+            actions: actions,
+            buttonColor: effectiveButtonColor,
+            buttonHoverColor: effectiveButtonHoverColor,
+            closeButtonHoverColor: effectiveCloseButtonHoverColor,
+          ),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }

@@ -61,16 +61,7 @@ class PublicSpaceCard extends StatelessWidget {
   Widget _buildHeader(BuildContext context, ColorScheme colorScheme) {
     return Container(
       height: 100,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary.withAlpha(190),
-            colorScheme.secondary.withAlpha(128),
-          ],
-        ),
-      ),
+      color: colorScheme.primaryContainer,
       child: Stack(
         children: [
           // Avatar

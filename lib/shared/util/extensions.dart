@@ -138,9 +138,10 @@ Future<Uint8List> _convertToCircularImage(
 extension StringToColor on String {
   Color generateFromString() {
     final hash = codeUnits.fold(0, (prev, elem) => prev + elem);
-    final r = (hash * 123) % 256;
-    final g = (hash * 456) % 256;
-    final b = (hash * 789) % 256;
+    // color must be a bright color
+    final r = (hash * 123) % 128 + 128;
+    final g = (hash * 456) % 128 + 128;
+    final b = (hash * 789) % 128 + 128;
     return Color.fromARGB(255, r, g, b);
   }
 }

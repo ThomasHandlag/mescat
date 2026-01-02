@@ -94,6 +94,14 @@ class ChatPage extends StatelessWidget {
   Widget _buildChatHeader(BuildContext context, Room room) {
     return Row(
       children: [
+        if (Platform.isAndroid || Platform.isIOS)
+          IconButton(
+            onPressed: () {
+              context.pop();
+            },
+            icon: const Icon(Icons.expand_more),
+            tooltip: 'Open Media Library',
+          ),
         if (room.isDirectChat)
           IconButton(onPressed: () {}, icon: const Icon(Icons.videocam))
         else

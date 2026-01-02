@@ -23,9 +23,6 @@ class UserBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8.0),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withAlpha(0x42),
-        ),
       ),
       child: Row(
         children: [

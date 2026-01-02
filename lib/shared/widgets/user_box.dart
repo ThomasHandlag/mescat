@@ -104,6 +104,12 @@ class UserBox extends StatelessWidget {
                         McButton(
                           onPressed: () {
                             context.read<CallBloc>().add(const LeaveCall());
+                            final spaceId =
+                                GoRouterState.of(
+                                  context,
+                                ).pathParameters['spaceId'] ??
+                                MescatRoutes.home;
+                            context.go(MescatRoutes.spaceRoute(spaceId));
                           },
                           child: Icon(Icons.call_end, color: Colors.red[400]),
                         ),

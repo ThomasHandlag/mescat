@@ -38,7 +38,7 @@ class PlatformLayout extends StatelessWidget {
                   onTap: () {
                     context.push(MescatRoutes.notifications);
                   },
-                  child: const Icon(Icons.inbox),
+                  child: const Icon(Icons.inbox, size: 20,),
                 ),
               ),
             ),

@@ -117,8 +117,8 @@ class MainLayout extends StatelessWidget {
     return Row(
       children: [
         Container(
-          color: Theme.of(context).colorScheme.surfaceContainer,
           width: 310,
+          color: Theme.of(context).colorScheme.surfaceContainer.withAlpha(255),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.max,
@@ -199,7 +199,17 @@ class MainLayout extends StatelessWidget {
             ],
           ),
         ),
-        Expanded(child: child),
+        Expanded(
+          child: Container(
+            clipBehavior: Clip.hardEdge,
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(UIConstraints.mDefaultPadding),
+              ),
+            ),
+            child: child,
+          ),
+        ),
         if (!Platform.isAndroid && !Platform.isIOS) const SpaceMembersList(),
       ],
     );

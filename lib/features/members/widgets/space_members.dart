@@ -66,25 +66,32 @@ class SpaceMembersList extends StatelessWidget {
             separatorBuilder: (context, _) => const SizedBox(height: 4),
             itemBuilder: (context, index) {
               if (index == 0) {
-                return Container(
-                  padding: const EdgeInsets.only(right: 10),
+                return SizedBox(
                   height: kToolbarHeight - 20,
                   child: Center(
                     child: SearchAnchor(
-                      viewConstraints:const BoxConstraints(
-                        maxWidth: 250,
-                      ),
+                      viewConstraints: const BoxConstraints(maxWidth: 250),
                       builder: (context, controller) {
                         return SearchBar(
                           controller: controller,
                           onChanged: (value) => controller.openView(),
                           hintText: 'Search',
+                          elevation: const WidgetStatePropertyAll(2),
+                          shape: WidgetStatePropertyAll(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         );
                       },
                       suggestionsBuilder: (context, controller) async {
-                        final rs = await client.search(Categories(
-                          roomEvents: RoomEventsCriteria(searchTerm: controller.text)
-                        ));
+                        final rs = await client.search(
+                          Categories(
+                            roomEvents: RoomEventsCriteria(
+                              searchTerm: controller.text,
+                            ),
+                          ),
+                        );
 
                         final List<Widget> widgets = [];
 
