@@ -1,5 +1,6 @@
 import 'dart:io';
 
+// import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,7 +16,6 @@ import 'package:mescat/features/settings/cubits/setting_cubit.dart';
 import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:rive/rive.dart';
 
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
 import 'package:mescat/features/home_server/cubits/server_cubit.dart';
@@ -56,16 +56,15 @@ void main() async {
   await Hive.initFlutter();
   await vod.init();
   await setupDependencyInjection();
+
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: HydratedStorageDirectory(
       (await getApplicationDocumentsDirectory()).path,
     ),
   );
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(statusBarColor: Colors.blueAccent),
+    const SystemUiOverlayStyle(statusBarColor: AppThemes.primaryColor),
   );
-
-  await RiveNative.init();
 
   if (Platform.isAndroid || Platform.isIOS) {
     await initWeb3Auth();
