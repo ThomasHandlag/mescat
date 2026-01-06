@@ -1,64 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/dependency_injection.dart';
+import 'package:web3auth_flutter/web3auth_flutter.dart';
+import 'dart:io';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
+  Client get _client => getIt<Client>();
+
+  final Map<String, (String, IconData)> items = const {
+    'general': (MescatRoutes.settingGeneral, Icons.settings),
+    'account': (MescatRoutes.settingAccount, Icons.account_circle),
+    'notifications': (MescatRoutes.settingNotifications, Icons.notifications),
+    'about': (MescatRoutes.settingAbout, Icons.info),
+  };
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
-          ListTile(
-            leading: const Icon(Icons.account_circle),
-            title: const Text('Account'),
-            onTap: () {
-              // TODO: Navigate to account settings
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            onTap: () {
-              // TODO: Navigate to notification settings
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip),
-            title: const Text('Privacy & Security'),
-            onTap: () {
-              // TODO: Navigate to privacy settings
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.palette),
-            title: const Text('Appearance'),
-            onTap: () {
-              // TODO: Navigate to appearance settings
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
-            onTap: () {
-              // TODO: Navigate to language settings
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('About'),
-            onTap: () {
-              // TODO: Show about dialog
-            },
+          ...items.entries.map(
+            (entry) => ListTile(
+              title: Text(entry.key[0].toUpperCase() + entry.key.substring(1)),
+              leading: Icon(entry.value.$2),
+              onTap: () {
+                Navigator.pushNamed(context, entry.value.$1);
+              },
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              // TODO: Implement logout
+            onTap: () async {
+              if (Platform.isAndroid || Platform.isIOS) {
+                await Web3AuthFlutter.logout();
+              }
+              _client.logout();
             },
           ),
         ],

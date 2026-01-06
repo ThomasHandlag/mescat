@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/settings/cubits/setting_cubit.dart';
 import 'package:mescat/l10n/mescat_localizations.dart';
+import 'package:web3auth_flutter/web3auth_flutter.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
@@ -123,9 +128,26 @@ class GeneralSettingsPage extends StatelessWidget {
 class AccountSettingsPage extends StatelessWidget {
   const AccountSettingsPage({super.key});
 
+  Client get _client => getIt<Client>();
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Account Settings')));
+    return Scaffold(
+      body: ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () async {
+              if (Platform.isAndroid || Platform.isIOS) {
+                await Web3AuthFlutter.logout();
+              }
+              _client.logout();
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
