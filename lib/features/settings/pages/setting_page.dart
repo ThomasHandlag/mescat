@@ -3,9 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mescat/core/routes/routes.dart';
+import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/settings/cubits/setting_cubit.dart';
+import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
+import 'package:mescat/features/wallet/data/wallet_store.dart';
 import 'package:mescat/l10n/mescat_localizations.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
+import 'package:web3auth_flutter/web3auth_flutter.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
@@ -136,6 +142,9 @@ class GeneralSettingsPage extends StatelessWidget {
 class AccountSettingsPage extends StatelessWidget {
   const AccountSettingsPage({super.key});
 
+  Client get client => getIt<Client>();
+  WalletStore get walletStore => getIt<WalletStore>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,7 +159,57 @@ class AccountSettingsPage extends StatelessWidget {
             : null,
         title: const Text('Settings'),
       ),
-      body: const Center(child: Text('Account Settings')),
+      body: ListView(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              shape: BoxShape.circle,
+            ),
+            child: GestureDetector(
+              onTap: () {},
+              child: FutureBuilder(
+                future: client.getUserProfile(client.userID!),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircleAvatar(
+                      radius: 80,
+                      child: CircularProgressIndicator(),
+                    );
+                  } else if (snapshot.hasError) {
+                    return const CircleAvatar(
+                      radius: 80,
+                      child: Icon(Icons.error, size: 40),
+                    );
+                  } else {
+                    final profile = snapshot.data!;
+                    return CircleAvatar(
+                      radius: Platform.isAndroid ? 40 : 80,
+                      child: profile.avatarUrl == null
+                          ? const Icon(Icons.camera_alt_outlined, size: 40)
+                          : McImage(uri: profile.avatarUrl!),
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+          ListTile(title: const Text('Change Password'), onTap: () {}),
+          ListTile(title: const Text('Privacy Notices'), onTap: () {}),
+          ListTile(
+            title: const Text('Logout'),
+            onTap: () async {
+              if (Platform.isAndroid || Platform.isIOS) {
+                await Web3AuthFlutter.logout();
+              } else {
+                await walletStore.wipe();
+              }
+              client.logout();
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -198,26 +257,3 @@ class AboutSettingsPage extends StatelessWidget {
     );
   }
 }
-
-/* 
- Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  shape: BoxShape.circle,
-                ),
-                child: GestureDetector(
-                  onTap: () {},
-                  child: CircleAvatar(
-                    radius: Platform.isAndroid ? 40 : 80,
-                    backgroundImage: widget.room.avatarUrl != null
-                        ? NetworkImage(widget.room.avatarUrl!)
-                        : null,
-                    child: widget.room.avatarUrl == null
-                        ? const Icon(Icons.camera_alt_outlined, size: 40)
-                        : null,
-                  ),
-                ),
-              ),
-
-*/
