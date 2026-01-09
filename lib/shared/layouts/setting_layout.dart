@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mescat/core/routes/routes.dart';
@@ -18,8 +20,9 @@ class SettingLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: _buildDesktop(),
+      body: Platform.isAndroid || Platform.isIOS
+          ? child
+          : _buildDesktop(),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -29,7 +31,7 @@ class SettingPage extends StatelessWidget {
               selected: selected,
               title: Text(key[0].toUpperCase() + key.substring(1)),
               onTap: () {
-                context.pushReplacement(value);
+                context.push(value);
               },
             );
           },
@@ -58,6 +60,17 @@ class GeneralSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: Platform.isAndroid
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  context.pop();
+                },
+              )
+            : null,
+        title: const Text('Settings'),
+      ),
       body: ListView(
         children: [
           ListTile(
@@ -125,7 +138,20 @@ class AccountSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Account Settings')));
+    return Scaffold(
+      appBar: AppBar(
+        leading: Platform.isAndroid
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  context.pop();
+                },
+              )
+            : null,
+        title: const Text('Settings'),
+      ),
+      body: const Center(child: Text('Account Settings')),
+    );
   }
 }
 
@@ -134,7 +160,20 @@ class NotificationSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Notification Settings')));
+    return Scaffold(
+      appBar: AppBar(
+        leading: Platform.isAndroid
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  context.pop();
+                },
+              )
+            : null,
+        title: const Text('Settings'),
+      ),
+      body: const Center(child: Text('Notification Settings')),
+    );
   }
 }
 
@@ -143,7 +182,20 @@ class AboutSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('About Settings')));
+    return Scaffold(
+      appBar: AppBar(
+        leading: Platform.isAndroid
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  context.pop();
+                },
+              )
+            : null,
+        title: const Text('Settings'),
+      ),
+      body: const Center(child: Text('About Settings')),
+    );
   }
 }
 

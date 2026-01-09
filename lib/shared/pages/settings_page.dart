@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mescat/core/routes/routes.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -7,58 +11,49 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: Platform.isAndroid ? IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.pop();
+          },
+        ) : null,
         title: const Text('Settings'),
       ),
       body: ListView(
         children: [
           ListTile(
+            leading: const Icon(Icons.language),
+            title: const Text('Language'),
+            onTap: () {
+              context.push(MescatRoutes.settingGeneral);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.account_circle),
             title: const Text('Account'),
             onTap: () {
-              // TODO: Navigate to account settings
+              context.push(MescatRoutes.settingAccount);
             },
           ),
           ListTile(
             leading: const Icon(Icons.notifications),
             title: const Text('Notifications'),
             onTap: () {
-              // TODO: Navigate to notification settings
+             context.push(MescatRoutes.settingNotifications);
             },
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip),
             title: const Text('Privacy & Security'),
             onTap: () {
-              // TODO: Navigate to privacy settings
+              context.push(MescatRoutes.settingPrivacy);
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.palette),
-            title: const Text('Appearance'),
-            onTap: () {
-              // TODO: Navigate to appearance settings
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
-            onTap: () {
-              // TODO: Navigate to language settings
-            },
-          ),
-          const Divider(),
           ListTile(
             leading: const Icon(Icons.info),
             title: const Text('About'),
             onTap: () {
-              // TODO: Show about dialog
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              // TODO: Implement logout
+              context.push(MescatRoutes.settingAbout);
             },
           ),
         ],
