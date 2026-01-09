@@ -7,7 +7,10 @@ import 'package:matrix/matrix.dart';
 import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/settings/cubits/setting_cubit.dart';
+import 'package:mescat/features/wallet/data/wallet_store.dart';
 import 'package:mescat/l10n/mescat_localizations.dart';
+import 'package:mescat/shared/util/string_util.dart';
+import 'package:mescat/shared/widgets/mc_image.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 
 class SettingPage extends StatelessWidget {
@@ -129,18 +132,68 @@ class AccountSettingsPage extends StatelessWidget {
   const AccountSettingsPage({super.key});
 
   Client get _client => getIt<Client>();
+  WalletStore get _walletStore => getIt<WalletStore>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: ListView(
         children: [
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              shape: BoxShape.circle,
+            ),
+            child: GestureDetector(
+              onTap: () {},
+              child: FutureBuilder(
+                future: _client.getUserProfile(_client.userID!),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircleAvatar(
+                      radius: 80,
+                      child: CircularProgressIndicator(),
+                    );
+                  } else if (snapshot.hasError) {
+                    return const CircleAvatar(
+                      radius: 80,
+                      child: Icon(Icons.error, size: 40),
+                    );
+                  } else {
+                    final profile = snapshot.data!;
+                    return CircleAvatar(
+                      radius: 80,
+                      child: profile.avatarUrl == null
+                          ? Container(
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.blueGrey,
+                              ),
+                              child: Text(
+                                getInitials(
+                                  profile.displayname ?? _client.userID!,
+                                ),
+                                style: const TextStyle(fontSize: 40),
+                              ),
+                            )
+                          : McImage(uri: profile.avatarUrl),
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () async {
               if (Platform.isAndroid || Platform.isIOS) {
                 await Web3AuthFlutter.logout();
+              } else {
+                await _walletStore.wipe();
               }
               _client.logout();
             },

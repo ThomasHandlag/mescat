@@ -77,3 +77,13 @@ final class ShareScreen extends CallEvent {
   @override
   List<Object> get props => [enable, sourceId];
 }
+
+
+final class DirectCall extends CallEvent {
+  const DirectCall({required this.userId});
+
+  final String userId;
+
+  @override
+  List<Object> get props => [userId];
+}

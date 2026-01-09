@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -51,6 +52,7 @@ class UserBox extends StatelessWidget {
         right: UIConstraints.mSmallPadding,
       ),
       child: Container(
+        clipBehavior: Clip.hardEdge,
         height: stream != null ? 150 : UIConstraints.mMessageInputHeight,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -130,6 +132,7 @@ class UserBox extends StatelessWidget {
                   future: client.getUserProfile(currentUserId),
                   builder: (_, snapshot) {
                     return UserBanner(
+                      noBg: true,
                       username: snapshot.data?.displayname,
                       avatarUrl: snapshot.data?.avatarUrl,
                       actions: [

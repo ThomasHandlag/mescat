@@ -95,7 +95,9 @@ class ChatPage extends StatelessWidget {
     return Row(
       children: [
         if (room.isDirectChat)
-          IconButton(onPressed: () {}, icon: const Icon(Icons.videocam))
+          // IconButton(onPressed: () {
+          // }, icon: const Icon(Icons.videocam))
+          const SizedBox.shrink()
         else
           IconButton(
             onPressed: () {

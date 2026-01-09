@@ -22,9 +22,11 @@ class NotificationService {
     DarwinInitializationSettings? iosSettings;
     WindowsInitializationSettings? windowsSettings;
     LinuxInitializationSettings? linuxSettings;
-    
+
     if (Platform.isAndroid) {
-      androidSettings = const AndroidInitializationSettings('@mipmap/ic_launcher');
+      androidSettings = const AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
     } else if (Platform.isIOS) {
       iosSettings = const DarwinInitializationSettings(
         requestAlertPermission: false,
@@ -269,8 +271,8 @@ class NotificationService {
         // Navigate to call screen
         break;
       case 'invite':
-        // Handle invite notification tap
-        // Navigate to room invitation
+        break;
+      case 'message':
         break;
       default:
         // Handle message notification tap

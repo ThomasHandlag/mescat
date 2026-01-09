@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:app_links/app_links.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:ipfsdart/ipfsdart.dart';
@@ -72,7 +71,6 @@ Future<Client> createMatrixClient(
 Future<void> setupDependencyInjection() async {
   final matrixClient = await createMatrixClient("Mescat", "https://matrix.org");
   final sharedPref = await SharedPreferences.getInstance();
-  final appLinks = AppLinks();
   final notificationService = NotificationService();
   final ipfsClient = IpfsClient.init(
     uri: Uri.parse(MescatContracts.ipfsApiUrl),
@@ -86,7 +84,6 @@ Future<void> setupDependencyInjection() async {
   getIt.registerSingleton<MarketRealm>(marketRealm);
   getIt.registerSingleton<WalletStore>(desktopWallet);
   getIt.registerSingleton<Client>(matrixClient);
-  getIt.registerSingleton<AppLinks>(appLinks);
   getIt.registerSingleton<IpfsClient>(ipfsClient);
   getIt.registerLazySingleton<MatrixClientManager>(
     () => MatrixClientManager(matrixClient, sharedPref),

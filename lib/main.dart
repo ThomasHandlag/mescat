@@ -15,6 +15,7 @@ import 'package:mescat/features/settings/cubits/nft_usage_cubit.dart';
 import 'package:mescat/features/settings/cubits/setting_cubit.dart';
 import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
+import 'package:mescat/shared/url_protocol/api.dart';
 import 'package:path_provider/path_provider.dart';
 
 // import 'package:mescat/core/utils/app_bloc_observer.dart';
@@ -68,6 +69,8 @@ void main() async {
 
   if (Platform.isAndroid || Platform.isIOS) {
     await initWeb3Auth();
+  } else {
+    registerProtocolHandler('mescat');
   }
 
   // Bloc.observer = AppBlocObserver();

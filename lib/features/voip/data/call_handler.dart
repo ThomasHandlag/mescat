@@ -88,7 +88,15 @@ class CallHandler implements WebRTCDelegate {
     return right(session);
   }
 
-  Future<void> inviteCall() async {}
+  Future<void> inviteCall(Room room, CallType callType) async {
+    logger.log(Level.info, 'Inviting to call in room $_activeRoomId');
+    try {
+      _directSession = await voIP.inviteToCall(room, callType);
+    } catch (e, stackTrace) {
+      logger.log(Level.error, 'Failed to invite to call: $e');
+      logger.log(Level.trace, 'Stack trace: $stackTrace');
+    }
+  }
 
   Future<void> shareScreen() async {
     logger.log(Level.info, 'Sharing screen in room $_activeRoomId');

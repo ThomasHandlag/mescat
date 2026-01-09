@@ -210,10 +210,9 @@ final class ItemBloc extends Bloc<ItemEvent, ItemState> {
       final tempFile = File("${path?.path}/MescatTemp/lib/$uri");
       if (!await tempFile.exists()) {
         await tempFile.create(recursive: true);
-        await tempFile.writeAsString(content);
+        final bytes = jsonData['bytes'];
+        await tempFile.writeAsString(bytes.toString());
       }
-      final bytes = jsonData['bytes'];
-      await tempFile.writeAsString(bytes.toString());
       emit(
         state.copyWith(
           loading: false,

@@ -192,6 +192,10 @@ class _MessageInputState extends State<MessageInput>
   Future<String?> _getPrivKey() async {
     String privateKey = '';
 
+    if (!_viaToken) {
+      return null;
+    }
+
     try {
       if (Platform.isAndroid || Platform.isIOS) {
         privateKey = await Web3AuthFlutter.getPrivKey();

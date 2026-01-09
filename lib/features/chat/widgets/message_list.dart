@@ -17,6 +17,7 @@ class MessageList extends StatefulWidget {
 class _MessageListState extends State<MessageList> {
   final ScrollController _scrollController = ScrollController(
     initialScrollOffset: 100,
+    keepScrollOffset: true
   );
 
   static const _scrollThreshold = 100.0;
