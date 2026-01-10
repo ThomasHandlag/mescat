@@ -9,8 +9,11 @@ import 'package:mescat/contracts/contracts.dart';
 import 'package:http/http.dart' as http;
 import 'package:mescat/core/routes/routes.dart';
 import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/features/marketplace/data/market_realm.dart';
 import 'package:mescat/features/wallet/cubits/wallet_cubit.dart';
 import 'package:mescat/features/wallet/data/wallet_store.dart';
+import 'package:mescat/shared/util/mc_dialog.dart';
+import 'package:mescat/shared/widgets/input_field.dart';
 import 'package:web3auth_flutter/output.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 import 'package:web3dart/web3dart.dart';
@@ -29,11 +32,15 @@ class _UserWalletPageState extends State<UserWalletPage>
 
   late final EthereumAddress address;
 
+  late final String pKey;
+
   late final TorusUserInfo _userInfo;
 
   Client get client => getIt();
 
   WalletStore get walletStore => getIt();
+
+  MarketRealm get marketRealm => getIt();
 
   @override
   void initState() {
@@ -66,6 +73,9 @@ class _UserWalletPageState extends State<UserWalletPage>
         }
         return;
       }
+
+      pKey = privateKey;
+
       if (isMobile) {
         address = EthPrivateKey.fromHex(privateKey).address;
         if (!mounted) return;
@@ -110,7 +120,7 @@ class _UserWalletPageState extends State<UserWalletPage>
       builder: (context) {
         return Dialog(
           child: Container(
-            color: Theme.of(context).colorScheme.surfaceContainer,
+            color: Colors.white,
             padding: const EdgeInsets.all(8.0),
             child: QrImageView(
               data: address.hex,
@@ -124,6 +134,55 @@ class _UserWalletPageState extends State<UserWalletPage>
           ),
         );
       },
+    );
+  }
+
+  void _showSendBottomSheet() async {
+    final addressController = TextEditingController();
+    final amountController = TextEditingController();
+
+    showFullscreenDialog(
+      context,
+      Container(
+        color: Theme.of(context).colorScheme.surface,
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InputField(
+              controller: addressController,
+              decoration: const InputDecoration(labelText: 'Recipient Address'),
+            ),
+            const SizedBox(height: 16),
+            InputField(
+              controller: amountController,
+              decoration: const InputDecoration(labelText: 'Amount'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                await marketRealm.web3Client.sendTransaction(
+                  EthPrivateKey.fromHex(pKey),
+                  Transaction(
+                    to: EthereumAddress.fromHex(addressController.text),
+                    value: EtherAmount.fromInt(
+                      EtherUnit.ether,
+                      int.parse(amountController.text),
+                    ),
+                  ),
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Send'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -300,7 +359,11 @@ class _UserWalletPageState extends State<UserWalletPage>
 
   Widget _buildActionButtons(ThemeData theme) {
     final actions = [
-      {'icon': Icons.arrow_outward, 'label': 'Send'},
+      {
+        'icon': Icons.arrow_outward,
+        'label': 'Send',
+        'onPressed': _showSendBottomSheet,
+      },
       {
         'icon': Icons.arrow_downward,
         'label': 'Receive',
@@ -320,7 +383,9 @@ class _UserWalletPageState extends State<UserWalletPage>
               height: 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                color: theme.colorScheme.primary,
+                color: action['onPressed'] != null
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surfaceContainer,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withAlpha(13),

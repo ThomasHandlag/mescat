@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -191,6 +190,10 @@ class _MessageInputState extends State<MessageInput>
 
   Future<String?> _getPrivKey() async {
     String privateKey = '';
+
+    if (!_viaToken) {
+      return null;
+    }
 
     try {
       if (Platform.isAndroid || Platform.isIOS) {

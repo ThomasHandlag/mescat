@@ -94,18 +94,8 @@ class ChatPage extends StatelessWidget {
   Widget _buildChatHeader(BuildContext context, Room room) {
     return Row(
       children: [
-        if (room.isDirectChat)
-          IconButton(onPressed: () {}, icon: const Icon(Icons.videocam))
-        else
-          IconButton(
-            onPressed: () {
-              if (Platform.isAndroid || Platform.isIOS) {
-                showFullscreenDialog(context, const SpaceMembersList());
-              }
-            },
-            icon: const Icon(Icons.group),
-            tooltip: 'Room Options',
-          ),
+        // if (room.isDirectChat)
+        //   IconButton(onPressed: () {}, icon: const Icon(Icons.videocam)),
         IconButton(
           onPressed: () {
             _showPinnedMessages(context, room);

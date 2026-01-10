@@ -7,12 +7,14 @@ class UserBanner extends StatelessWidget {
   final String? username;
   final Uri? avatarUrl;
   final List<Widget>? actions;
+  final bool noBg;
 
   const UserBanner({
     super.key,
     required this.username,
     required this.avatarUrl,
     this.actions,
+    this.noBg = false,
   });
 
   @override
@@ -21,7 +23,9 @@ class UserBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: noBg
+            ? Colors.transparent
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Row(

@@ -130,6 +130,7 @@ class UserBox extends StatelessWidget {
                   future: client.getUserProfile(currentUserId),
                   builder: (_, snapshot) {
                     return UserBanner(
+                      noBg: true,
                       username: snapshot.data?.displayname,
                       avatarUrl: snapshot.data?.avatarUrl,
                       actions: [

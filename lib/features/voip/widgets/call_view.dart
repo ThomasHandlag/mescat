@@ -96,14 +96,14 @@ class CallView extends StatelessWidget {
                         ],
                       ),
                       const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.chat_bubble),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.group_add),
-                      ),
+                      // IconButton(
+                      //   icon: const Icon(Icons.chat_bubble),
+                      //   onPressed: () {},
+                      // ),
+                      // IconButton(
+                      //   onPressed: () {},
+                      //   icon: const Icon(Icons.group_add),
+                      // ),
                     ],
                   ),
                 );

@@ -22,8 +22,8 @@ class SettingsPage extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
+            leading: const Icon(Icons.list),
+            title: const Text('General'),
             onTap: () {
               context.push(MescatRoutes.settingGeneral);
             },

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:matrix/matrix.dart';
+import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 import 'package:mescat/shared/widgets/mc_image.dart';
 
 /// Widget to display a public space card with Discord-like styling
@@ -8,6 +11,8 @@ class PublicSpaceCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const PublicSpaceCard({super.key, required this.space, this.onTap});
+
+  Client get client => getIt<Client>();
 
   @override
   Widget build(BuildContext context) {
@@ -216,6 +221,14 @@ class PublicSpaceCard extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurface.withAlpha(179),
             ),
+          ),
+          const Spacer(),
+          ElevatedButton(
+            onPressed: () {
+              client.joinRoom(space.roomId);
+              context.read<SpaceCubit>().load();
+            },
+            child: const Text('Join'),
           ),
         ],
       ),
