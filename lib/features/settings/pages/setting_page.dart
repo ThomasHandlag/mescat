@@ -163,6 +163,7 @@ class AccountSettingsPage extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(8.0),
+            clipBehavior: Clip.hardEdge,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey),
               shape: BoxShape.circle,
@@ -188,7 +189,13 @@ class AccountSettingsPage extends StatelessWidget {
                       radius: Platform.isAndroid ? 40 : 80,
                       child: profile.avatarUrl == null
                           ? const Icon(Icons.camera_alt_outlined, size: 40)
-                          : McImage(uri: profile.avatarUrl!),
+                          : McImage(
+                              uri: profile.avatarUrl!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              borderRadius: BorderRadius.circular(40),
+                            ),
                     );
                   }
                 },

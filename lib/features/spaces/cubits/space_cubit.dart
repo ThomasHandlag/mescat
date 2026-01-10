@@ -11,7 +11,24 @@ class SpaceCubit extends Cubit<List<Room>> {
     emit(client.rooms.where((room) => room.isSpace).toList());
   }
 
+  Future<void> refresh() async {
+    if (!client.isLogged()) return;
+
+    final rooms = await client.getJoinedRooms();
+
+    final spaces = <Room>[];
+    for (final id in rooms) {
+      final room = client.getRoomById(id);
+      if (room != null && room.isSpace) {
+        spaces.add(room);
+      }
+    }
+
+    emit(spaces);
+  }
+
   Future createSpace({required String name, String? topic}) async {
-    client.createSpace(name: name, topic: topic);
+    await client.createSpace(name: name, topic: topic);
+    await refresh();
   }
 }

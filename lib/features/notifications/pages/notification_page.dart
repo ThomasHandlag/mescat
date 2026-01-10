@@ -5,6 +5,7 @@ import 'package:matrix/matrix.dart' as matrix;
 import 'package:matrix/matrix_api_lite/model/event_types.dart';
 import 'package:mescat/dependency_injection.dart';
 import 'package:mescat/features/notifications/blocs/notification_bloc.dart';
+import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -211,9 +212,11 @@ class _NotificationPageState extends State<NotificationPage> {
             if (isInvite)
               IconButton(
                 icon: const Icon(Icons.done),
-                onPressed: () {
+                onPressed: () async {
                   final client = getIt<matrix.Client>();
-                  client.joinRoomById(notification.roomId);
+                  await client.joinRoomById(notification.roomId);
+                  if (!mounted) return;
+                  context.read<SpaceCubit>().refresh();
                 },
                 tooltip: 'Accept Invite',
               ),
