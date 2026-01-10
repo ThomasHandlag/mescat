@@ -115,7 +115,7 @@ class SidebarItem extends StatelessWidget {
     final words = name.split(' ');
     if (words.length >= 2) {
       return '${words[0][0]}${words[1][0]}'.toUpperCase();
-    } else if (words.isNotEmpty) {
+    } else if (words.isNotEmpty && words[0].isNotEmpty) {
       return words[0][0].toUpperCase();
     }
     return '?';

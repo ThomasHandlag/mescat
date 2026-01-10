@@ -71,7 +71,7 @@ class SpaceMembersList extends StatelessWidget {
                   child: Center(
                     child: SearchAnchor(
                       viewConstraints: const BoxConstraints(maxWidth: 250),
-                      builder: (context, controller) {
+                      builder: (_, controller) {
                         return SearchBar(
                           controller: controller,
                           onChanged: (value) => controller.openView(),
@@ -84,7 +84,7 @@ class SpaceMembersList extends StatelessWidget {
                           ),
                         );
                       },
-                      suggestionsBuilder: (context, controller) async {
+                      suggestionsBuilder: (_, controller) async {
                         final rs = await client.search(
                           Categories(
                             roomEvents: RoomEventsCriteria(

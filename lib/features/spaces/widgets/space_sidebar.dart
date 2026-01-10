@@ -17,32 +17,25 @@ class SpaceSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tempSpaces = spaces;
     return Container(
       width: 60,
       padding: const EdgeInsets.all(8),
       child: Column(
         children: [
           Expanded(
-            child: ListView.separated(
-              itemCount: tempSpaces.length + 1,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return const SidebarItem(
-                    icon: Icons.home,
-                    name: 'Home',
-                    id: '',
-                  );
-                }
+            child: ListView(
+              children: [
+                const SidebarItem(icon: Icons.home, name: 'Home', id: ''),
 
-                final space = tempSpaces[index - 1];
-                return SidebarItem(
-                  avatarUrl: space.avatar,
-                  name: space.name,
-                  id: space.id,
-                );
-              },
+                for (final space in spaces) ...[
+                  const SizedBox(height: 8),
+                  SidebarItem(
+                    avatarUrl: space.avatar,
+                    name: space.name,
+                    id: space.id,
+                  ),
+                ],
+              ],
             ),
           ),
           if (Platform.isAndroid || Platform.isIOS) ...[

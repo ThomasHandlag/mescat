@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mescat/core/constants/app_constants.dart';
 import 'package:mescat/dependency_injection.dart';
+import 'package:mescat/features/spaces/cubits/space_cubit.dart';
 import 'package:mescat/shared/widgets/mc_button.dart';
 import 'package:mescat/features/settings/widgets/manage_member.dart';
 import 'package:mescat/features/settings/widgets/manage_notification.dart';
@@ -163,7 +165,10 @@ class _RoomSettingPageState extends State<RoomSettingPage> {
                           room.canKick ? 'Remove room' : 'Leave room',
                           style: const TextStyle(color: Colors.red),
                         ),
-                        onTap: () {},
+                        onTap: () {
+                          room.leave();
+                          context.read<SpaceCubit>().refresh();
+                        },
                       ),
                     ],
                   ),
