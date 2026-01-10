@@ -140,6 +140,7 @@ class AccountSettingsPage extends StatelessWidget {
       body: ListView(
         children: [
           Container(
+            clipBehavior: Clip.hardEdge,
             padding: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey),
@@ -178,7 +179,13 @@ class AccountSettingsPage extends StatelessWidget {
                                 style: const TextStyle(fontSize: 40),
                               ),
                             )
-                          : McImage(uri: profile.avatarUrl),
+                          : McImage(
+                              uri: profile.avatarUrl,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              borderRadius: BorderRadius.circular(40),
+                            ),
                     );
                   }
                 },
